@@ -418,41 +418,41 @@ class DevblocksPlatform {
 	
 	/**
 	 */
-	static function renderResponse() {
-		$request = DevblocksPlatform::getHttpRequest();
-		$path = $request->path;
-		
-		$mapping = DevblocksPlatform::getMappingRegistry();
-		@$extension_id = $mapping[$path[0]];
-		
-		if(empty($extension_id)) $extension_id = 'typemonkey.page.read';
-
-		$tpl = DevblocksPlatform::getTemplateService();
-		$session = DevblocksPlatform::getSessionService();
-		
-		// [JAS]: Base Menu System
-		// [TODO] This 'pages' concept doesn't belong in Platform (move to Application)
-		$pageManifests = DevblocksPlatform::getExtensions("typemonkey.page");
-		$pages = array();
-		if(is_array($pageManifests))
-		foreach($pageManifests as $pageManifest) {
-			$pages[$pageManifest->id] = $pageManifest->createInstance(1);
-		}
-		$tpl->assign('pages', $pages);
-		
-		// [JAS]: [TODO] Ditch ActivePage in favor of HttpRequest
-		$pageManifest = DevblocksPlatform::getExtension($extension_id);
-		$page = $pageManifest->createInstance();
-		$tpl->assign('page',$page);
-		
-		$tpl->assign('session', $_SESSION);
-		$tpl->assign('visit', $session->getVisit());
-		
-		$translate = DevblocksPlatform::getTranslationService();
-		$tpl->assign('translate', $translate);
-		
-		$tpl->display('border.php');		
-	}
+//	static function renderResponse() {
+//		$request = DevblocksPlatform::getHttpRequest();
+//		$path = $request->path;
+//		
+//		$mapping = DevblocksPlatform::getMappingRegistry();
+//		@$extension_id = $mapping[$path[0]];
+//		
+//		if(empty($extension_id)) $extension_id = 'typemonkey.page.read';
+//
+//		$tpl = DevblocksPlatform::getTemplateService();
+//		$session = DevblocksPlatform::getSessionService();
+//		
+//		// [JAS]: Base Menu System
+//		// [TODO] This 'pages' concept doesn't belong in Platform (move to Application)
+//		$pageManifests = DevblocksPlatform::getExtensions("typemonkey.page");
+//		$pages = array();
+//		if(is_array($pageManifests))
+//		foreach($pageManifests as $pageManifest) {
+//			$pages[$pageManifest->id] = $pageManifest->createInstance(1);
+//		}
+//		$tpl->assign('pages', $pages);
+//		
+//		// [JAS]: [TODO] Ditch ActivePage in favor of HttpRequest
+//		$pageManifest = DevblocksPlatform::getExtension($extension_id);
+//		$page = $pageManifest->createInstance();
+//		$tpl->assign('page',$page);
+//		
+//		$tpl->assign('session', $_SESSION);
+//		$tpl->assign('visit', $session->getVisit());
+//		
+//		$translate = DevblocksPlatform::getTranslationService();
+//		$tpl->assign('translate', $translate);
+//		
+//		$tpl->display('border.php');		
+//	}
 	
 	/**
 	 * Initializes the plugin platform (paths, etc).
