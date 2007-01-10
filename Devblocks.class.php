@@ -418,13 +418,13 @@ class DevblocksPlatform {
 		
 		if(DEVBLOCKS_REWRITE) {
 			$parts = $url->parseURL($_SERVER['REQUEST_URI']);
-			if(empty($parts)) $parts[] = 'read';
+			if(empty($parts)) $parts[] = APP_DEFAULT_URI;
 			$query = $_SERVER['QUERY_STRING'];
 			
 		} else {
 			$argc = $url->parseQueryString($_SERVER['QUERY_STRING']);
 			$parts = array_values($argc);
-			if(empty($parts)) $parts[] = 'read';
+			if(empty($parts)) $parts[] = APP_DEFAULT_URI;
 			$query = '';
 		}
 		$request = new DevblocksHttpRequest($parts,$query); 
