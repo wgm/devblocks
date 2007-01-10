@@ -24,7 +24,7 @@ define('PLATFORM_BUILD',9);
  *
  * @static 
  * @ingroup core
- * @author Jeff Standen
+ * @author Jeff Standen <jeff@webgroupmedia.com>
  */
 class DevblocksPlatform {
 	private static $request = null;
@@ -99,7 +99,7 @@ class DevblocksPlatform {
 		while(!$rs->EOF) {
 			$extension = new DevblocksExtensionManifest();
 			$extension->id = $rs->fields['id'];
-			$extension->plugin_id = intval($rs->fields['plugin_id']);
+			$extension->plugin_id = $rs->fields['plugin_id'];
 			$extension->point = $rs->fields['point'];
 			$extension->name = $rs->fields['name'];
 			$extension->file = $rs->fields['file'];
@@ -140,7 +140,7 @@ class DevblocksPlatform {
 		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		while(!$rs->EOF) {
 			$plugin = new DevblocksPluginManifest();
-			$plugin->id = intval($rs->fields['id']);
+			$plugin->id = $rs->fields['id'];
 //			$plugin->enabled = intval($rs->fields['enabled']);
 			$plugin->name = $rs->fields['name'];
 			$plugin->author = $rs->fields['author'];
@@ -154,6 +154,21 @@ class DevblocksPlatform {
 		}
 		
 		return $plugins;
+	}
+	
+	/**
+	 * Enter description here...
+	 *
+	 * @param string $id
+	 * @return DevblocksPluginManifest
+	 */
+	static function getPlugin($id) {
+		$plugins = DevblocksPlatform::getPluginRegistry();
+		
+		if(isset($plugins[$id]))
+			return $plugins[$id];
+			
+		return null;
 	}
 	
 	static function getMappingRegistry() {
@@ -228,30 +243,22 @@ class DevblocksPlatform {
 		$success = $rssRoot->loadXML(DEVBLOCKS_PLUGIN_PATH.$dir.'/plugin.xml', false);
 		$doc =& $rssRoot->documentElement; /* @var $doc DOMIT_Node */
 		
+		$eId = $doc->getElementsByPath("id",1);
 		$eName = $doc->getElementsByPath("name",1);
 		$eAuthor = $doc->getElementsByPath("author",1);
 			
 		$manifest = new DevblocksPluginManifest();
+		$manifest->id = $eId->getText();
 		$manifest->dir = $dir;
 		$manifest->author = $eAuthor->getText();
 		$manifest->name = $eName->getText();
 		
 		$db = DevblocksPlatform::getDatabaseService();
 
-		// [JAS]: Check if the plugin exists already
-		$pluginId = $db->GetOne(sprintf("SELECT id FROM plugin WHERE dir = %s",
-			$db->QMagic($manifest->dir)
-		)); // or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
-		
-		if(empty($pluginId))
-			$pluginId = $db->GenID('plugin_seq');
-			
-		$manifest->id = $pluginId;
-		
 		$db->Replace(
 			'plugin',
 			array(
-				'id' => $manifest->id,
+				'id' => $db->QMagic($manifest->id),
 				'name' => $db->QMagic($manifest->name),
 				'author' => $db->QMagic($manifest->author),
 				'dir' => $db->QMagic($manifest->dir),
@@ -262,8 +269,9 @@ class DevblocksPlatform {
 		);
 		
 		// [JAS]: URI Mapping
-		// [TODO] Include which plugin contributed URI so we can clear by plugin
-//		$db->Execute("DELETE FROM uri");
+		$db->Execute("DELETE FROM uri WHERE plugin_id = %s",
+			$manifest->id
+		);
 		
 		$eUris =& $doc->getElementsByPath("mapping/uri"); /* @var $eUris DOMIT_NodeList */
 		if(is_array($eUris->arNodeList))
@@ -275,6 +283,7 @@ class DevblocksPlatform {
 				'uri',
 				array(
 					'uri' => $db->QMagic($sUri),
+					'plugin_id' => $db->QMagic($manifest->id),
 					'extension_id' => $db->QMagic($sExtensionId)
 				),
 				array('uri'),
@@ -322,7 +331,7 @@ class DevblocksPlatform {
 				'extension',
 				array(
 					'id' => $db->QMagic($extension->id),
-					'plugin_id' => $extension->plugin_id,
+					'plugin_id' => $db->QMagic($extension->plugin_id),
 					'point' => $db->QMagic($extension->point),
 					'pos' => $pos,
 					'name' => $db->QMagic($extension->name),
@@ -427,6 +436,7 @@ class DevblocksPlatform {
 			if(empty($parts)) $parts[] = APP_DEFAULT_URI;
 			$query = '';
 		}
+		
 		$request = new DevblocksHttpRequest($parts,$query); 
 		DevblocksPlatform::setHttpRequest($request);
 		
@@ -442,26 +452,53 @@ class DevblocksPlatform {
 		$path = $request->path;
 		$command = array_shift($path);
 		
-		$mapping = DevblocksPlatform::getMappingRegistry();
-		
-		if(null != ($extension_id = $mapping[$command])) {
-			$manifest = DevblocksPlatform::getExtension($extension_id);
-			$inst = $manifest->createInstance(); /* @var $inst DevblocksHttpRequestHandler */
-			
-			if($inst instanceof DevblocksHttpRequestHandler) {
-				$inst->handleRequest($request);
+		// [JAS]: Offer the platform a chance to intercept.
+		switch($command) {
+
+			// [JAS]: Resource proxy URI
+			case 'resource':
+				$plugin_id = $path[0];
+				$file = $path[1];
 				
-				// [JAS]: If we didn't write a new response, repeat the request
-				if(null == ($response = DevblocksPlatform::getHttpResponse())) {
-					$response = new DevblocksHttpResponse($request->path);
-					DevblocksPlatform::setHttpResponse($response);
+				$plugin = DevblocksPlatform::getPlugin($plugin_id);
+				if(null == $plugin) continue;
+				
+				// [JAS]: [TODO] Run through an audit to make sure this isn't abusable (../plugin.xml, etc.)
+				$dir = DEVBLOCKS_PLUGIN_PATH . $plugin->dir . '/resources/'.$file;
+				
+				if(file_exists($dir)) {
+					echo file_get_contents($dir,false);
+				} else {
+					echo "Requested resource not found!";
 				}
+								
+				break;
 				
-				$inst->writeResponse($response);
-			}
-			
-		} else {
-			echo "No request handler was found for this URI.";			
+			// [JAS]: Plugin-supplied URIs
+			default:
+				$mapping = DevblocksPlatform::getMappingRegistry();
+				
+				if(null != ($extension_id = $mapping[$command])) {
+					$manifest = DevblocksPlatform::getExtension($extension_id);
+					$inst = $manifest->createInstance(); /* @var $inst DevblocksHttpRequestHandler */
+					
+					if($inst instanceof DevblocksHttpRequestHandler) {
+						$inst->handleRequest($request);
+						
+						// [JAS]: If we didn't write a new response, repeat the request
+						if(null == ($response = DevblocksPlatform::getHttpResponse())) {
+							$response = new DevblocksHttpResponse($request->path);
+							DevblocksPlatform::setHttpResponse($response);
+						}
+						
+						$inst->writeResponse($response);
+					}
+					
+				} else {
+					// [JAS]: [TODO] This would be a good point for a 404 URI Platform option		
+					echo "No request handler was found for this URI.";
+				}
+				break;
 		}
 		
 		return;
@@ -483,6 +520,23 @@ class DevblocksPlatform {
 		}
 	}
 	
+	/**
+	 * Prints out the Platform Javascript Library for use by Application.
+	 * This library provides the ability to rewrite URLs in Javascript for 
+	 * Ajax functionality, etc.
+	 * 
+	 * @example
+	 * <script language="javascript" type="text/javascript">{php}DevblocksPlatform::printJavascriptLibrary();{/php}</script>
+	 */
+	static function printJavascriptLibrary() {
+		$tpl = DevblocksPlatform::getTemplateService();
+		$path = dirname(__FILE__);
+		$tpl->caching = 2;
+		$tpl->cache_lifetime = 3600*24; // 1day
+		$tpl->display("file:$path/devblocks.tpl.js",APP_BUILD);
+		$tpl->caching = 0;
+	}
+	
 };
 
 /**
@@ -490,7 +544,7 @@ class DevblocksPlatform {
  * @ingroup plugin
  */
 class DevblocksPluginManifest {
-	var $id = 0;
+	var $id = '';
 	var $name = '';
 	var $author = '';
 	var $dir = '';
@@ -503,7 +557,7 @@ class DevblocksPluginManifest {
  */
 class DevblocksExtensionManifest {
 	var $id = '';
-	var $plugin_id = 0;
+	var $plugin_id ='';
 	var $point = '';
 	var $name = '';
 	var $file = '';
@@ -524,13 +578,15 @@ class DevblocksExtensionManifest {
 		if(empty($this->id) || empty($this->plugin_id)) // empty($instance_id) || 
 			return null;
 
-		$plugins = DevblocksPlatform::getPluginRegistry();
-		
-		if(!isset($plugins[$this->plugin_id]))
-			return null;
-		
-		$plugin = $plugins[$this->plugin_id]; /* @var $plugin DevblocksPluginManifest */
-		
+//		$plugins = DevblocksPlatform::getPluginRegistry();
+//		
+//		if(!isset($plugins[$this->plugin_id]))
+//			return null;
+//		
+//		$plugin = $plugins[$this->plugin_id]; /* @var $plugin DevblocksPluginManifest */
+
+		$plugin = DevblocksPlatform::getPlugin($this->plugin_id);
+			
 		$class_file = DEVBLOCKS_PLUGIN_PATH . $plugin->dir . '/' . $this->file;
 		$class_name = $this->class;
 
@@ -1066,5 +1122,6 @@ class URL {
 		return $contents;
 	}
 }
+
 
 ?>
