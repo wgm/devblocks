@@ -26,6 +26,7 @@ include_once(APP_PATH . "/languages/".DEVBLOCKS_LANGUAGE."/strings.php");
  */
 class DevblocksPlatform {
 	private static $request = null;
+	private static $response = null;
 	
 	/**
 	 * @private
@@ -391,6 +392,46 @@ class DevblocksPlatform {
 	}
 	
 	/**
+	 * Enter description here...
+	 *
+	 * @return DevblocksHttpRequest
+	 */
+	static function getHttpResponse() {
+		return self::$response;
+	}
+	
+	/**
+	 * @param DevblocksHttpResponse $$response
+	 */
+	static function setHttpResponse($response) {
+		if(!is_a($response,'DevblocksHttpResponse')) return null;
+		self::$response = $response;
+	}
+	
+	/**
+	 * @return DevblocksHttpRequest
+	 */
+	static function readRequest() {
+		$url = URL::getInstance();
+		
+		if(DEVBLOCKS_REWRITE) {
+			$parts = $url->parseURL($_SERVER['REQUEST_URI']);
+			if(empty($parts)) $parts[] = 'read';
+			$query = $_SERVER['QUERY_STRING'];
+			
+		} else {
+			$argc = $url->parseQueryString($_SERVER['QUERY_STRING']);
+			$parts = array_values($argc);
+			if(empty($parts)) $parts[] = 'read';
+			$query = '';
+		}
+		$request = new DevblocksHttpRequest($parts,$query); 
+		DevblocksPlatform::setHttpRequest($request);
+		
+		return $request;
+	}
+	
+	/**
 	 * @param DevblocksHttpRequest $request
 	 */
 	static function processRequest($request) {
@@ -407,6 +448,14 @@ class DevblocksPlatform {
 			
 			if($inst instanceof DevblocksHttpRequestHandler) {
 				$inst->handleRequest($request);
+				
+				// [JAS]: If we didn't write a new response, repeat the request
+				if(null == ($response = DevblocksPlatform::getHttpResponse())) {
+					$response = new DevblocksHttpResponse($request->path);
+					DevblocksPlatform::setHttpResponse($response);
+				}
+				
+				$inst->writeResponse($response);
 			}
 			
 		} else {
@@ -415,44 +464,6 @@ class DevblocksPlatform {
 		
 		return;
 	}
-	
-	/**
-	 */
-//	static function renderResponse() {
-//		$request = DevblocksPlatform::getHttpRequest();
-//		$path = $request->path;
-//		
-//		$mapping = DevblocksPlatform::getMappingRegistry();
-//		@$extension_id = $mapping[$path[0]];
-//		
-//		if(empty($extension_id)) $extension_id = 'typemonkey.page.read';
-//
-//		$tpl = DevblocksPlatform::getTemplateService();
-//		$session = DevblocksPlatform::getSessionService();
-//		
-//		// [JAS]: Base Menu System
-//		// [TODO] This 'pages' concept doesn't belong in Platform (move to Application)
-//		$pageManifests = DevblocksPlatform::getExtensions("typemonkey.page");
-//		$pages = array();
-//		if(is_array($pageManifests))
-//		foreach($pageManifests as $pageManifest) {
-//			$pages[$pageManifest->id] = $pageManifest->createInstance(1);
-//		}
-//		$tpl->assign('pages', $pages);
-//		
-//		// [JAS]: [TODO] Ditch ActivePage in favor of HttpRequest
-//		$pageManifest = DevblocksPlatform::getExtension($extension_id);
-//		$page = $pageManifest->createInstance();
-//		$tpl->assign('page',$page);
-//		
-//		$tpl->assign('session', $_SESSION);
-//		$tpl->assign('visit', $session->getVisit());
-//		
-//		$translate = DevblocksPlatform::getTranslationService();
-//		$tpl->assign('translate', $translate);
-//		
-//		$tpl->display('border.php');		
-//	}
 	
 	/**
 	 * Initializes the plugin platform (paths, etc).
@@ -922,20 +933,49 @@ class _DevblocksTranslationManager {
  * Platform Extensions
  */
 
+abstract class DevblocksApplication {
+	
+}
+
 interface DevblocksHttpRequestHandler {
 	/**
 	 * @param DevblocksHttpRequest
+	 * @return DevblocksHttpResponse
 	 */
 	public function handleRequest($request);
+	public function writeResponse($response);
 }
 
-class DevblocksHttpRequest {
+class DevblocksHttpRequest extends DevblocksHttpIO {
+	/**
+	 * @param array $path
+	 */
+	function __construct($path) {
+		parent::__construct($path);
+	}
+}
+
+class DevblocksHttpResponse extends DevblocksHttpIO {
+	/**
+	 * @param array $path
+	 */
+	function __construct($path) {
+		parent::__construct($path);
+	}
+}
+
+abstract class DevblocksHttpIO {
 	public $path = array();
-	public $query = null;
+//	public $query = null;
 	
-	function __construct($path,$query=null) {
+	/**
+	 * Enter description here...
+	 *
+	 * @param array $path
+	 */
+	function __construct($path) {
 		$this->path = $path;
-		$this->query = $query;
+//		$this->query = $query;
 	}
 }
 
