@@ -2,6 +2,8 @@
 include_once(DEVBLOCKS_PATH . "pear/i18n/I18N_UnicodeString.php");
 include_once(APP_PATH . "/languages/".DEVBLOCKS_LANGUAGE."/strings.php");
 
+define('PLATFORM_BUILD',8);
+
 /**
  *  @defgroup core Devblocks Framework Core
  *  Core data structures of the framework
