@@ -2,7 +2,7 @@
 include_once(DEVBLOCKS_PATH . "pear/i18n/I18N_UnicodeString.php");
 include_once(APP_PATH . "/languages/".DEVBLOCKS_LANGUAGE."/strings.php");
 
-define('PLATFORM_BUILD',8);
+define('PLATFORM_BUILD',9);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -662,7 +662,7 @@ class _DevblocksSessionManager {
 			include_once(DEVBLOCKS_PATH . "adodb/session/adodb-session2.php");
 			$options = array();
 			$options['table'] = 'session';
-			ADOdb_Session::config(DEVBLOCKS_DB_DRIVER, DEVBLOCKS_DB_HOST, DEVBLOCKS_DB_USER, DEVBLOCKS_DB_PASS, DEVBLOCKS_DB_DATABASE, $options);
+			ADOdb_Session::config(APP_DB_DRIVER, APP_DB_HOST, APP_DB_USER, APP_DB_PASS, APP_DB_DATABASE, $options);
 			ADOdb_session::Persist($connectMode=false);
 			ADOdb_session::lifetime($lifetime=86400);
 			
@@ -870,8 +870,8 @@ class _DevblocksDatabaseManager {
 		if(null == $instance) {
 			include_once(DEVBLOCKS_PATH . "adodb/adodb.inc.php");
 			$ADODB_CACHE_DIR = APP_PATH . "/cache";
-			@$instance =& ADONewConnection(DEVBLOCKS_DB_DRIVER); /* @var $instance ADOConnection */
-			@$instance->Connect(DEVBLOCKS_DB_HOST,DEVBLOCKS_DB_USER,DEVBLOCKS_DB_PASS,DEVBLOCKS_DB_DATABASE);
+			@$instance =& ADONewConnection(APP_DB_DRIVER); /* @var $instance ADOConnection */
+			@$instance->Connect(APP_DB_HOST,APP_DB_USER,APP_DB_PASS,APP_DB_DATABASE);
 			@$instance->SetFetchMode(ADODB_FETCH_ASSOC);
 		}
 		return $instance;
@@ -1036,32 +1036,29 @@ class URL {
 		return $parts;
 	}
 	
-	function write($c='',$a='',$args='') {
+	function write($sQuery='') {
+		$args = URL::parseQueryString($sQuery);
+		$c = @$args['c'];
+		
 		// [JAS]: Internal non-component URL (images/css/js/etc)
 		if(empty($c)) {
 			$contents = sprintf("%s%s",
 				DEVBLOCKS_WEBPATH,
-				$args
+				$sQuery
 			);
 			
 		// [JAS]: Component URL
 		} else {
 			if(DEVBLOCKS_REWRITE) {
-				$argc = URL::parseQueryString($args);
-				
-				$contents = sprintf("%s%s%s%s",
+				$contents = sprintf("%s%s",
 					DEVBLOCKS_WEBPATH,
-					$c,
-					(!empty($a) ? '/'.$a : ''),
-					(!empty($argc) ? '/'.implode('/',array_values($argc)) : '')
+					(!empty($args) ? implode('/',array_values($args)) : '')
 				);
 				
 			} else {
-				$contents = sprintf("%sindex.php?c=%s%s%s",
+				$contents = sprintf("%sindex.php?",
 					DEVBLOCKS_WEBPATH,
-					$c,
-					(!empty($a) ? '&a='.$a : ''),
-					(!empty($args) ? '&'.$args : '')
+					(!empty($args) ? $args : '')
 				);
 			}
 		}
