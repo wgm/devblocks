@@ -270,7 +270,7 @@ class DevblocksPlatform {
 		
 		// [JAS]: URI Mapping
 		$db->Execute("DELETE FROM uri WHERE plugin_id = %s",
-			$manifest->id
+			$db->QMagic($manifest->id)
 		);
 		
 		$eUris =& $doc->getElementsByPath("mapping/uri"); /* @var $eUris DOMIT_NodeList */
@@ -535,6 +535,64 @@ class DevblocksPlatform {
 		$tpl->cache_lifetime = 3600*24; // 1day
 		$tpl->display("file:$path/devblocks.tpl.js",APP_BUILD);
 		$tpl->caching = 0;
+	}
+	
+	/*
+	 * [JAS]: [TODO] This should move into a DatabaseUpdateService area later 
+	 * (where plugins can also contribute their patches)
+	 */
+	static function getDatabaseSchema() {
+		$tables = array();
+		
+		$tables['extension'] = "
+			id C(128) DEFAULT '' NOTNULL PRIMARY,
+			plugin_id C(128) DEFAULT 0 NOTNULL,
+			point C(128) DEFAULT '' NOTNULL,
+			pos I2 DEFAULT 0 NOTNULL,
+			name C(128) DEFAULT '' NOTNULL,
+			file C(128) DEFAULT '' NOTNULL,
+			class C(128) DEFAULT '' NOTNULL,
+			params B DEFAULT '' NOTNULL
+		";
+		
+		$tables['plugin'] = "
+			id C(128) PRIMARY,
+			enabled I1 DEFAULT 0 NOTNULL,
+			name C(128) DEFAULT '' NOTNULL,
+			author C(64) DEFAULT '' NOTNULL,
+			dir C(128) DEFAULT '' NOTNULL
+		";
+		
+		$tables['property_store'] = "
+			extension_id C(128) DEFAULT '' NOTNULL PRIMARY,
+			instance_id I DEFAULT 0 NOTNULL PRIMARY,
+			property C(128) DEFAULT '' NOTNULL PRIMARY,
+			value C(255) DEFAULT '' NOTNULL
+		";
+		
+		$tables['session'] = "
+			sesskey C(64) PRIMARY,
+			expiry T,
+			expireref C(250),
+			created T NOTNULL,
+			modified T NOTNULL,
+			sessdata B
+		";
+		
+		$tables['login'] = "
+			id I PRIMARY,
+			login C(32) NOTNULL,
+			password C(32) NOTNULL,
+			admin I1 DEFAULT 0 NOTNULL
+		";
+		
+		$tables['uri'] = "
+			uri C(32) PRIMARY,
+			plugin_id C(128) NOTNULL,
+			extension_id C(128) NOTNULL
+		";
+
+		return $tables;
 	}
 	
 };
