@@ -1,8 +1,10 @@
 <!--
-{literal}
+var DevblocksAppPath = '{$smarty.const.DEVBLOCKS_WEBPATH}';
 
+{literal}
 var DevblocksUrl = function() {
 {/literal}
+
 {if $smarty.const.DEVBLOCKS_REWRITE}
 	this.base_url = '{$smarty.const.DEVBLOCKS_WEBPATH}';
 	this.rewrite = true;
@@ -10,6 +12,7 @@ var DevblocksUrl = function() {
 	this.base_url = '{$smarty.const.DEVBLOCKS_WEBPATH}index.php';
 	this.rewrite = false;
 {/if}
+
 {literal}
 	this.vars = new Array();
 

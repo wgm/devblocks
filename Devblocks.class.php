@@ -2,7 +2,7 @@
 include_once(DEVBLOCKS_PATH . "pear/i18n/I18N_UnicodeString.php");
 include_once(APP_PATH . "/languages/".DEVBLOCKS_LANGUAGE."/strings.php");
 
-define('PLATFORM_BUILD',9);
+define('PLATFORM_BUILD',13);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -34,6 +34,10 @@ class DevblocksPlatform {
 	 * @private
 	 */
 	private function DevblocksPlatform() {}
+	
+	static function importGPC($var) {
+		return get_magic_quotes_gpc() ? stripslashes($var) : $var;
+	}
 	
 	/**
 	 * Returns the list of extensions on a given extension point.
@@ -258,10 +262,10 @@ class DevblocksPlatform {
 		$db->Replace(
 			'plugin',
 			array(
-				'id' => $db->QMagic($manifest->id),
-				'name' => $db->QMagic($manifest->name),
-				'author' => $db->QMagic($manifest->author),
-				'dir' => $db->QMagic($manifest->dir),
+				'id' => $db->qstr($manifest->id),
+				'name' => $db->qstr($manifest->name),
+				'author' => $db->qstr($manifest->author),
+				'dir' => $db->qstr($manifest->dir),
 				'enabled' => 1
 			),
 			array('id'),
@@ -270,7 +274,7 @@ class DevblocksPlatform {
 		
 		// [JAS]: URI Mapping
 		$db->Execute("DELETE FROM uri WHERE plugin_id = %s",
-			$db->QMagic($manifest->id)
+			$db->qstr($manifest->id)
 		);
 		
 		$eUris =& $doc->getElementsByPath("mapping/uri"); /* @var $eUris DOMIT_NodeList */
@@ -282,9 +286,9 @@ class DevblocksPlatform {
 			$db->Replace(
 				'uri',
 				array(
-					'uri' => $db->QMagic($sUri),
-					'plugin_id' => $db->QMagic($manifest->id),
-					'extension_id' => $db->QMagic($sExtensionId)
+					'uri' => $db->qstr($sUri),
+					'plugin_id' => $db->qstr($manifest->id),
+					'extension_id' => $db->qstr($sExtensionId)
 				),
 				array('uri'),
 				false
@@ -330,14 +334,14 @@ class DevblocksPlatform {
 			$db->Replace(
 				'extension',
 				array(
-					'id' => $db->QMagic($extension->id),
-					'plugin_id' => $db->QMagic($extension->plugin_id),
-					'point' => $db->QMagic($extension->point),
+					'id' => $db->qstr($extension->id),
+					'plugin_id' => $db->qstr($extension->plugin_id),
+					'point' => $db->qstr($extension->point),
 					'pos' => $pos,
-					'name' => $db->QMagic($extension->name),
-					'file' => $db->QMagic($extension->file),
-					'class' => $db->QMagic($extension->class),
-					'params' => $db->QMagic(serialize($extension->params))
+					'name' => $db->qstr($extension->name),
+					'file' => $db->qstr($extension->file),
+					'class' => $db->qstr($extension->class),
+					'params' => $db->qstr(serialize($extension->params))
 				),
 				array('id'),
 				false
@@ -427,14 +431,24 @@ class DevblocksPlatform {
 		
 		if(DEVBLOCKS_REWRITE) {
 			$parts = $url->parseURL($_SERVER['REQUEST_URI']);
-			if(empty($parts)) $parts[] = APP_DEFAULT_URI;
 			$query = $_SERVER['QUERY_STRING'];
 			
 		} else {
 			$argc = $url->parseQueryString($_SERVER['QUERY_STRING']);
 			$parts = array_values($argc);
-			if(empty($parts)) $parts[] = APP_DEFAULT_URI;
 			$query = '';
+		}
+
+		if(empty($parts)) {
+			// Overrides (Form POST, etc.)
+			@$uri = DevblocksPlatform::importGPC($_REQUEST['c']); // extension
+			if(!empty($uri)) $parts[] = $uri;
+
+			@$listener = DevblocksPlatform::importGPC($_REQUEST['a']); // listener
+			if(!empty($listener)) $parts[] = $listener;
+			
+			// Use our default URI if we didn't have an override
+			if(empty($parts)) $parts[] = APP_DEFAULT_URI;
 		}
 		
 		$request = new DevblocksHttpRequest($parts,$query); 
@@ -446,7 +460,7 @@ class DevblocksPlatform {
 	/**
 	 * @param DevblocksHttpRequest $request
 	 */
-	static function processRequest($request) {
+	static function processRequest($request,$is_ajax=false) {
 		if(!is_a($request,'DevblocksHttpRequest')) return null;
 		
 		$path = $request->path;
@@ -478,8 +492,15 @@ class DevblocksPlatform {
 			default:
 				$mapping = DevblocksPlatform::getMappingRegistry();
 				
-				if(null != ($extension_id = $mapping[$command])) {
-					$manifest = DevblocksPlatform::getExtension($extension_id);
+				/*
+				 * [JAS]: Try to find our command in the URI lookup first, and if we
+				 * fail then fall back to raw extension ids.
+				 */
+				if(null == ($extension_id = $mapping[$command])) {
+					$extension_id = $command;
+				}
+				
+				if(null != ($manifest = DevblocksPlatform::getExtension($extension_id))) {
 					$inst = $manifest->createInstance(); /* @var $inst DevblocksHttpRequestHandler */
 					
 					if($inst instanceof DevblocksHttpRequestHandler) {
@@ -491,7 +512,10 @@ class DevblocksPlatform {
 							DevblocksPlatform::setHttpResponse($response);
 						}
 						
-						$inst->writeResponse($response);
+						// [JAS]: An Ajax request doesn't need the full Http cycle
+						if(!$is_ajax) {
+							$inst->writeResponse($response);
+						}
 					}
 					
 				} else {
@@ -710,7 +734,7 @@ class DevblocksExtension {
 		$sql = sprintf("SELECT property,value ".
 			"FROM property_store ".
 			"WHERE extension_id=%s AND instance_id='%d' ",
-			$db->QMagic($this->id),
+			$db->qstr($this->id),
 			$this->instance_id
 		);
 		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
@@ -738,7 +762,7 @@ class DevblocksExtension {
 		foreach($this->params as $k => $v) {
 			$db->Replace(
 				'property_store',
-				array('extension_id'=>$this->id,'instance_id'=>$this->instance_id,'property'=>$db->QMagic($k),'value'=>$db->QMagic($v)),
+				array('extension_id'=>$this->id,'instance_id'=>$this->instance_id,'property'=>$db->qstr($k),'value'=>$db->qstr($v)),
 				array('extension_id','instance_id','property'),
 				true
 			);
@@ -814,8 +838,8 @@ class _DevblocksSessionManager {
 			"FROM login ".
 			"WHERE login = %s ".
 			"AND password = MD5(%s)",
-				$db->QMagic($login),
-				$db->QMagic($password)
+				$db->qstr($login),
+				$db->qstr($password)
 		);
 		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		
