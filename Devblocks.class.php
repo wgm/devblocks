@@ -362,6 +362,16 @@ class DevblocksPlatform {
 	}
 	
 	/**
+	 * Enter description here...
+	 *
+	 * @return CloudGlue
+	 */
+	static function getCloudGlueService() {
+		include_once(DEVBLOCKS_PATH . "cloudglue/CloudGlue.class.php");
+		return CloudGlue::getInstance();
+	}
+	
+	/**
 	 * @return _DevblocksEmailManager
 	 */
 	static function getMailService() {
