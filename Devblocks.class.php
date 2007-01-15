@@ -157,6 +157,14 @@ class DevblocksPlatform {
 			$rs->MoveNext();
 		}
 		
+		$extensions = DevblocksPlatform::getExtensionRegistry();
+		foreach($extensions as $extension_id => $extension) { /* @var $extension DevblocksExtensionManifest */
+			$plugin_id = $extension->plugin_id;
+			if(isset($plugin_id)) {
+				$plugins[$plugin_id]->extensions[$extension_id] = $extension;
+			}
+		}
+		
 		return $plugins;
 	}
 	
