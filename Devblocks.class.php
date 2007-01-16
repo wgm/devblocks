@@ -2,7 +2,7 @@
 include_once(DEVBLOCKS_PATH . "pear/i18n/I18N_UnicodeString.php");
 include_once(APP_PATH . "/languages/".DEVBLOCKS_LANGUAGE."/strings.php");
 
-define('PLATFORM_BUILD',13);
+define('PLATFORM_BUILD',18);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -78,6 +78,27 @@ class DevblocksPlatform {
 		}		
 		
 		return $result;
+	}
+	
+	static function getExtensionPoints() {
+		static $points = array();
+
+		if(!empty($points))
+			return $points;
+		
+		$extensions = DevblocksPlatform::getExtensionRegistry();
+		foreach($extensions as $extension) { /* @var $extension DevblocksExtensionManifest */
+			$point = $extension->point;
+			if(!isset($points[$point])) {
+				$p = new DevblocksExtensionPoint();
+				$p->id = $point;
+				$points[$point] = $p;
+			}
+			
+			$points[$point]->extensions[$extension->id] = $extension;
+		}
+		
+		return $points;
 	}
 	
 	/**
@@ -638,6 +659,11 @@ class DevblocksPlatform {
 	}
 	
 };
+
+class DevblocksExtensionPoint {
+	var $id = '';
+	var $extensions = array();
+}
 
 /**
  * Manifest information for plugin.
