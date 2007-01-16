@@ -12,41 +12,81 @@ class CloudGlue {
 		return self::$instance;
 	}
 	
-	function createCloud($tagIdsToRelate=NULL,$maxFreq=NULL) {
-		return new CloudGlueCloud($tagIdsToRelate, $maxFreq);
+	function createCloud($tags, $tablename, $col_tag_id, $col_content_id) {
+		return new CloudGlueCloud($tags, $tablename, $col_tag_id, $col_content_id);
 	}
 }
 
 class CloudGlueCloud {
 	
+	private $cgDao;
+	
+	private $tagsToRelateTo;
+	
 	private $tags;
 	private $tagCounts;
+	private $tagWeights;
 	
-	private $MIN_FONT = 11;
-	private $MAX_FONT = 56;
+	private $tagLimit;
+	
+	private $minWeight;
+	private $maxWeight;
 	
 	private $maxFrequency;
 	private $minFrequency;
+	
+	private $weightsCalculated;//boolean tells whether assignCloudWeights() has been called yet
 	
 	/**
 	 * @param relatedToTagId An optional array of tags to get a related tag cloud for. Default gets cloud of all tags.
 	 * @param maxFreq The max frequency can be specified, otherwise it is determined based on the frequencies it finds when it get tag counts
 	 */
-	public function __construct($relatedToTagId=NULL, $maxFreq=NULL) {
-		$this->tags = DAO_Tag::getTags();
+	public function __construct($tags, $tablename, $col_tag_id, $col_content_id) {
+		$this->cgDao = new CloudGlueDao($tablename, $col_tag_id, $col_content_id);
 		
-		$this->maxFrequency = $maxFreq;
+		$this->weightsCalculated = false;
+		$this->minWeight = 14;
+		$this->maxWeight = 56;
+		$this->tagLimit = -1;
+		$this->tags = $tags;
 		
-		if($relatedToTagId === NULL) {
-			$this->tagCounts = DAO_Tag::getTagContentCounts();
+	}
+	
+	public function setTagsToRelateTo($tagIds) {
+		$this->tagsToRelateTo = $tagIds;
+	}
+	
+	/**
+	 * Allows the max frequency to be set, so when weights are calculated,
+	 * it will use an alternative max than what it actually finds in the data
+	 * (useful if we want it to use a maximum from a previous execution thus yielding smaller weights)
+	 */
+	public function setMaxFrequency($maxFrequency) {
+		$this->maxFrequency = $maxFrequency;
+	}
+	
+	public function setMaxWeight($maxWeight) {
+		$this->maxWeight = $maxWeight;
+	}
+	
+	public function setMinWeight($minWeight) {
+		$this->minWeight = $minWeight;
+	}
+	
+	/**
+	 * Set the maximum number of tags that will be returned
+	 */
+	public function setTagLimit($limit) {
+		$this->tagLimit = $limit;
+	}
+	
+	private function getContentCounts() {
+		if($this->tagsToRelateTo === NULL) {
+			$this->tagCounts = $this->cgDao->getTagContentCounts($this->tagLimit);
 		}
 		else {
-			$this->tagCounts = DAO_Tag::getRelatedTagContentCounts($relatedToTagId);
+			$this->tagCounts = $this->cgDao->getRelatedTagContentCounts($this->tagsToRelateTo, $this->tagLimit);
 		}
-		
-		//print_r($this->tagCounts);exit();
-		$this->assignCloudWeights();
-		
 	}
 	
 	/**
@@ -74,9 +114,9 @@ class CloudGlueCloud {
 				//echo sprintf("round(((%d - %d) / (%d - %d)) * 100)<br>", $frequency, $min, $max, $min);
 				$frequencyPercent = round((($frequency - $min) / ($max - $min)) * 100);
 				//echo "frequency% ::".$frequencyPercent.'<br>';
-				$weight = round(($frequencyPercent * ($this->MAX_FONT-$this->MIN_FONT)) / 100) + 11;
-				
-				$this->tags[$tagId]->weight = $weight;
+				$weight = round(($frequencyPercent * ($this->maxWeight-$this->minWeight)) / 100) + $this->minWeight;
+				//echo "$tagId, $weight<br>";
+				$this->tagWeights[$tagId] = new CloudGlueTag($tagId, $weight);
 			}
 		}
 		
@@ -110,12 +150,18 @@ class CloudGlueCloud {
 	 */
 	private function setWeightsEqual() {
 		foreach($this->tagCounts as $tagId=>$countObj) {
-			$this->tags[$tagId]->weight = round($this->MAX_FONT-$this->MIN_FONT /2);
+			$this->tags[$tagId]->weight = round($this->maxWeight-$this->minWeight /2);
 		}
 	}
 	
 	public function getWeightedTags() {
-		return $this->tags;
+		if(!$this->weightsCalculated) {
+			$this->getContentCounts();
+			$this->assignCloudWeights();
+			$this->weightsCalculated = true;
+		}
+		
+		return $this->tagWeights;
 	}
 	
 	public function getMaxFrequency() {
