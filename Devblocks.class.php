@@ -7,7 +7,7 @@ include_once(DEVBLOCKS_PATH . "api/DAO.php");
 include_once(DEVBLOCKS_PATH . "api/Model.php");
 include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
-define('PLATFORM_BUILD',21);
+define('PLATFORM_BUILD',22);
 
 /**
  *  @defgroup core Devblocks Framework Core
