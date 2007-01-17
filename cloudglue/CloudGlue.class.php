@@ -1,5 +1,9 @@
 <?php
 class CloudGlue {
+	
+	private $clouds;
+	private $cgDao;
+	
 	private static $instance = null;
 	
 	private function __construct() {}
@@ -12,8 +16,61 @@ class CloudGlue {
 		return self::$instance;
 	}
 	
-	function createCloud($tags, $tablename, $col_tag_id, $col_content_id) {
-		return new CloudGlueCloud($tags, $tablename, $col_tag_id, $col_content_id);
+	function createTagGroup($cloudId) {
+		return new TagGroup($cloudId, true);
+	}
+	
+	public function getTagGroup($cloudId) {
+		return new TagGroup($cloudId);
+	}
+}
+
+class TagGroup {
+	
+	private $tags;
+	private $cgDao;
+	private $cloud;
+	
+	/**
+	 * @param cloudId The unique string identifier for this tag group
+	 * @param doInit Boolean that indicates whether the tag group tables should be initialized
+	 */
+	public function __construct($cloudId, $doInit=false) {
+		$this->cgDao = new CloudGlueDao($cloudId);
+		if($doInit) {
+			$this->initTables();
+		}
+	}
+	
+	public function initTables() {
+		$this->cgDao->initCloudGlueTables();	
+	}
+	
+	public function createTag($name) {
+		$this->cgDao->createTag($name);
+	}
+	
+	public function assignTag($tagId, $contentId) {
+		$this->cgDao->assignTag($tagId, $contentId);
+	}
+	
+	public function getTags($tagIds=array()) {
+		$this->tags = $this->cgDao->getTags($tagIds);
+		return $this->tags;
+	}
+	
+	public function isTagContentExist($tagId, $contentId) {
+		return $this->cgDao->isTagContentExist($tagId, $contentId);
+	}
+	
+	public function getCloud() {
+		if($this->cloud == NULL) {
+			if($this->tags == NULL) {
+				$this->tags = $this->getTags();
+			}
+			$this->cloud = new CloudGlueCloud($this->tags, $this->cgDao);
+		}
+		return $this->cloud;
 	}
 }
 
@@ -38,11 +95,12 @@ class CloudGlueCloud {
 	private $weightsCalculated;//boolean tells whether assignCloudWeights() has been called yet
 	
 	/**
-	 * @param relatedToTagId An optional array of tags to get a related tag cloud for. Default gets cloud of all tags.
-	 * @param maxFreq The max frequency can be specified, otherwise it is determined based on the frequencies it finds when it get tag counts
+	 * @param tags An array of tags
+	 * @param cgDao the DAO for the tag group
 	 */
-	public function __construct($tags, $tablename, $col_tag_id, $col_content_id) {
-		$this->cgDao = new CloudGlueDao($tablename, $col_tag_id, $col_content_id);
+	//public function __construct($tags, $tablename, $col_tag_id, $col_content_id) {
+	public function __construct($tags, $cgDao) {		
+		$this->cgDao = $cgDao;
 		
 		$this->weightsCalculated = false;
 		$this->minWeight = 14;
@@ -90,7 +148,7 @@ class CloudGlueCloud {
 	}
 	
 	/**
-	 * sets the weight instance variable for each tag in $this->tags
+	 * sets the weight instance variable for each tag in $this->tagWeights
 	 */
 	private function assignCloudWeights() {
 		
@@ -116,7 +174,7 @@ class CloudGlueCloud {
 				//echo "frequency% ::".$frequencyPercent.'<br>';
 				$weight = round(($frequencyPercent * ($this->maxWeight-$this->minWeight)) / 100) + $this->minWeight;
 				//echo "$tagId, $weight<br>";
-				$this->tagWeights[$tagId] = new CloudGlueTag($tagId, $weight);
+				$this->tagWeights[$tagId] = new CloudGlueTagWeight($tagId, $weight);
 			}
 		}
 		

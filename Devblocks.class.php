@@ -397,6 +397,8 @@ class DevblocksPlatform {
 	 */
 	static function getCloudGlueService() {
 		include_once(DEVBLOCKS_PATH . "cloudglue/CloudGlue.class.php");
+		include_once(DEVBLOCKS_PATH . "cloudglue/CloudGlueDAO.class.php");
+		include_once(DEVBLOCKS_PATH . "cloudglue/CloudGlueVO.class.php");
 		return CloudGlue::getInstance();
 	}
 	
