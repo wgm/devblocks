@@ -1,10 +1,10 @@
 <?php
 
 abstract class DevblocksEngine {
-	private static $plugins_cache = array();
-	private static $extensions_cache = array();
-	private static $points_cache = array();
-	private static $mapping_cache = array();
+	protected static $plugins_cache = array();
+	protected static $extensions_cache = array();
+	protected static $points_cache = array();
+	protected static $mapping_cache = array();
 	
 	protected static $request = null;
 	protected static $response = null;
