@@ -78,7 +78,7 @@ class CloudGlueCloud {
 	
 	private $cgDao;
 	
-	private $tagsToRelateTo;
+	private $relatedTags;
 	
 	private $tags;
 	private $tagCounts;
@@ -110,8 +110,28 @@ class CloudGlueCloud {
 		
 	}
 	
-	public function setTagsToRelateTo($tagIds) {
-		$this->tagsToRelateTo = $tagIds;
+	/**
+	 * Draws the tag cloud.  Should be called from a template.
+	 * @author Jeff Standen
+	 */
+	public function render() {
+		$path = dirname(__FILE__). '/templates/';
+		
+		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl->assign('path', $path);
+		
+		$cloudglue = DevblocksPlatform::getCloudGlueService();
+		$tagGroup = $cloudglue->getTagGroup("mygroup");
+		$tags = $tagGroup->getTags();
+		$tpl->assign('tags', $tags);
+		
+		$tpl->assign('tagCloud', $this);
+		
+		$tpl->display('file:' . $path . 'cloud.tpl.php');
+	}
+	
+	public function setRelatedTags($tagIds) {
+		$this->relatedTags = $tagIds;
 	}
 	
 	/**
@@ -139,11 +159,11 @@ class CloudGlueCloud {
 	}
 	
 	private function getContentCounts() {
-		if($this->tagsToRelateTo === NULL) {
+		if($this->relatedTags === NULL) {
 			$this->tagCounts = $this->cgDao->getTagContentCounts($this->tagLimit);
 		}
 		else {
-			$this->tagCounts = $this->cgDao->getRelatedTagContentCounts($this->tagsToRelateTo, $this->tagLimit);
+			$this->tagCounts = $this->cgDao->getRelatedTagContentCounts($this->relatedTags, $this->tagLimit);
 		}
 	}
 	
@@ -220,6 +240,10 @@ class CloudGlueCloud {
 		}
 		
 		return $this->tagWeights;
+	}
+	
+	public function getRelatedTags() {
+		return $this->relatedTags;
 	}
 	
 	public function getMaxFrequency() {
