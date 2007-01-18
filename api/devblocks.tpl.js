@@ -88,5 +88,27 @@ function appendTextboxAsCsv(formName, field, oLink) {
 	txt.value = txt.value + sAppend;
 }
 
+function genericAjaxGet(divName,args) {
+	var frm = document.getElementById(divName);
+	if(null == frm) return;
+
+	var anim = new YAHOO.util.Anim(frm, { opacity: { to: 0.2 } }, 1, YAHOO.util.Easing.easeOut);
+	anim.animate();
+	
+	var cObj = YAHOO.util.Connect.asyncRequest('GET', DevblocksAppPath+'ajax.php?'+args, {
+			success: function(o) {
+				var frm = document.getElementById(divName);
+				if(null == frm) return;
+				frm.innerHTML = o.responseText;
+				
+				var anim = new YAHOO.util.Anim(frm, { opacity: { to: 1.0 } }, 1, YAHOO.util.Easing.easeOut);
+				anim.animate();
+			},
+			failure: function(o) {alert('fail');},
+			argument:{caller:this}
+			}
+	);
+}
+
 {/literal}
 -->

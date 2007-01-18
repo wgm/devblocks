@@ -7,6 +7,8 @@ include_once(DEVBLOCKS_PATH . "api/DAO.php");
 include_once(DEVBLOCKS_PATH . "api/Model.php");
 include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
+include_once(DEVBLOCKS_PATH . "cloudglue/CloudGlue.php");
+
 define('PLATFORM_BUILD',22);
 
 /**
@@ -288,7 +290,6 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return CloudGlue
 	 */
 	static function getCloudGlueService() {
-		include_once(DEVBLOCKS_PATH . "cloudglue2/CloudGlue.php");
 		return CloudGlue::getInstance();
 	}
 	
