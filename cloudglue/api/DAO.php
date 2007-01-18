@@ -104,7 +104,7 @@ class DAO_CloudGlue {
 		$hits = array();
 		
 		// [JAS]: Make sure our index exists
-		$index_id = DAO_CloudGlue::lookupIndex($index_name);
+		$index_id = DAO_CloudGlue::lookupIndex($index_name,true);
 		if(empty($index_id)) return array();
 		
 		// [JAS]: If we're requiring other tags, join them
