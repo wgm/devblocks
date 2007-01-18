@@ -16,12 +16,12 @@ class CloudGlue {
 		return self::$instance;
 	}
 	
-	function createTagGroup($cloudId) {
-		return new TagGroup($cloudId, true);
+	function createTagGroup($tagGroupId) {
+		return new TagGroup($tagGroupId, true);
 	}
 	
-	public function getTagGroup($cloudId) {
-		return new TagGroup($cloudId);
+	public function getTagGroup($tagGroupId) {
+		return new TagGroup($tagGroupId);
 	}
 }
 
@@ -29,14 +29,15 @@ class TagGroup {
 	
 	private $tags;
 	private $cgDao;
+	private $tagGroupId;
 	private $cloud;
 	
 	/**
-	 * @param cloudId The unique string identifier for this tag group
+	 * @param tagGroupId The unique string identifier for this tag group
 	 * @param doInit Boolean that indicates whether the tag group tables should be initialized
 	 */
-	public function __construct($cloudId, $doInit=false) {
-		$this->cgDao = new CloudGlueDao($cloudId);
+	public function __construct($tagGroupId, $doInit=false) {
+		$this->cgDao = new CloudGlueDao($tagGroupId);
 		if($doInit) {
 			$this->initTables();
 		}
@@ -59,16 +60,13 @@ class TagGroup {
 		return $this->tags;
 	}
 	
-	public function isTagContentExist($tagId, $contentId) {
-		return $this->cgDao->isTagContentExist($tagId, $contentId);
+	public function hasContent($tagId, $contentId) {
+		return $this->cgDao->hasContent($tagId, $contentId);
 	}
 	
 	public function getCloud() {
 		if($this->cloud == NULL) {
-			if($this->tags == NULL) {
-				$this->tags = $this->getTags();
-			}
-			$this->cloud = new CloudGlueCloud($this->tags, $this->cgDao);
+			$this->cloud = new CloudGlueCloud($this->cgDao, $this->tagGroupId);
 		}
 		return $this->cloud;
 	}
@@ -76,6 +74,7 @@ class TagGroup {
 
 class CloudGlueCloud {
 	
+	private $tagGroupId;
 	private $cgDao;
 	
 	private $relatedTags;
@@ -95,40 +94,19 @@ class CloudGlueCloud {
 	private $weightsCalculated;//boolean tells whether assignCloudWeights() has been called yet
 	
 	/**
-	 * @param tags An array of tags
 	 * @param cgDao the DAO for the tag group
 	 */
 	//public function __construct($tags, $tablename, $col_tag_id, $col_content_id) {
-	public function __construct($tags, $cgDao) {		
+	public function __construct($cgDao, $tagGroupId) {		
 		$this->cgDao = $cgDao;
+		$this->tagGroupId = $tagGroupId;
 		
 		$this->weightsCalculated = false;
 		$this->minWeight = 14;
 		$this->maxWeight = 56;
 		$this->tagLimit = -1;
-		$this->tags = $tags;
-		
 	}
-	
-	/**
-	 * Draws the tag cloud.  Should be called from a template.
-	 * @author Jeff Standen
-	 */
-	public function render() {
-		$path = dirname(__FILE__). '/templates/';
-		
-		$tpl = DevblocksPlatform::getTemplateService();
-		$tpl->assign('path', $path);
-		
-		$cloudglue = DevblocksPlatform::getCloudGlueService();
-		$tagGroup = $cloudglue->getTagGroup("mygroup");
-		$tags = $tagGroup->getTags();
-		$tpl->assign('tags', $tags);
-		
-		$tpl->assign('tagCloud', $this);
-		
-		$tpl->display('file:' . $path . 'cloud.tpl.php');
-	}
+
 	
 	public function setRelatedTags($tagIds) {
 		$this->relatedTags = $tagIds;
@@ -228,14 +206,23 @@ class CloudGlueCloud {
 	 */
 	private function setWeightsEqual() {
 		foreach($this->tagCounts as $tagId=>$countObj) {
-			$this->tags[$tagId]->weight = round($this->maxWeight-$this->minWeight /2);
+			$this->tagWeights[$tagId] = new CloudGlueTagWeight($tagId, round(($this->maxWeight-$this->minWeight) /2));
 		}
 	}
 	
 	public function getWeightedTags() {
 		if(!$this->weightsCalculated) {
 			$this->getContentCounts();
-			$this->assignCloudWeights();
+			
+			$tempTags = array_keys($this->tagCounts);
+			if($this->relatedTags != NULL)
+				foreach($this->relatedTags AS $tagId) {
+					$tempTags[] = $tagId; 
+				}
+			
+			$this->tags = $this->cgDao->getTags($tempTags);
+			
+			$this->assignCloudWeights($tagWeights);
 			$this->weightsCalculated = true;
 		}
 		
@@ -252,6 +239,55 @@ class CloudGlueCloud {
 	
 	public function getMinFrequency() {
 		return $this->minFrequency;
+	}
+	
+	/**
+	 * Returns all tag objects used by this object, including related tags
+	 */
+	public function getAllTags() {
+		return $this->tags;
+	}
+	
+	/**
+	 * Returns all tags objects displayed in the cloud
+	 * This result will not include tags that were inputted as 'related'
+	 */
+	public function getCloudTags() {
+		$ctags = $this->tags;
+		if($this->relatedTags != NULL)
+			foreach($this->relatedTags AS $tagId) {
+				unset($ctags[$tagId]);
+			}
+		array_merge($ctags);
+		return $ctags;		
+	}
+	
+	public function getTagGroupId() {
+		return $this->tagGroupId;
+	}
+}
+
+class CloudGlueRenderer {
+	
+	private $cloud;
+	private $templateService;
+	
+	public function CloudGlueRenderer($templateService, $cloud){
+		$this->templateService = $templateService;
+		$this->cloud = $cloud;
+	}
+	
+	/**
+	 * Draws the tag cloud.  Should be called from a template.
+	 * @author Jeff Standen
+	 */
+	public function render() {
+		$path = dirname(__FILE__). '/templates/';
+
+		$this->templateService->assign('path', $path);
+		$this->templateService->assign('tagCloud', $this->cloud);
+		$this->templateService->display('file:' . $path . 'cloud.tpl.php');
+		
 	}
 }
 ?>

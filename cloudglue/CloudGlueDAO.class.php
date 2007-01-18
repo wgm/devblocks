@@ -16,7 +16,7 @@ class CloudGlueDao {
 	public function __construct($cloudId) {
 		$tagTableName = 'cg_tag_'.$cloudId;
 		$tagToContentTableName = 'cg_tag_assignment_'.$cloudId;		
-		
+
 		$this->tagToContentTableName = $tagToContentTableName;
 		$this->tagTableName = $tagTableName;
 		$this->col_tag_id = self::$DEFAULT_TAG_ID_COL;
@@ -58,7 +58,7 @@ class CloudGlueDao {
 			"FROM %s tc ".
 			" GROUP by tc.%s", $this->col_tag_id, $this->tagToContentTableName, $this->col_tag_id);
 		;
-		//echo $sql;
+
 		if($limit == -1) {
 			$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		}
@@ -214,7 +214,7 @@ class CloudGlueDao {
 		return $id;
 	}
 	
-	public function isTagContentExist($tagId, $contentId) {
+	public function hasContent($tagId, $contentId) {
 		$db = DevblocksPlatform::getDatabaseService();
 
 		if(empty($tagId) || empty($contentId)) return null;
