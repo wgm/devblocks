@@ -5,7 +5,8 @@ class CloudGlueConfiguration {
 	public $maxWeight = 55;
 	public $indexName = '';
 	public $divName = '';
-	public $args = '';
+	public $cb_extension = '';
+	public $cb_click = '';
 };
 
 class CloudGlueIndex {
