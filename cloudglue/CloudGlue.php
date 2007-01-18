@@ -104,6 +104,14 @@ class CloudGlueCloud {
 		$_SESSION[$this->cfg->divName . '_path'] = $path;
 	}
 	
+	function removeFromPath($tag) {
+		if(!is_a($tag,'cloudgluetag')) return;
+		
+		$path = $this->getPath();
+		unset($path[$tag->id]);
+		$_SESSION[$this->cfg->divName . '_path'] = $path;
+	}
+	
 	/**
 	 * @return CloudGluePath
 	 */
