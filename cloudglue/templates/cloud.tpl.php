@@ -5,6 +5,9 @@
 	{$path->name}{if !$smarty.foreach.paths.last} + {/if}
 {/foreach}
 <br>
+<a href="javascript:;" onclick="genericAjaxGet('{$tagCloud->cfg->divName}','c=search&a=resetCloud');">start over</a>
+| <a href="{devblocks_url}c=search&a=showMatches{/devblocks_url}">show matches</a>
+<br>
 <br>
 {/if}
 
