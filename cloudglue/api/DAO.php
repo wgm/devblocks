@@ -29,11 +29,11 @@ class DAO_CloudGlue {
 		}
 		
 		if(is_array($tags) && !empty($tags))
-		foreach($tags as $tag) {
-			$tag_id = self::lookupTag($tag,true);
+		foreach($tags as $v) {
+			$tag = self::lookupTag($v,true);
 			$db->Replace(
 				'tag_to_content', 
-				array('index_id'=>$index_id,'tag_id'=>$tag_id, 'content_id'=>$content_id), 
+				array('index_id'=>$index_id,'tag_id'=>$tag->id, 'content_id'=>$content_id), 
 				array('index_id','tag_id', 'content_id')
 			);
 		}
@@ -276,7 +276,7 @@ class DAO_CloudGlue {
 			return NULL;
 		}
 		
-		return $id;
+		return self::getTag($id);
 	}
 	
 };
