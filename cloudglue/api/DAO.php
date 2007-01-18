@@ -13,7 +13,7 @@ class DAO_CloudGlue {
 	static function applyTags($tags,$content_id,$index_name,$replace=false) {
 
 		$db = DevblocksPlatform::getDatabaseService();
-		$index_id = self::lookupIndex($index_name);
+		$index_id = self::lookupIndex($index_name,true);
 		$tag_ids = array();
 		
 		if(empty($index_id) || empty($content_id)) {
@@ -104,7 +104,7 @@ class DAO_CloudGlue {
 		$hits = array();
 		
 		// [JAS]: Make sure our index exists
-		$index_id = DAO_CloudGlue::lookupIndex($index_name,true);
+		$index_id = DAO_CloudGlue::lookupIndex($index_name);
 		if(empty($index_id)) return array();
 		
 		// [JAS]: If we're requiring other tags, join them
