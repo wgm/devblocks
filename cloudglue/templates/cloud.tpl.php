@@ -3,7 +3,7 @@
 <div style="background-color:rgb(240,240,240);">
 <b>Tags:</b> 
 {foreach from=$tagPath item=path name=paths}
-	<a href="javascript:;" onclick="genericAjaxGet('{$tagCloud->cfg->divName}','c={$tagCloud->cfg->cb_extension}&a={$tagCloud->cfg->cb_click}&tag={$path->id}&remove=1');">{$path->name}</a>{if !$smarty.foreach.paths.last} + {/if}
+	<a href="javascript:;" onclick="genericAjaxGet('{$tagCloud->cfg->divName}','c={$tagCloud->cfg->cb_extension}&a={$tagCloud->cfg->cb_click}&tag={$path->id}&remove=1');" style="color:rgb(255, 108, 25);" title="Remove tag">{$path->name}</a>{if !$smarty.foreach.paths.last} + {/if}
 {/foreach} 
 </div>
 <br>
