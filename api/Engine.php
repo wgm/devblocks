@@ -294,7 +294,7 @@ abstract class DevblocksEngine {
 		";
 		
 		$tables['login'] = "
-			id I PRIMARY,
+			id I4 PRIMARY,
 			login C(32) NOTNULL,
 			password C(32) NOTNULL,
 			admin I1 DEFAULT 0 NOTNULL

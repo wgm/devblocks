@@ -168,31 +168,45 @@ class DAO_CloudGlue {
 		return NULL;
 	}
 	
-	static function getTagsOnContentId($content_id,$index_name) {
+	/**
+	 * @param array $content_ids
+	 * @param string $index_name
+	 * @return array
+	 */
+	static function getTagsOnContents($content_ids,$index_name) {
+		if(!is_array($content_ids)) $content_ids = array($content_ids);
 		$db = DevblocksPlatform::getDatabaseService();
 		$ids = array();
 		
 		$index_id = DAO_CloudGlue::lookupIndex($index_name);
 		if(empty($index_id)) return array();
 		
-		$sql = sprintf("SELECT tc.tag_id ".
+		$sql = sprintf("SELECT tc.tag_id, tc.content_id ".
 			"FROM tag_to_content tc ".
-			"WHERE tc.content_id = %d ".
+			"WHERE tc.content_id IN (%s) ".
 			"AND tc.index_id = %d ",
-			$content_id,
+			implode(',',$content_ids),
 			$index_id
 		);
 		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		
 		while(!$rs->EOF) {
-			$ids[] = intval($rs->fields['tag_id']);
+			$content_id = intval($rs->fields['content_id']);
+			$tag_id = intval($rs->fields['tag_id']);
+			if(!isset($ids[$content_id])) $ids[$content_id] = array();
+			$ids[$content_id][] = $tag_id;
 			$rs->MoveNext();
 		}
-		
+
 		if(empty($ids))
 			return array();
+		
+		$content_tags = array();
+		foreach($ids as $content_id => $tags) {
+			$content_tags[$content_id] = DAO_CloudGlue::getTags($tags);
+		}
 			
-		return DAO_CloudGlue::getTags($ids);
+		return $content_tags;
 	}
 	
 	/**
@@ -229,6 +243,7 @@ class DAO_CloudGlue {
 	 * @return integer id 
 	 */
 	static function lookupIndex($index_name,$create_if_new=false) {
+		if(empty($index_name)) return NULL;
 		$db = DevblocksPlatform::getDatabaseService();
 		
 		$sql = sprintf("SELECT ti.id FROM tag_index ti WHERE ti.name = %s",
@@ -257,6 +272,7 @@ class DAO_CloudGlue {
 	 * @return integer id 
 	 */
 	static function lookupTag($tag_name,$create_if_new=false) {
+		if(empty($tag_name)) return NULL;
 		$db = DevblocksPlatform::getDatabaseService();
 		
 		$sql = sprintf("SELECT t.id FROM tag t WHERE t.name = %s",
