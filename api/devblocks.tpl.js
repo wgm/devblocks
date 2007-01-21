@@ -110,5 +110,29 @@ function genericAjaxGet(divName,args) {
 	);
 }
 
+function genericAjaxPost(formName,divName,args) {
+	var frm = document.getElementById(formName);
+	var div = document.getElementById(divName);
+	if(null == frm || null == div) return;
+
+//	var anim = new YAHOO.util.Anim(frm, { opacity: { to: 0.2 } }, 1, YAHOO.util.Easing.easeOut);
+//	anim.animate();
+	
+	YAHOO.util.Connect.setForm(formName);
+	var cObj = YAHOO.util.Connect.asyncRequest('POST', DevblocksAppPath+'ajax.php?'+args, {
+			success: function(o) {
+				var div = document.getElementById(divName);
+				if(null == div) return;
+				div.innerHTML = o.responseText;
+				
+//				var anim = new YAHOO.util.Anim(frm, { opacity: { to: 1.0 } }, 1, YAHOO.util.Easing.easeOut);
+//				anim.animate();
+			},
+			failure: function(o) {alert('fail');},
+			argument:{caller:this}
+			}
+	);
+}
+
 {/literal}
 -->
