@@ -7,14 +7,15 @@
 				{foreach from=$tagPath item=path name=paths}
 					<a href="javascript:;" onclick="genericAjaxGet('{$tagCloud->cfg->divName}','c={$tagCloud->cfg->extension}&a={$tagCloud->cfg->php_click}&tag={$path->id}&remove=1'{if !empty($tagCloud->cfg->js_click)},{$tagCloud->cfg->js_click}{/if});" style="" title="Remove tag">{$path->name}</a>{if !$smarty.foreach.paths.last} +{/if} 
 				{/foreach}
-				[ <a href="javascript:;" onclick="genericAjaxGet('{$tagCloud->cfg->divName}','c={$tagCloud->cfg->extension}&a=resetCloud');" style="color:rgb(100,100,100);">clear</a> ] 
 			{/if}
 			<div id="{$tagCloud->cfg->divName}_results" style="width: 95%;background:rgb(255,255,255);">
 			</div>
 		</td>
 		
 		<td valign="top" style="border-left:1px solid rgb(240,240,240);">
-		<b>{if !empty($tagPath) && !empty($tags)}Related topics:{else}Topics:{/if}</b><br>
+		<b>{if !empty($tagPath) && !empty($tags)}Related topics:{else}Topics:{/if}</b>
+		{if !empty($tagPath)}[ <a href="javascript:;" onclick="genericAjaxGet('{$tagCloud->cfg->divName}','c={$tagCloud->cfg->extension}&a=resetCloud');" style="color:rgb(100,100,100);">start over</a> ]{/if}
+		<br>
 		
 		{if !empty($tags)}
 		{foreach from=$tags key=tag_id item=tag name=tags}
