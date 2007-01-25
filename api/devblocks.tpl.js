@@ -88,29 +88,34 @@ function appendTextboxAsCsv(formName, field, oLink) {
 	txt.value = txt.value + sAppend;
 }
 
-function genericAjaxGet(divName,args) {
+function genericAjaxGet(divName,args,cb) {
 	var frm = document.getElementById(divName);
 	if(null == frm) return;
 
-	var anim = new YAHOO.util.Anim(frm, { opacity: { to: 0.2 } }, 1, YAHOO.util.Easing.easeOut);
-	anim.animate();
+	// [JAS]: Default response action
+	if(null == cb) {
+		var anim = new YAHOO.util.Anim(frm, { opacity: { to: 0.2 } }, 1, YAHOO.util.Easing.easeOut);
+		anim.animate();
+		
+		var cb = function(o) {
+			var frm = document.getElementById(divName);
+			if(null == frm) return;
+			frm.innerHTML = o.responseText;
+			
+			var anim = new YAHOO.util.Anim(frm, { opacity: { to: 1.0 } }, 1, YAHOO.util.Easing.easeOut);
+			anim.animate();
+		}
+	}
 	
 	var cObj = YAHOO.util.Connect.asyncRequest('GET', DevblocksAppPath+'ajax.php?'+args, {
-			success: function(o) {
-				var frm = document.getElementById(divName);
-				if(null == frm) return;
-				frm.innerHTML = o.responseText;
-				
-				var anim = new YAHOO.util.Anim(frm, { opacity: { to: 1.0 } }, 1, YAHOO.util.Easing.easeOut);
-				anim.animate();
-			},
+			success: cb,
 			failure: function(o) {alert('fail');},
-			argument:{caller:this}
+			argument:{caller:this,divName:divName}
 			}
 	);
 }
 
-function genericAjaxPost(formName,divName,args) {
+function genericAjaxPost(formName,divName,args,cb) {
 	var frm = document.getElementById(formName);
 	var div = document.getElementById(divName);
 	if(null == frm) return;

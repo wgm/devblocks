@@ -81,7 +81,7 @@ class CloudGlueCloud {
 	 * @param CloudGlueConfiguration $cfg
 	 */
 	function __construct($cfg) {
-		if(empty($cfg->divName) || empty($cfg->cb_extension) || empty($cfg->cb_click) || empty($cfg->indexName)) {
+		if(empty($cfg->divName) || empty($cfg->extension) || empty($cfg->php_click) || empty($cfg->indexName)) {
 			echo "Cloud not configured. (".__CLASS__." : Line ".__LINE__.")";
 			return;
 		}
