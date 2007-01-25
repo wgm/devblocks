@@ -271,7 +271,7 @@ abstract class DevblocksEngine {
 		
 		$tables['plugin'] = "
 			id C(128) PRIMARY,
-			enabled I1 DEFAULT 0 NOTNULL,
+			enabled I1 DEFAULT 1 NOTNULL,
 			name C(128) DEFAULT '' NOTNULL,
 			author C(64) DEFAULT '' NOTNULL,
 			dir C(128) DEFAULT '' NOTNULL
@@ -293,12 +293,11 @@ abstract class DevblocksEngine {
 			sessdata B
 		";
 		
-		$tables['login'] = "
-			id I4 PRIMARY,
-			login C(32) NOTNULL,
-			password C(32) NOTNULL,
-			admin I1 DEFAULT 0 NOTNULL
-		";
+//		$tables['login'] = "
+//			id I4 PRIMARY,
+//			login C(32) NOTNULL,
+//			password C(32) NOTNULL
+//		";
 		
 		$tables['uri'] = "
 			uri C(32) PRIMARY,
@@ -347,7 +346,7 @@ class _DevblocksSessionManager {
 			session_set_cookie_params(0);
 			session_start();
 			$instance = new _DevblocksSessionManager();
-			$instance->visit = $_SESSION['um_visit']; /* @var $visit DevblocksSession */
+			$instance->visit = $_SESSION['db_visit']; /* @var $visit DevblocksVisit */
 		}
 		
 		return $instance;
@@ -355,54 +354,27 @@ class _DevblocksSessionManager {
 	
 	/**
 	 * Returns the current session or NULL if no session exists.
-	 *
-	 * @return DevblocksSession
 	 */
 	function getVisit() {
 		return $this->visit;
 	}
 	
 	/**
-	 * Attempts to create a session by login/password.  On success a DevblocksSession 
-	 * is returned.  On failure NULL is returned.
-	 *
-	 * @param string $login
-	 * @param string $password
-	 * @return DevblocksSession
+	 * @param $visit
 	 */
-	function login($login,$password) {
-		$db = DevblocksPlatform::getDatabaseService();
-		
-		$sql = sprintf("SELECT id,login,admin ".
-			"FROM login ".
-			"WHERE login = %s ".
-			"AND password = MD5(%s)",
-				$db->qstr($login),
-				$db->qstr($password)
-		);
-		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
-		
-		if($rs->NumRows()) {
-			$visit = new DevblocksSession();
-				$visit->id = intval($rs->fields['id']);
-				$visit->login = $rs->fields['login'];
-				$visit->admin = intval($rs->fields['admin']);
-			$this->visit = $visit;
-			$_SESSION['um_visit'] = $visit;
-			return $this->visit;
-		}
-		
-		$_SESSION['um_visit'] = null;
-		return null;
+	function setVisit($visit) {
+		// [TODO] Type check for DevblocksVisit
+		$this->visit = $visit;
+		$_SESSION['db_visit'] = $this->visit;
 	}
 	
 	/**
 	 * Kills the current session.
 	 *
 	 */
-	function logout() {
+	function clear() {
 		$this->visit = null;
-		unset($_SESSION['um_visit']);
+		unset($_SESSION['db_visit']);
 	}
 }
 
@@ -669,6 +641,42 @@ class _DevblocksUrlManager {
 		
 		return $contents;
 	}
+};
+
+class DevblocksACL {
+	// [JAS]: Unsigned 32 bit number, with room to enable all flags
+	const BITFLAG_1 = 1;
+	const BITFLAG_2 = 2;
+	const BITFLAG_3 = 4;
+	const BITFLAG_4 = 8;
+	const BITFLAG_5 = 16;
+	const BITFLAG_6 = 32;
+	const BITFLAG_7 = 64;
+	const BITFLAG_8 = 128;
+	const BITFLAG_9 = 256;
+	const BITFLAG_10 = 1024;
+	const BITFLAG_11 = 2048;
+	const BITFLAG_12 = 4096;
+	const BITFLAG_13 = 8192;
+	const BITFLAG_14 = 16384;
+	const BITFLAG_15 = 32768;
+	const BITFLAG_16 = 65536;
+	const BITFLAG_17 = 131072;
+	const BITFLAG_18 = 262144;
+	const BITFLAG_19 = 524288;
+	const BITFLAG_20 = 1048576;
+	const BITFLAG_21 = 2097152;
+	const BITFLAG_22 = 4194304;
+	const BITFLAG_23 = 8388608;
+	const BITFLAG_24 = 16777216;
+	const BITFLAG_25 = 33554432;
+	const BITFLAG_26 = 67108864;
+	const BITFLAG_27 = 134217728;
+	const BITFLAG_28 = 268435456;
+	const BITFLAG_29 = 536870912;
+	const BITFLAG_30 = 1073741824;
+
+	private function __construct() {}
 };
 
 ?>

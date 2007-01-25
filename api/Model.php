@@ -83,20 +83,9 @@ class DevblocksExtensionManifest {
  * A single session instance
  *
  * @ingroup core
+ * [TODO] Evaluate if this is even needed, or if apps can have their own unguided visit object
  */
-class DevblocksSession {
-	var $id = 0;
-	var $login = '';
-	var $admin = 0;
-	
-	/**
-	 * Returns TRUE if the current session has administrative privileges, or FALSE otherwise.
-	 *
-	 * @return boolean
-	 */
-	function isAdmin() {
-		return $this->admin != 0;
-	}
+abstract class DevblocksVisit {
 };
 
 ?>

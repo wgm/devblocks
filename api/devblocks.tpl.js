@@ -113,7 +113,22 @@ function genericAjaxGet(divName,args) {
 function genericAjaxPost(formName,divName,args) {
 	var frm = document.getElementById(formName);
 	var div = document.getElementById(divName);
-	if(null == frm || null == div) return;
+	if(null == frm) return;
+
+	if(null != div) {
+		// [JAS]: [TODO] Move to a function
+		var loading = document.createElement('div');
+		loading.setAttribute('style','position:absolute;padding:5px;top:0;left:0;background-color:red;color:white;font-weight:bold;');
+		loading.innerHTML = 'Loading...';
+		
+		var toX = findPosX(div) + (div.offsetWidth/2) - (loading.offsetWidth/2);
+		var toY = findPosY(div) + (div.offsetHeight/2) - (loading.offsetHeight/2);		
+		
+		loading.style.top = toY;
+		loading.style.left = toX;
+		
+		document.body.appendChild(loading);
+	}
 
 //	var anim = new YAHOO.util.Anim(frm, { opacity: { to: 0.2 } }, 1, YAHOO.util.Easing.easeOut);
 //	anim.animate();
@@ -123,6 +138,8 @@ function genericAjaxPost(formName,divName,args) {
 			success: function(o) {
 				var div = document.getElementById(divName);
 				if(null == div) return;
+
+				document.body.removeChild(loading);
 				div.innerHTML = o.responseText;
 				
 //				var anim = new YAHOO.util.Anim(frm, { opacity: { to: 1.0 } }, 1, YAHOO.util.Easing.easeOut);
@@ -132,6 +149,37 @@ function genericAjaxPost(formName,divName,args) {
 			argument:{caller:this}
 			}
 	);
+}
+
+// [JAS]: [TODO] Any YUI/DOM functions for this?
+function findPosX(obj) {
+    var curleft = 0;
+    if(obj.offsetParent)
+        while(1) 
+        {
+          curleft += obj.offsetLeft;
+          if(!obj.offsetParent)
+            break;
+          obj = obj.offsetParent;
+        }
+    else if(obj.x)
+        curleft += obj.x;
+    return curleft;
+}
+
+function findPosY(obj) {
+    var curtop = 0;
+    if(obj.offsetParent)
+        while(1)
+        {
+          curtop += obj.offsetTop;
+          if(!obj.offsetParent)
+            break;
+          obj = obj.offsetParent;
+        }
+    else if(obj.y)
+        curtop += obj.y;
+    return curtop;
 }
 
 {/literal}
