@@ -96,6 +96,20 @@ class DAO_CloudGlue {
 		return array(DAO_CloudGlue::getTags(array_keys($hits)),$hits);
 	}
 	
+	static function deleteContentIds($index_name,$content_ids) {
+		$db = DevblocksPlatform::getDatabaseService();
+		if(!is_array($content_ids)) $content_ids = array($content_ids);
+
+		$index_id = DAO_CloudGlue::lookupIndex($index_name);
+		if(empty($index_id)) return null;
+		
+		$sql = sprintf("DELETE FROM tag_to_content WHERE index_id = %d AND content_id IN (%s)",
+			$index_id,
+			implode(',', $content_ids)
+		);
+		$db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+	}
+	
 	/**
 	 * @return array
 	 */

@@ -120,6 +120,7 @@ function genericAjaxPost(formName,divName,args,cb) {
 	var div = document.getElementById(divName);
 	if(null == frm) return;
 
+	// [JAS]: [TODO] This doesn't work in IE -- probably offsetWidth/Height
 	if(null != div) {
 		// [JAS]: [TODO] Move to a function
 		var loading = document.createElement('div');
