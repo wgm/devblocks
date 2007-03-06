@@ -425,7 +425,7 @@ class _DevblocksEmailManager {
 		$params['decode_bodies']	= true;
 		$params['decode_headers']	= true;
 		$params['crlf']				= "\r\n";
-	
+		
 		for ($i=1; $i<=$check->Nmsgs; $i++) {
 			$headers = imap_fetchheader($mailbox, $i);
 			$body = imap_body($mailbox, $i);
