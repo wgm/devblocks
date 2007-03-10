@@ -21,20 +21,13 @@ abstract class DevblocksEngine {
 		if(!file_exists(DEVBLOCKS_PLUGIN_PATH.$dir.'/plugin.xml'))
 			return NULL;
 			
-		include_once(DEVBLOCKS_PATH . 'domit/xml_domit_include.php');
-		$rssRoot =& new DOMIT_Document();
-		$success = $rssRoot->loadXML(DEVBLOCKS_PLUGIN_PATH.$dir.'/plugin.xml', false);
-		$doc =& $rssRoot->documentElement; /* @var $doc DOMIT_Node */
-		
-		$eId = $doc->getElementsByPath("id",1);
-		$eName = $doc->getElementsByPath("name",1);
-		$eAuthor = $doc->getElementsByPath("author",1);
-			
+		$plugin = simplexml_load_file(DEVBLOCKS_PLUGIN_PATH.$dir.'/plugin.xml');
+				
 		$manifest = new DevblocksPluginManifest();
-		$manifest->id = $eId->getText();
+		$manifest->id = (string) $plugin->id;
 		$manifest->dir = $dir;
-		$manifest->author = $eAuthor->getText();
-		$manifest->name = $eName->getText();
+		$manifest->author = (string) $plugin->author;
+		$manifest->name = (string) $plugin->name;
 		
 		$db = DevblocksPlatform::getDatabaseService();
 
@@ -55,57 +48,51 @@ abstract class DevblocksEngine {
 			$db->qstr($manifest->id)
 		);
 		
-		$eUris =& $doc->getElementsByPath("mapping/uri"); /* @var $eUris DOMIT_NodeList */
-		if(is_array($eUris->arNodeList))
-		foreach($eUris->arNodeList as $eUri) { /* @var $eUri DOMIT_Node */
-			$sUri = $eUri->getAttribute('value');
-			$sExtensionId = $eUri->getAttribute('extension_id');
-			
-			$db->Replace(
-				'uri',
-				array(
-					'uri' => $db->qstr($sUri),
-					'plugin_id' => $db->qstr($manifest->id),
-					'extension_id' => $db->qstr($sExtensionId)
-				),
-				array('uri'),
-				false
-			);
-		};
-				
-		$eExtensions =& $doc->getElementsByPath("extensions/extension"); /* @var $eExtensions DOMIT_NodeList */
-		if(is_array($eExtensions->arNodeList))
-		foreach($eExtensions->arNodeList as $eExtension) { /* @var $eExtension DOMIT_Node */
-			
-			$sPoint = $eExtension->getAttribute('point');
-			$eId = $eExtension->getElementsByPath('id',1);
-			$eName = $eExtension->getElementsByPath('name',1);
-			$eClassName = $eExtension->getElementsByPath('class/name',1);
-			$eClassFile = $eExtension->getElementsByPath('class/file',1);
-			$params = $eExtension->getElementsByPath('params/param');
-			$extension = new DevblocksExtensionManifest();
-
-			if(empty($eId) || empty($eName))
-				continue;
-
-			$extension->id = $eId->getText();
-			$extension->plugin_id = $manifest->id;
-			$extension->point = $sPoint;
-			$extension->name = $eName->getText();
-			$extension->file = $eClassFile->getText();
-			$extension->class = $eClassName->getText();
-				
-			if(null != $params && !empty($params->arNodeList)) {
-				foreach($params->arNodeList as $pnode) {
-					$sKey = $pnode->getAttribute('key');
-					$sValue = $pnode->getAttribute('value');
-					$extension->params[$sKey] = $sValue;
-				}
-			}
-				
-			$manifest->extensions[] = $extension;
+		if(isset($plugin->mapping->uri)) {
+		    foreach($plugin->mapping->uri as $eUri) { /* @var $eUri DOMIT_Node */
+		        $sUri = (string) $eUri['value'];
+		        $sExtensionId = (string) $eUri['extension_id'];
+		        	
+		        $db->Replace(
+		        'uri',
+		        array(
+		        'uri' => $db->qstr($sUri),
+		        'plugin_id' => $db->qstr($manifest->id),
+		        'extension_id' => $db->qstr($sExtensionId)
+		        ),
+		        array('uri'),
+		        false
+		        );
+		    }
 		}
 		
+		if(isset($plugin->extensions->extension)) {
+		    foreach($plugin->extensions->extension as $eExtension) {
+		        $sId = (string) $eExtension->id;
+		        $sName = (string) $eExtension->name;
+		        
+		        if(empty($sId) || empty($sName))
+		            continue;
+		        
+		        $extension = new DevblocksExtensionManifest();
+		        
+		        $extension->id = $sId;
+		        $extension->plugin_id = $manifest->id;
+		        $extension->point = (string) $eExtension['point'];
+		        $extension->name = $sName;
+		        $extension->file = (string) $eExtension->class->file;
+		        $extension->class = (string) $eExtension->class->name;
+		        
+		        if(isset($eExtension->params->param)) {
+		            foreach($eExtension->params->param as $eParam) {
+		                $extension->params[(string) $eParam['key']] = (string) $eParam['value'];
+		            }
+		        }
+		        
+		        $manifest->extensions[] = $extension;
+		    }
+		}
+						
 		// [JAS]: Extension caching
 		if(is_array($manifest->extensions))
 		foreach($manifest->extensions as $pos => $extension) { /* @var $extension DevblocksExtensionManifest */
