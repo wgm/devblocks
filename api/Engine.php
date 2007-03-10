@@ -346,7 +346,7 @@ class _DevblocksSessionManager {
 			session_set_cookie_params(0);
 			session_start();
 			$instance = new _DevblocksSessionManager();
-			$instance->visit = $_SESSION['db_visit']; /* @var $visit DevblocksVisit */
+			$instance->visit = isset($_SESSION['db_visit']) ? $_SESSION['db_visit'] : NULL; /* @var $visit DevblocksVisit */
 		}
 		
 		return $instance;
@@ -354,16 +354,17 @@ class _DevblocksSessionManager {
 	
 	/**
 	 * Returns the current session or NULL if no session exists.
+	 * 
+	 * @return DevblocksVisit
 	 */
 	function getVisit() {
 		return $this->visit;
 	}
 	
 	/**
-	 * @param $visit
+	 * @param DevblocksVisit $visit
 	 */
-	function setVisit($visit) {
-		// [TODO] Type check for DevblocksVisit
+	function setVisit(DevblocksVisit $visit) {
 		$this->visit = $visit;
 		$_SESSION['db_visit'] = $this->visit;
 	}
