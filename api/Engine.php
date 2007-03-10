@@ -351,7 +351,7 @@ class _DevblocksSessionManager {
 	/**
 	 * @param DevblocksVisit $visit
 	 */
-	function setVisit(DevblocksVisit $visit) {
+	function setVisit(DevblocksVisit $visit = null) {
 		$this->visit = $visit;
 		$_SESSION['db_visit'] = $this->visit;
 	}
