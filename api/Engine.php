@@ -342,7 +342,7 @@ class _DevblocksSessionManager {
 			ADOdb_session::Persist($connectMode=false);
 			ADOdb_session::lifetime($lifetime=86400);
 			
-			//session_name("cerb4");
+			session_name(APP_SESSION_NAME);
 			session_set_cookie_params(0);
 			session_start();
 			$instance = new _DevblocksSessionManager();

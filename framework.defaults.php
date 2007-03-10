@@ -54,4 +54,6 @@ define('LANG_CHARSET_MAIL_CONTENT_TYPE','text/plain');
 if(!defined('LANG_CHARSET_CODE'))
 define('LANG_CHARSET_CODE','iso-8859-1');
 
+if(!defined('APP_SESSION_NAME'))
+define('APP_SESSION_NAME', 'Devblocks');
 ?>
