@@ -31,11 +31,13 @@ class DAO_CloudGlue {
 		if(is_array($tags) && !empty($tags))
 		foreach($tags as $v) {
 			$tag = self::lookupTag($v,true);
-			$db->Replace(
-				'tag_to_content', 
-				array('index_id'=>$index_id,'tag_id'=>$tag->id, 'content_id'=>$content_id), 
-				array('index_id','tag_id', 'content_id')
-			);
+			if($tag instanceOf CloudGlueTag) {
+			    $db->Replace(
+			        'tag_to_content', 
+			        array('index_id'=>$index_id,'tag_id'=>$tag->id, 'content_id'=>$content_id), 
+			        array('index_id','tag_id', 'content_id')
+			        );
+			}
 		}
 		
 	}
