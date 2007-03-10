@@ -127,8 +127,8 @@ function genericAjaxPost(formName,divName,args,cb) {
 		loading.setAttribute('style','position:absolute;padding:5px;top:0;left:0;background-color:red;color:white;font-weight:bold;');
 		loading.innerHTML = 'Loading...';
 		
-		var toX = findPosX(div) + (div.offsetWidth/2) - (loading.offsetWidth/2);
-		var toY = findPosY(div) + (div.offsetHeight/2) - (loading.offsetHeight/2);		
+		var toX = YAHOO.util.Dom.getX(div) + (div.offsetWidth/2) - (loading.offsetWidth/2);
+		var toY = YAHOO.util.Dom.getY(div) + (div.offsetHeight/2) - (loading.offsetHeight/2);		
 		
 		loading.style.top = toY;
 		loading.style.left = toX;
@@ -155,37 +155,6 @@ function genericAjaxPost(formName,divName,args,cb) {
 			argument:{caller:this}
 			}
 	);
-}
-
-// [JAS]: [TODO] Any YUI/DOM functions for this?
-function findPosX(obj) {
-    var curleft = 0;
-    if(obj.offsetParent)
-        while(1) 
-        {
-          curleft += obj.offsetLeft;
-          if(!obj.offsetParent)
-            break;
-          obj = obj.offsetParent;
-        }
-    else if(obj.x)
-        curleft += obj.x;
-    return curleft;
-}
-
-function findPosY(obj) {
-    var curtop = 0;
-    if(obj.offsetParent)
-        while(1)
-        {
-          curtop += obj.offsetTop;
-          if(!obj.offsetParent)
-            break;
-          obj = obj.offsetParent;
-        }
-    else if(obj.y)
-        curtop += obj.y;
-    return curtop;
 }
 
 {/literal}
