@@ -77,6 +77,11 @@ class DevblocksExtensionManifest {
 		$instance = new $class_name($this,$instance_id);
 		return $instance;
 	}
+	
+	function getPlugin() {
+		$plugin = DevblocksPlatform::getPlugin($this->plugin_id);
+		return $plugin;
+	}
 };
 
 /**
