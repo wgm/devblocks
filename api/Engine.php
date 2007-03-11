@@ -85,7 +85,31 @@ abstract class DevblocksEngine {
 		        
 		        if(isset($eExtension->params->param)) {
 		            foreach($eExtension->params->param as $eParam) {
-		                $extension->params[(string) $eParam['key']] = (string) $eParam['value'];
+				$key = (string) $eParam['key'];
+		                if(isset($eParam->value)) {
+					// [JSJ]: If there is a child of the param tag named value, then this 
+					//        param has multiple values and thus we need to grab them all.
+					foreach($eParam->value as $eValue) {
+						// [JSJ]: If there is a child named data, then this is a complex structure
+						if(isset($eValue->data)) {
+							$value = array();
+							foreach($eValue->data as $eData) {
+								$key2 = (string) $eData['key'];
+								$value[$key2] = (string) $eData['value'];
+							}
+						}
+						else {
+							// [JSJ]: Else, just grab the value and use it
+							$value = (string) $eValue;
+						}
+						$extension->params[$key][] = $value;
+						unset($value); // Just to be extra safe
+					}
+				}
+				else {
+					// [JSJ]: Otherwise, we grab the single value from the params value attribute.
+					$extension->params[$key] = (string) $eParam['value'];
+				}
 		            }
 		        }
 		        
