@@ -95,7 +95,11 @@ abstract class DevblocksEngine {
 							$value = array();
 							foreach($eValue->data as $eData) {
 								$key2 = (string) $eData['key'];
-								$value[$key2] = (string) $eData['value'];
+								if(isset($eData['value'])) {
+									$value[$key2] = (string) $eData['value'];
+								} else {
+									$value[$key2] = (string) $eData;
+								}
 							}
 						}
 						else {
