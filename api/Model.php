@@ -23,7 +23,7 @@ class DevblocksPluginManifest {
 		$fields = array(
 			'enabled' => $this->enabled
 		);
-		DevblocksDAO::updatePlugin($this->id,$fields);
+		DAO_Platform::updatePlugin($this->id,$fields);
 	}
 };
 

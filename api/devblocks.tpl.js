@@ -34,6 +34,10 @@ var DevblocksUrl = function() {
 	}
 }
 
+function selectValue(e) {
+	return e.options[e.selectedIndex].value;
+}
+
 function clearDiv(divName) {
 	var div = document.getElementById(divName);
 	if(null == div) return;
@@ -52,7 +56,7 @@ function toggleDiv(divName,state) {
 		} else {
 			div.style.display = 'block';
 		}
-	} else if (null != state && (state == 'block' || state == 'none')) {
+	} else if (null != state && (state == 'block' || state == 'inline' || state == 'none')) {
 		div.style.display = state;
 	}
 }
