@@ -478,9 +478,9 @@ class _DevblocksTemplateManager {
 		if(null == $instance) {
 			require(DEVBLOCKS_PATH . 'smarty/Smarty.class.php');
 			$instance = new Smarty();
-			$instance->template_dir = APP_PATH . '/templates';
-			$instance->compile_dir = DEVBLOCKS_PATH . 'templates_c';
-			$instance->cache_dir = DEVBLOCKS_PATH . 'cache';
+			$instance->template_dir = APP_PATH . '/templates'; // [TODO] Themes
+			$instance->compile_dir = DEVBLOCKS_PATH . 'tmp/templates_c';
+			$instance->cache_dir = DEVBLOCKS_PATH . 'tmp/cache';
 			
 			//$smarty->config_dir = DEVBLOCKS_PATH. 'configs';
 			$instance->caching = 0;
@@ -514,7 +514,7 @@ class _DevblocksDatabaseManager {
 		static $instance = null;
 		if(null == $instance) {
 			include_once(DEVBLOCKS_PATH . "adodb/adodb.inc.php");
-			$ADODB_CACHE_DIR = APP_PATH . "/cache";
+			$ADODB_CACHE_DIR = APP_PATH . "/tmp/cache";
 			@$instance =& ADONewConnection(APP_DB_DRIVER); /* @var $instance ADOConnection */
 			@$instance->Connect(APP_DB_HOST,APP_DB_USER,APP_DB_PASS,APP_DB_DATABASE);
 			@$instance->SetFetchMode(ADODB_FETCH_ASSOC);
