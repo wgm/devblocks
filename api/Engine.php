@@ -414,6 +414,7 @@ class _DevblocksEmailManager {
 		return $instance;
 	}
 	
+	// [TODO] Implement SMTP Auth
 	static function send($server, $sRCPT, $headers, $body) {
 		// mailer setup
 		require_once(DEVBLOCKS_PATH . 'pear/Mail.php');
@@ -423,6 +424,48 @@ class _DevblocksEmailManager {
 
 		$result = $mailer->send($sRCPT, $headers, $body);
 		return $result;
+	}
+	
+	/**
+	 * @return array
+	 */
+	static function getErrors() {
+		return imap_errors();
+	}
+	
+	// [TODO] Implement SMTP Auth
+	static function testSmtp($server,$to,$from,$smtp_auth_user=null,$smtp_auth_pass=null) {
+		require_once(DEVBLOCKS_PATH . 'pear/Mail.php');
+		
+		$mail_params = array();
+		$mail_params['host'] = $server;
+		$mail_params['timeout'] = 20;
+		$mailer =& Mail::factory("smtp", $mail_params);
+
+		$headers = array(
+			'From' => $from,
+			'Subject' => 'Testing Outgoing Mail!',
+			'Date' => date("r")
+		);
+		$body = "Testing Outgoing Mail!";
+		$result = $mailer->send($to, $headers, $body);
+		
+		return $result;
+	}
+	
+	static function testImap($server, $port, $service, $username, $password) {
+		if (!extension_loaded("imap")) die("IMAP Extension not loaded!");
+		
+		@$mailbox = imap_open("{".$server.":".$port."/service=".$service."/notls}INBOX",
+							 !empty($username)?$username:"superuser",
+							 !empty($password)?$password:"superuser");
+
+		if($mailbox === FALSE)
+			return FALSE;
+		
+		@imap_close($mailbox);
+			
+		return TRUE;
 	}
 	
 	static function getMessages($server, $port, $service, $username, $password) {
