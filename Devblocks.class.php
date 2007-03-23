@@ -39,14 +39,17 @@ class DevblocksPlatform extends DevblocksEngine {
 	 */
 	private function __construct() {}
 	
-	// [JAS]: [TODO] Implement $default
 	static function importGPC($var,$cast=null,$default=null) {
 		if(is_string($var))
 			return get_magic_quotes_gpc() ? stripslashes($var) : $var;
 		
+		if(is_null($var) && !is_null($default)) {
+			$var = $default;
+		}
+			
 		if(!is_null($cast))
 			@settype($var,$cast);
-			
+		
 		return $var;
 	}
 	
