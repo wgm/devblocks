@@ -12,7 +12,9 @@ class DevblocksPluginManifest {
 	var $id = '';
 	var $enabled = 0;
 	var $name = '';
+	var $description = '';
 	var $author = '';
+	var $revision = 0;
 	var $dir = '';
 	var $extensions = array();
 	
@@ -24,6 +26,13 @@ class DevblocksPluginManifest {
 			'enabled' => $this->enabled
 		);
 		DAO_Platform::updatePlugin($this->id,$fields);
+	}
+	
+	/**
+	 * @return DevblocksPatchContainer
+	 */
+	function getPatchContainer() {
+		return null;
 	}
 };
 
@@ -91,6 +100,55 @@ class DevblocksExtensionManifest {
  * [TODO] Evaluate if this is even needed, or if apps can have their own unguided visit object
  */
 abstract class DevblocksVisit {
+};
+
+
+/**
+ * 
+ */
+abstract class DevblocksPatch {
+	private $plugin_id = ''; // cerberusweb.core
+	private $revision = 0; // 100
+//	private $one_run = false;
+	
+	protected function __construct($plugin_id, $revision) { // $one_run=false
+		$this->plugin_id = $plugin_id;
+		$this->revision = intval($revision);
+//		$this->one_run = $one_run;
+	}
+	
+	/**
+	 * @return boolean
+	 */
+	public function run() {
+		// Override
+		die("Your patch class should overload the run() method.");
+	}
+	
+	protected function _ran() {
+		DAO_Platform::setPatchRan($this->plugin_id,$this->revision);
+	}
+	
+	/**
+	 * @return boolean
+	 */
+	public function hasRun() {
+		// Compare PLUGIN_ID + REVISION in script history
+		return DAO_Platform::hasPatchRun($this->plugin_id,$this->revision);
+	}
+	
+	public function getPluginId() {
+		return $this->plugin_id;
+	}
+	
+	public function getRevision() {
+		return $this->revision;
+	}
+	
+	public function getOneRun() {
+		return $this->one_run;
+	}
+		
 };
 
 ?>

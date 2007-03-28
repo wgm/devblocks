@@ -22,21 +22,26 @@ abstract class DevblocksEngine {
 			return NULL;
 			
 		$plugin = simplexml_load_file(DEVBLOCKS_PLUGIN_PATH.$dir.'/plugin.xml');
+		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 				
 		$manifest = new DevblocksPluginManifest();
 		$manifest->id = (string) $plugin->id;
 		$manifest->dir = $dir;
+		$manifest->description = (string) $plugin->description;
 		$manifest->author = (string) $plugin->author;
+		$manifest->revision = (integer) $plugin->revision;
 		$manifest->name = (string) $plugin->name;
 		
 		$db = DevblocksPlatform::getDatabaseService();
 
 		$db->Replace(
-			'plugin',
+			$prefix.'plugin',
 			array(
 				'id' => $db->qstr($manifest->id),
 				'name' => $db->qstr($manifest->name),
+				'description' => $db->qstr($manifest->description),
 				'author' => $db->qstr($manifest->author),
+				'revision' => $manifest->revision,
 				'dir' => $db->qstr($manifest->dir)
 			),
 			array('id'),
@@ -44,7 +49,8 @@ abstract class DevblocksEngine {
 		);
 		
 		// [JAS]: URI Mapping
-		$db->Execute("DELETE FROM uri WHERE plugin_id = %s",
+		$db->Execute("DELETE FROM %suri WHERE plugin_id = %s",
+			$prefix,
 			$db->qstr($manifest->id)
 		);
 		
@@ -54,7 +60,7 @@ abstract class DevblocksEngine {
 		        $sExtensionId = (string) $eUri['extension_id'];
 		        	
 		        $db->Replace(
-		        'uri',
+		        $prefix.'uri',
 		        array(
 		        'uri' => $db->qstr($sUri),
 		        'plugin_id' => $db->qstr($manifest->id),
@@ -125,7 +131,7 @@ abstract class DevblocksEngine {
 		if(is_array($manifest->extensions))
 		foreach($manifest->extensions as $pos => $extension) { /* @var $extension DevblocksExtensionManifest */
 			$db->Replace(
-				'extension',
+				$prefix.'extension',
 				array(
 					'id' => $db->qstr($extension->id),
 					'plugin_id' => $db->qstr($extension->plugin_id),
@@ -265,63 +271,6 @@ abstract class DevblocksEngine {
 		$tpl->display("file:$path/devblocks.tpl.js",APP_BUILD);
 		$tpl->caching = 0;
 	}
-	
-	/*
-	 * [JAS]: [TODO] This should move into a DatabaseUpdateService area later 
-	 * (where plugins can also contribute their patches)
-	 */
-	static function getDatabaseSchema() {
-		$tables = array();
-		
-		$tables['extension'] = "
-			id C(128) DEFAULT '' NOTNULL PRIMARY,
-			plugin_id C(128) DEFAULT 0 NOTNULL,
-			point C(128) DEFAULT '' NOTNULL,
-			pos I2 DEFAULT 0 NOTNULL,
-			name C(128) DEFAULT '' NOTNULL,
-			file C(128) DEFAULT '' NOTNULL,
-			class C(128) DEFAULT '' NOTNULL,
-			params B DEFAULT '' NOTNULL
-		";
-		
-		$tables['plugin'] = "
-			id C(128) PRIMARY,
-			enabled I1 DEFAULT 1 NOTNULL,
-			name C(128) DEFAULT '' NOTNULL,
-			author C(64) DEFAULT '' NOTNULL,
-			dir C(128) DEFAULT '' NOTNULL
-		";
-		
-		$tables['property_store'] = "
-			extension_id C(128) DEFAULT '' NOTNULL PRIMARY,
-			instance_id I DEFAULT 0 NOTNULL PRIMARY,
-			property C(128) DEFAULT '' NOTNULL PRIMARY,
-			value C(255) DEFAULT '' NOTNULL
-		";
-		
-		$tables['session'] = "
-			sesskey C(64) PRIMARY,
-			expiry T,
-			expireref C(250),
-			created T NOTNULL,
-			modified T NOTNULL,
-			sessdata B
-		";
-		
-//		$tables['login'] = "
-//			id I4 PRIMARY,
-//			login C(32) NOTNULL,
-//			password C(32) NOTNULL
-//		";
-		
-		$tables['uri'] = "
-			uri C(32) PRIMARY,
-			plugin_id C(128) NOTNULL,
-			extension_id C(128) NOTNULL
-		";
-
-		return $tables;
-	}	
 }
 
 /**
@@ -350,9 +299,11 @@ class _DevblocksSessionManager {
 			$db = DevblocksPlatform::getDatabaseService();
 			if(!$db->IsConnected()) return null;
 			
+			$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
+			
 			include_once(DEVBLOCKS_PATH . "adodb/session/adodb-session2.php");
 			$options = array();
-			$options['table'] = 'session';
+			$options['table'] = $prefix.'session';
 			ADOdb_Session::config(APP_DB_DRIVER, APP_DB_HOST, APP_DB_USER, APP_DB_PASS, APP_DB_DATABASE, $options);
 			ADOdb_session::Persist($connectMode=false);
 			ADOdb_session::lifetime($lifetime=86400);
@@ -614,6 +565,49 @@ class _DevblocksTranslationManager {
 			$u = new I18N_UnicodeString($language[$token],'UTF8');
 		}
 		return $u->toUtf8String();
+	}
+
+};
+
+class _DevblocksPatchManager {
+	private function __construct() {}
+	private static $instance = null; 
+	private $containers = array(); // DevblocksPatchContainerExtension[]
+	private $errors = array();
+	
+	public static function getInstance() {
+		if(null == self::$instance) {
+			self::$instance = new _DevblocksPatchManager();
+		}
+		return self::$instance;
+	}
+	
+	public function registerPatchContainer(DevblocksPatchContainerExtension $container) {
+		// [TODO] Ordering?
+		$this->containers[] = $container;
+	}
+	
+	public function run() {
+		$failed = false;
+		
+		if(is_array($this->containers))
+		foreach($this->containers as $container) { /* @var $container DevblocksPatchContainerExtension */
+			$failed = $container->run();
+		}
+		
+		$this->clear();
+		
+		return TRUE;
+	}
+	
+	// [TODO] Populate
+	public function getErrors() {
+		return $this->errors;
+	}
+	
+	public function clear() {
+		// [TODO] We probably need a mechanism to clear errors also.
+		$this->containers = array();
 	}
 
 };

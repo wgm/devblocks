@@ -20,6 +20,9 @@ define('APP_DB_USER','');
 if(!defined('APP_DB_PASS'))
 define('APP_DB_PASS','');
 
+if(!defined('APP_DB_PREFIX'))
+define('APP_DB_PREFIX','');
+
 if(!defined('DEVBLOCKS_LANGUAGE'))
 define('DEVBLOCKS_LANGUAGE','en');
 

@@ -1,24 +1,20 @@
-<!DOCTYPE PLUGIN [
-
-<!ELEMENT PLUGIN (ID,NAME,AUTHOR,MAPPING,EXTENSIONS)>
-	<!ELEMENT ID (#CDATA)>
-	<!ELEMENT NAME (#CDATA)>
-	<!ELEMENT AUTHOR (#CDATA)>
-	<!ELEMENT MAPPING (URI+)>
-		<!ELEMENT URI EMPTY>
-			<!ATTLIST URI VALUE CDATA #REQUIRED>
-			<!ATTLIST URI EXTENSION_ID CDATA #REQUIRED>
-	<!ELEMENT EXTENSIONS (EXTENSION+)>
-		<!ELEMENT EXTENSION (ID,NAME,CLASS,PARAMS?)>
-			<!ELEMENT ID (#CDATA)>
-			<!ELEMENT NAME (#CDATA)>
-			<!ELEMENT CLASS (FILE,NAME)>
-				<!ELEMENT FILE (#CDATA)>
-				<!ELEMENT NAME (#CDATA)>
-			<!ELEMENT PARAMS (PARAM*)>
-				<!ELEMENT PARAM EMPTY>
-					<!ATTLIST PARAM KEY CDATA #REQUIRED>
-					<!ATTLIST PARAM VALUE CDATA #REQUIRED>
-			<!ATTLIST EXTENSION POINT CDATA #REQUIRED>
-
-]>
+<?xml version="1.0" encoding="utf-8" ?>
+<!ELEMENT plugin (id,name,description,author,revision,mapping?,extensions?)>
+<!ELEMENT id (#PCDATA)>
+<!ELEMENT name (#PCDATA)>
+<!ELEMENT description (#PCDATA)>
+<!ELEMENT author (#PCDATA)>
+<!ELEMENT revision (#PCDATA)>
+<!ELEMENT mapping (uri*)>
+	<!ELEMENT uri EMPTY>
+		<!ATTLIST uri value CDATA #REQUIRED>
+		<!ATTLIST uri extension_id CDATA #REQUIRED>
+<!ELEMENT extensions (extension*)>
+	<!ATTLIST extension point CDATA #REQUIRED>
+	<!ELEMENT extension (id,name,class,params?)>
+	<!ELEMENT class (file,name)>
+		<!ELEMENT file (#PCDATA)>
+	<!ELEMENT params (param*)>
+	<!ELEMENT param EMPTY>
+		<!ATTLIST param key CDATA #REQUIRED>
+		<!ATTLIST param value CDATA #REQUIRED>

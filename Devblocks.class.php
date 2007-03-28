@@ -9,7 +9,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',51);
+define('PLATFORM_BUILD',56);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -136,12 +136,15 @@ class DevblocksPlatform extends DevblocksEngine {
 		
 		$db = DevblocksPlatform::getDatabaseService();
 		$plugins = DevblocksPlatform::getPluginRegistry();
+		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 		
 		$sql = sprintf("SELECT e.id , e.plugin_id, e.point, e.pos, e.name , e.file , e.class, e.params ".
-			"FROM extension e ".
-			"INNER JOIN plugin p ON (e.plugin_id=p.id) ".
+			"FROM %sextension e ".
+			"INNER JOIN %splugin p ON (e.plugin_id=p.id) ".
 			"WHERE p.enabled = 1 ".
-			"ORDER BY e.plugin_id ASC, e.pos ASC"
+			"ORDER BY e.plugin_id ASC, e.pos ASC",
+			$prefix,
+			$prefix
 		);
 		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		while(!$rs->EOF) {
@@ -181,9 +184,11 @@ class DevblocksPlatform extends DevblocksEngine {
 			return $plugins;
 		
 		$db = DevblocksPlatform::getDatabaseService();
+		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 		
-		$sql = sprintf("SELECT p.id , p.enabled , p.name, p.author, p.dir ".
-			"FROM plugin p"
+		$sql = sprintf("SELECT p.id , p.enabled , p.name, p.description, p.author, p.revision, p.dir ".
+			"FROM %splugin p",
+			$prefix
 		);
 		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		while(!$rs->EOF) {
@@ -191,7 +196,9 @@ class DevblocksPlatform extends DevblocksEngine {
 			$plugin->id = $rs->fields['id'];
 			$plugin->enabled = intval($rs->fields['enabled']);
 			$plugin->name = $rs->fields['name'];
+			$plugin->description = $rs->fields['description'];
 			$plugin->author = $rs->fields['author'];
+			$plugin->revision = intval($rs->fields['revision']);
 			$plugin->dir = $rs->fields['dir'];
 			
 			if(file_exists(DEVBLOCKS_PLUGIN_PATH . $plugin->dir)) {
@@ -234,9 +241,11 @@ class DevblocksPlatform extends DevblocksEngine {
 			return $maps;
 		
 		$db = DevblocksPlatform::getDatabaseService();
+		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 		
 		$sql = sprintf("SELECT uri,extension_id ".
-			"FROM uri"
+			"FROM %suri",
+			$prefix
 		);
 		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		while(!$rs->EOF) {
@@ -289,6 +298,13 @@ class DevblocksPlatform extends DevblocksEngine {
 	 */
 	static function getDatabaseService() {
 		return _DevblocksDatabaseManager::getInstance();
+	}
+	
+	/**
+	 * @return _DevblocksPatchManager
+	 */
+	static function getPatchService() {
+		return _DevblocksPatchManager::getInstance();
 	}
 	
 	/**

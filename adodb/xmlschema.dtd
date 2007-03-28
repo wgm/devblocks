@@ -1,5 +1,4 @@
-<?xml version="1.0"?>
-<!DOCTYPE adodb_schema [
+<?xml version="1.0" encoding="utf-8" ?>
 <!ELEMENT schema (table*, sql*)>
 <!ATTLIST schema version CDATA #REQUIRED>
 <!ELEMENT table ((field+|DROP), CONSTRAINT*, descr?, index*, data*)>
@@ -7,8 +6,8 @@
 NOQUOTE?, CONSTRAINT*, descr?)>
 <!ELEMENT data (row+)>
 <!ELEMENT row (f+)>
-<!ELEMENT f (#CDATA)>
-<!ELEMENT descr (#CDATA)>
+<!ELEMENT f (#PCDATA)>
+<!ELEMENT descr (#PCDATA)>
 <!ELEMENT NOTNULL EMPTY>
 <!ELEMENT KEY EMPTY>
 <!ELEMENT PRIMARY EMPTY>
@@ -19,14 +18,14 @@ NOQUOTE?, CONSTRAINT*, descr?)>
 <!ELEMENT DEFTIMESTAMP EMPTY>
 <!ELEMENT NOQUOTE EMPTY>
 <!ELEMENT DROP EMPTY>
-<!ELEMENT CONSTRAINT (#CDATA)>
+<!ELEMENT CONSTRAINT (#PCDATA)>
 <!ATTLIST table name CDATA #REQUIRED platform CDATA #IMPLIED version CDATA #IMPLIED>
 <!ATTLIST field name CDATA #REQUIRED type (C|C2|X|X2|B|D|T|L|I|F|N) #REQUIRED size CDATA #IMPLIED>
 <!ATTLIST data platform CDATA #IMPLIED>
 <!ATTLIST f name CDATA #IMPLIED>
 <!ATTLIST DEFAULT VALUE CDATA #REQUIRED>
 <!ELEMENT index ((col+|DROP), CLUSTERED?, BITMAP?, UNIQUE?, FULLTEXT?, HASH?, descr?)>
-<!ELEMENT col (#CDATA)>
+<!ELEMENT col (#PCDATA)>
 <!ELEMENT CLUSTERED EMPTY>
 <!ELEMENT BITMAP EMPTY>
 <!ELEMENT UNIQUE EMPTY>
@@ -34,6 +33,8 @@ NOQUOTE?, CONSTRAINT*, descr?)>
 <!ELEMENT HASH EMPTY>
 <!ATTLIST index name CDATA #REQUIRED platform CDATA #IMPLIED>
 <!ELEMENT sql (query+, descr?)>
-<!ELEMENT query (#CDATA)>
-<!ATTLIST sql name CDATA #IMPLIED platform CDATA #IMPLIED, key CDATA, prefixmethod (AUTO|MANUAL|NONE) >
-] >
+<!ELEMENT query (#PCDATA)>
+<!ATTLIST sql name CDATA #IMPLIED>
+<!ATTLIST sql platform CDATA #IMPLIED>
+<!ATTLIST sql key CDATA #IMPLIED>
+<!ATTLIST sql prefixmethod (AUTO|MANUAL|NONE) #IMPLIED>

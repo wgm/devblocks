@@ -48,10 +48,12 @@ class DevblocksExtension {
 		
 		$params = $this->manifest->params;
 		$db = DevblocksPlatform::getDatabaseService();
+		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 		
 		$sql = sprintf("SELECT property,value ".
-			"FROM property_store ".
+			"FROM %sproperty_store ".
 			"WHERE extension_id=%s AND instance_id='%d' ",
+			$prefix,
 			$db->qstr($this->id),
 			$this->instance_id
 		);
@@ -75,16 +77,49 @@ class DevblocksExtension {
 			return FALSE;
 		
 		$db = DevblocksPlatform::getDatabaseService();
+		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 		
 		if(is_array($this->params))
 		foreach($this->params as $k => $v) {
 			$db->Replace(
-				'property_store',
+				$prefix.'property_store',
 				array('extension_id'=>$this->id,'instance_id'=>$this->instance_id,'property'=>$db->qstr($k),'value'=>$db->qstr($v)),
 				array('extension_id','instance_id','property'),
 				true
 			);
 		}
+	}
+};
+
+/**
+ * 
+ */
+abstract class DevblocksPatchContainerExtension extends DevblocksExtension {
+	private $patches = array();
+
+	function __construct($manifest) {
+		$this->DevblocksExtension($manifest, 1);
+	}
+		
+	public function registerPatch(DevblocksPatch $patch) {
+		// index by revision
+		$rev = $patch->getRevision();
+		$this->patches[$rev] = $patch;
+		ksort($this->patches);
+	}
+	
+	public function run() {
+		if(is_array($this->patches))
+		foreach($this->patches as $rev => $patch) { /* @var $patch DevblocksPatch */
+			if(!$patch->run())
+				return FALSE;
+		}
+		
+		return TRUE;
+	}
+	
+	public function runRevision($rev) {
+		return TRUE;
 	}
 };
 

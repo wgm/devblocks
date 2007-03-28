@@ -70,6 +70,7 @@ function checkAll(divName, state) {
 	
 	for(x=0;x<numBoxes;x++) {
 		if(null != boxes[x].name) {
+			if(state == null) state = !boxes[x].checked;
 			boxes[x].checked = (state) ? true : false;
 		}
 	}
