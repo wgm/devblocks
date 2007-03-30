@@ -91,6 +91,16 @@ class DevblocksExtension {
 	}
 };
 
+abstract class DevblocksTranslationsExtension extends DevblocksExtension {
+	function __construct($manifest) {
+		$this->DevblocksExtension($manifest, 1);
+	}
+	
+	function getTmxFile() {
+		return NULL;
+	}
+}
+
 /**
  * 
  */

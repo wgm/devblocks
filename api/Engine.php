@@ -1,4 +1,6 @@
 <?php
+require_once("Zend.php");
+require_once("Zend/Registry.php");
 
 abstract class DevblocksEngine {
 	protected static $plugins_cache = array();
@@ -301,7 +303,7 @@ class _DevblocksSessionManager {
 			
 			$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 			
-			include_once(DEVBLOCKS_PATH . "adodb/session/adodb-session2.php");
+			include_once(DEVBLOCKS_PATH . "libs/adodb/session/adodb-session2.php");
 			$options = array();
 			$options['table'] = $prefix.'session';
 			ADOdb_Session::config(APP_DB_DRIVER, APP_DB_HOST, APP_DB_USER, APP_DB_PASS, APP_DB_DATABASE, $options);
@@ -368,7 +370,9 @@ class _DevblocksEmailManager {
 	// [TODO] Implement SMTP Auth
 	static function send($server, $sRCPT, $headers, $body) {
 		// mailer setup
-		require_once(DEVBLOCKS_PATH . 'pear/Mail.php');
+		// [TODO] It's silly we call this include in every function -- we need to wrap it in platform or
+			// convert to the Zend_Mail version. 
+		require_once(DEVBLOCKS_PATH . 'libs/pear/Mail.php');
 		$mail_params = array();
 		$mail_params['host'] = $server;
 		$mailer =& Mail::factory("smtp", $mail_params);
@@ -386,7 +390,7 @@ class _DevblocksEmailManager {
 	
 	// [TODO] Implement SMTP Auth
 	static function testSmtp($server,$to,$from,$smtp_auth_user=null,$smtp_auth_pass=null) {
-		require_once(DEVBLOCKS_PATH . 'pear/Mail.php');
+		require_once(DEVBLOCKS_PATH . 'libs/pear/Mail.php');
 		
 		$mail_params = array();
 		$mail_params['host'] = $server;
@@ -421,7 +425,7 @@ class _DevblocksEmailManager {
 	
 	static function getMessages($server, $port, $service, $username, $password) {
 		if (!extension_loaded("imap")) die("IMAP Extension not loaded!");
-		require_once(DEVBLOCKS_PATH . 'pear/mimeDecode.php');
+		require_once(DEVBLOCKS_PATH . 'libs/pear/mimeDecode.php');
 		
 		$mailbox = imap_open("{".$server.":".$port."/service=".$service."/notls}INBOX",
 							 !empty($username)?$username:"superuser",
@@ -470,7 +474,7 @@ class _DevblocksTemplateManager {
 	static function getInstance() {
 		static $instance = null;
 		if(null == $instance) {
-			require(DEVBLOCKS_PATH . 'smarty/Smarty.class.php');
+			require(DEVBLOCKS_PATH . 'libs/smarty/Smarty.class.php');
 			$instance = new Smarty();
 			$instance->template_dir = APP_PATH . '/templates'; // [TODO] Themes
 			$instance->compile_dir = DEVBLOCKS_PATH . 'tmp/templates_c';
@@ -507,7 +511,7 @@ class _DevblocksDatabaseManager {
 	static function getInstance() {
 		static $instance = null;
 		if(null == $instance) {
-			include_once(DEVBLOCKS_PATH . "adodb/adodb.inc.php");
+			include_once(DEVBLOCKS_PATH . "libs/adodb/adodb.inc.php");
 			$ADODB_CACHE_DIR = APP_PATH . "/tmp/cache";
 			@$instance =& ADONewConnection(APP_DB_DRIVER); /* @var $instance ADOConnection */
 			@$instance->Connect(APP_DB_HOST,APP_DB_USER,APP_DB_PASS,APP_DB_DATABASE);
@@ -515,58 +519,6 @@ class _DevblocksDatabaseManager {
 		}
 		return $instance;
 	}
-};
-
-/**
- * Unicode Translation Singleton
- *
- * @ingroup services
- */
-class _DevblocksTranslationManager {
-	/**
-	 * Constructor
-	 * 
-	 * @private
-	 */
-	private function _DevblocksTranslationManager() {}
-	
-	/**
-	 * Returns an instance of the translation singleton.
-	 *
-	 * @static 
-	 * @return DevblocksTranslationManager
-	 */
-	static function getInstance() {
-		static $instance = null;
-		if(null == $instance) {
-			$instance = new _DevblocksTranslationManager();
-		}
-		return $instance;
-	}
-
-	/**
-	 * Translate an externalized string token into a Unicode string in the 
-	 * current language.  The $vars argument provides a list of substitutions 
-	 * similar to sprintf().
-	 *
-	 * @param string $token The externalized string token to replace
-	 * @param array $vars A list of substitutions
-	 * @return string A string with the Unicode values encoded in UTF-8
-	 */
-	function say($token,$vars=array()) {
-		global $language;
-		
-		if(!isset($language[$token]))
-			return "[#".$token."#]";
-		
-		if(!empty($vars)) {
-			$u = new I18N_UnicodeString(vsprintf($language[$token],$vars),'UTF8');
-		} else {
-			$u = new I18N_UnicodeString($language[$token],'UTF8');
-		}
-		return $u->toUtf8String();
-	}
-
 };
 
 class _DevblocksPatchManager {

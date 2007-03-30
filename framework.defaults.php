@@ -1,7 +1,11 @@
 <?php
 @ini_set('session.gc_maxlifetime','86400');
 @ini_set('session.save_path',DEVBLOCKS_PATH . 'tmp/');
-@set_include_path(DEVBLOCKS_PATH . 'pear' . PATH_SEPARATOR . get_include_path());
+// [TODO]: We need a way to get around this requirement for libs
+@set_include_path(
+	DEVBLOCKS_PATH . 'libs' . PATH_SEPARATOR .
+	DEVBLOCKS_PATH . 'libs/pear' . PATH_SEPARATOR .  
+	get_include_path());
 @ini_set('magic_quotes_gpc',0);
 @set_magic_quotes_runtime(0);
 

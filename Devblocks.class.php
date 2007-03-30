@@ -1,13 +1,10 @@
 <?php
-include_once(DEVBLOCKS_PATH . "pear/i18n/I18N_UnicodeString.php");
-include_once(APP_PATH . "/languages/".DEVBLOCKS_LANGUAGE."/strings.php");
-
 include_once(DEVBLOCKS_PATH . "api/Engine.php");
 include_once(DEVBLOCKS_PATH . "api/DAO.php");
 include_once(DEVBLOCKS_PATH . "api/Model.php");
 include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
-include_once(DEVBLOCKS_PATH . "cloudglue/CloudGlue.php");
+include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
 define('PLATFORM_BUILD',56);
 
@@ -58,6 +55,12 @@ class DevblocksPlatform extends DevblocksEngine {
 		self::$extensions_cache = array();
 		self::$points_cache = array();
 		self::$mapping_cache = array();
+	}
+	
+	static function isDatabaseEmpty() {
+		$db = DevblocksPlatform::getDatabaseService();
+		$tables = $db->MetaTables('TABLE',false);
+		return empty($tables);
 	}
 	
 	/**
@@ -135,6 +138,7 @@ class DevblocksPlatform extends DevblocksEngine {
 			return $extensions;
 		
 		$db = DevblocksPlatform::getDatabaseService();
+		
 		$plugins = DevblocksPlatform::getPluginRegistry();
 		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 		
@@ -345,10 +349,61 @@ class DevblocksPlatform extends DevblocksEngine {
 	}
 	
 	/**
-	 * @return _DevblocksTranslationManager
+	 * @return Zend_Date
+	 */
+	static function getDateService($date=null) {
+		require_once 'Zend/Date.php';
+		$locale = DevblocksPlatform::getLocaleService();
+		$date = new Zend_Date($date);
+		$date->setLocale($locale);
+		return $date;
+	}
+	
+	/**
+	 * @return Zend_Locale
+	 */
+	static function getLocaleService() {
+		require_once("Zend/Locale.php");
+		
+		if(!Zend_Registry::isRegistered('locale')) {
+			$locale = new Zend_Locale('en_US');
+			Zend_Registry::set('locale', $locale);			
+		} else {
+			$locale = Zend_Registry::get('locale');
+		}
+		
+		return $locale;
+	}
+	
+	/**
+	 * @return Zend_Translate
 	 */
 	static function getTranslationService() {
-		return _DevblocksTranslationManager::getInstance();
+		require_once("Zend/Translate.php");
+		
+		if(!Zend_Registry::isRegistered('translate')) {
+			$locale = DevblocksPlatform::getLocaleService();
+			$translate = new Zend_Translate('tmx', DEVBLOCKS_PATH . 'resources/strings.xml', $locale);
+			
+			// [JAS]: Read in translations from the extension point
+			if(!self::isDatabaseEmpty())
+				$translations = DevblocksPlatform::getExtensions("devblocks.i18n.translations");
+			
+			if(is_array($translations))
+			foreach($translations as $translationManifest) { /* @var $translationManifest DevblocksExtensionManifest */
+				$translation = $translationManifest->createInstance(); /* @var $translation DevblocksTranslationsExtension */
+				$file = $translation->getTmxFile();
+				
+				if(@is_readable($file))
+					$translate->addTranslation($file, $locale);
+			}
+			
+			Zend_Registry::set('translate', $translate);		
+		} else {
+			$translate = Zend_Registry::get('translate');
+		}
+		
+		return $translate;
 	}
 	
 	/**
