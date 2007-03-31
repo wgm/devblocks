@@ -77,12 +77,12 @@ class DevblocksExtensionManifest {
 
 		if(!file_exists($class_file))
 			return null;
-			
+
 		include_once($class_file);
 		if(!class_exists($class_name)) {
 			return null;
 		}
-			
+		
 		$instance = new $class_name($this,$instance_id);
 		return $instance;
 	}

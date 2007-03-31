@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',56);
+define('PLATFORM_BUILD',58);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -387,7 +387,7 @@ class DevblocksPlatform extends DevblocksEngine {
 			
 			// [JAS]: Read in translations from the extension point
 			if(!self::isDatabaseEmpty())
-				$translations = DevblocksPlatform::getExtensions("devblocks.i18n.translations");
+				$translations = DevblocksPlatform::getExtensions("devblocks.i18n.strings");
 			
 			if(is_array($translations))
 			foreach($translations as $translationManifest) { /* @var $translationManifest DevblocksExtensionManifest */
