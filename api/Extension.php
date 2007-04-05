@@ -129,7 +129,7 @@ abstract class DevblocksPatchContainerExtension extends DevblocksExtension {
 	}
 	
 	public function runRevision($rev) {
-		return TRUE;
+		die("Overload " . __CLASS__ . "::runRevision()");
 	}
 };
 

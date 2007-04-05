@@ -79,12 +79,11 @@ class DAO_CloudGlue {
 			"WHERE tc0.index_id = %d ".
 			(!empty($exclude_ids) ? sprintf("AND tc0.tag_id NOT IN (%s) ",implode(',', $exclude_ids)) : "").
 			"GROUP BY tc0.tag_id ".
-			"ORDER BY hits DESC ".
-			"LIMIT 0,30",
+			"ORDER BY hits DESC ",
 			$index_id
 		);
 //		echo $sql;
-		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		$rs = $db->SelectLimit($sql,30,0) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		
 		while(!$rs->EOF) {
 			$id = intval($rs->fields['tag_id']);
@@ -149,12 +148,11 @@ class DAO_CloudGlue {
 			"WHERE tc0.index_id = %d ".
 //			(!empty($exclude_ids) ? sprintf("AND tc0.tag_id NOT IN (%s) ",implode(',', $exclude_ids)) : "").
 			"GROUP BY tc0.content_id ".
-			"ORDER BY hits DESC ".
-			"LIMIT 0,30",
+			"ORDER BY hits DESC ",
 			$index_id
 		);
 //		echo $sql;
-		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		$rs = $db->SelectLimit($sql,30,0) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		
 		while(!$rs->EOF) {
 			$id = intval($rs->fields['content_id']);
@@ -187,7 +185,7 @@ class DAO_CloudGlue {
 	/**
 	 * @param array $content_ids
 	 * @param string $index_name
-	 * @return array
+	 * @return CloudGlueTag[]
 	 */
 	static function getTagsOnContents($content_ids,$index_name) {
 		if(!is_array($content_ids)) $content_ids = array($content_ids);

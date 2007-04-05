@@ -93,14 +93,65 @@ function appendTextboxAsCsv(formName, field, oLink) {
 	txt.value = txt.value + sAppend;
 }
 
+var genericPanel;
+function genericAjaxPanel(request,target,modal,width) {
+	if(null != genericPanel) {
+		genericPanel.hide();
+	}
+
+	options = { 
+	  width : "300px",
+	  fixedcenter : false,
+	  visible : false, 
+	  constraintoviewport : true,
+	  underlay : "none",
+	  modal : false,
+	  close : false,
+	  draggable : false
+	};
+
+	if(null != width) options.width = width;
+	if(null != modal) options.modal = modal;
+	if(true == modal) options.fixedcenter = true;
+	
+	var cObj = YAHOO.util.Connect.asyncRequest('GET', DevblocksAppPath+'ajax.php?'+request, {
+			success: function(o) {
+				var caller = o.argument.caller;
+				var target = o.argument.target;
+				var options = o.argument.options;
+					
+				genericPanel = new YAHOO.widget.Panel("genericPanel", options);
+
+				genericPanel.setBody('');
+				genericPanel.render(document.body);
+				
+				genericPanel.hide();
+				genericPanel.setBody(o.responseText);
+				
+				if(null != target && !options.fixedcenter) {
+					genericPanel.cfg.setProperty('context',[target,"tr","br"]);
+				}
+				
+				genericPanel.show();
+			},
+			failure: function(o) {},
+			argument:{request:request,target:target,options:options}
+		}
+	);	
+}
+
 function genericAjaxGet(divName,args,cb) {
-	var frm = document.getElementById(divName);
-	if(null == frm) return;
+	//var frm = document.getElementById(divName);
+	//if(null == frm) return;
 
 	// [JAS]: Default response action
 	if(null == cb) {
-		var anim = new YAHOO.util.Anim(frm, { opacity: { to: 0.2 } }, 1, YAHOO.util.Easing.easeOut);
-		anim.animate();
+		var frm = document.getElementById(divName);
+
+		if(null != frm) {
+			var anim = new YAHOO.util.Anim(frm, { opacity: { to: 0.2 } }, 1, YAHOO.util.Easing.easeOut);
+			anim.animate();
+		}
 		
 		var cb = function(o) {
 			var frm = document.getElementById(divName);
@@ -113,10 +164,10 @@ function genericAjaxGet(divName,args,cb) {
 	}
 	
 	var cObj = YAHOO.util.Connect.asyncRequest('GET', DevblocksAppPath+'ajax.php?'+args, {
-			success: cb,
-			failure: function(o) {alert('fail');},
-			argument:{caller:this,divName:divName}
-			}
+		success: cb,
+		failure: function(o) {alert('fail');},
+		argument:{caller:this,divName:divName}
+		}
 	);
 }
 

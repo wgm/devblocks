@@ -540,11 +540,12 @@ class _DevblocksPatchManager {
 	}
 	
 	public function run() {
-		$failed = false;
+		$result = TRUE;
 		
 		if(is_array($this->containers))
 		foreach($this->containers as $container) { /* @var $container DevblocksPatchContainerExtension */
-			$failed = $container->run();
+			$result = $container->run();
+			if(!$result) die("FAILED on " . $container->id);
 		}
 		
 		$this->clear();

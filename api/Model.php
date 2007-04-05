@@ -100,6 +100,24 @@ class DevblocksExtensionManifest {
  * [TODO] Evaluate if this is even needed, or if apps can have their own unguided visit object
  */
 abstract class DevblocksVisit {
+	private $registry = array();
+	
+	public function exists($key) {
+		return isset($this->registry[$key]);
+	}
+	
+	public function get($key, $default=null) {
+		$value = $this->registry[$key];
+		
+		if(is_null($value) && !is_null($default)) 
+			$value = $default;
+			
+		return $value;
+	}
+	
+	public function set($key, $object) {
+		$this->registry[$key] = $object;
+	}
 };
 
 

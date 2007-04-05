@@ -60,7 +60,7 @@ abstract class DevblocksORMHelper {
 class DAO_Platform {
 	
 	function updatePlugin($id, $fields) {
-		$um_db = DevblocksPlatform::getDatabaseService();
+		$db = DevblocksPlatform::getDatabaseService();
 		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 		$sets = array();
 		
@@ -70,16 +70,16 @@ class DAO_Platform {
 		foreach($fields as $k => $v) {
 			$sets[] = sprintf("%s = %s",
 				$k,
-				$um_db->qstr($v)
+				$db->qstr($v)
 			);
 		}
 			
 		$sql = sprintf("UPDATE %splugin SET %s WHERE id = %s",
 			$prefix,
 			implode(', ', $sets),
-			$um_db->qstr($id)
+			$db->qstr($id)
 		);
-		$um_db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $um_db->ErrorMsg()); /* @var $rs ADORecordSet */
+		$db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 	}
 
 	/**

@@ -21,14 +21,15 @@ class PlatformPatchContainer extends DevblocksPatchContainerExtension {
 	}
 
 	function runRevision($rev) {
+		$result = TRUE;
+		
 		switch($rev) {
-			
 			case REV_0:
-				self::_initDatabase();
+				$result = self::_initDatabase();
 				break;
 		}
 		
-		return TRUE;
+		return $result;
 	}
 	
 	private static function _initDatabase() {
@@ -88,15 +89,22 @@ class PlatformPatchContainer extends DevblocksPatchContainerExtension {
 			extension_id C(128) NOTNULL
 		";
 
+		$currentTables = $db->MetaTables('TABLE', false);
+
+		if(is_array($tables))
 		foreach($tables as $table => $flds) {
-			$sql = $datadict->ChangeTableSQL($table,$flds);
-//			print_r($sql);
-			// [TODO] Buffer up success and fail messages?  Patcher!
-			if(!$datadict->ExecuteSQLArray($sql,false)) {
-				return FALSE;
+			if(false === array_search($table,$currentTables)) {
+				$sql = $datadict->CreateTableSQL($table,$flds);
+				// [TODO] Buffer up success and fail messages?  Patcher!
+				if(!$datadict->ExecuteSQLArray($sql,false)) {
+					echo '[' . $table . '] ' . $db->ErrorMsg();
+					exit;
+					return FALSE;
+				}
 			}
-//			echo "<HR>";
-		}				
+		}
+		
+		return TRUE;
 	}
 	
 };
