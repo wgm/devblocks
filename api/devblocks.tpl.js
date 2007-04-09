@@ -140,6 +140,27 @@ function genericAjaxPanel(request,target,modal,width) {
 	);	
 }
 
+function saveGenericAjaxPanel(div,cb) {
+	YAHOO.util.Connect.setForm(div);
+	
+	var cObj = YAHOO.util.Connect.asyncRequest('POST', DevblocksAppPath+'ajax.php', {
+			success: function(o) {
+				var cb = o.argument.cb;
+				
+				if(null != genericPanel) {
+					genericPanel.hide();
+				}
+				
+				if(null != cb) {
+					cb(o);
+				}
+				
+			},
+			failure: function(o) {},
+			argument:{div:div,cb:cb}
+	});	
+}
+
 function genericAjaxGet(divName,args,cb) {
 	//var frm = document.getElementById(divName);
 	//if(null == frm) return;
