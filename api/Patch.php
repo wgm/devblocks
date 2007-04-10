@@ -11,7 +11,7 @@ class PlatformPatchContainer extends DevblocksPatchContainerExtension {
 		 * number.
 		 */
 		$revisions = array(
-			REV_0,
+			self::REV_0,
 		);
 		
 		if(is_array($revisions))
@@ -24,7 +24,7 @@ class PlatformPatchContainer extends DevblocksPatchContainerExtension {
 		$result = TRUE;
 		
 		switch($rev) {
-			case REV_0:
+			case self::REV_0:
 				$result = self::_initDatabase();
 				break;
 		}
