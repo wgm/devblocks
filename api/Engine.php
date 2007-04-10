@@ -372,7 +372,7 @@ class _DevblocksEmailManager {
 		// mailer setup
 		// [TODO] It's silly we call this include in every function -- we need to wrap it in platform or
 			// convert to the Zend_Mail version. 
-		require_once(DEVBLOCKS_PATH . 'libs/pear/Mail.php');
+	//	require_once(DEVBLOCKS_PATH . 'libs/pear/Mail.php');
 		$mail_params = array();
 		$mail_params['host'] = $server;
 		$mailer =& Mail::factory("smtp", $mail_params);
@@ -390,7 +390,7 @@ class _DevblocksEmailManager {
 	
 	// [TODO] Implement SMTP Auth
 	static function testSmtp($server,$to,$from,$smtp_auth_user=null,$smtp_auth_pass=null) {
-		require_once(DEVBLOCKS_PATH . 'libs/pear/Mail.php');
+	//	require_once(DEVBLOCKS_PATH . 'libs/pear/Mail.php');
 		
 		$mail_params = array();
 		$mail_params['host'] = $server;
@@ -425,7 +425,7 @@ class _DevblocksEmailManager {
 	
 	static function getMessages($server, $port, $service, $username, $password) {
 		if (!extension_loaded("imap")) die("IMAP Extension not loaded!");
-		require_once(DEVBLOCKS_PATH . 'libs/pear/mimeDecode.php');
+		//require_once(DEVBLOCKS_PATH . 'libs/pear/mimeDecode.php');
 		
 		$mailbox = imap_open("{".$server.":".$port."/service=".$service."/notls}INBOX",
 							 !empty($username)?$username:"superuser",

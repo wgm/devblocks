@@ -4,7 +4,7 @@
 // [TODO]: We need a way to get around this requirement for libs
 @set_include_path(
 	DEVBLOCKS_PATH . 'libs' . PATH_SEPARATOR .
-	DEVBLOCKS_PATH . 'libs/pear' . PATH_SEPARATOR .  
+//	DEVBLOCKS_PATH . 'libs/pear' . PATH_SEPARATOR .  
 	get_include_path());
 @ini_set('magic_quotes_gpc',0);
 @set_magic_quotes_runtime(0);
