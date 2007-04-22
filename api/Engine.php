@@ -157,16 +157,21 @@ abstract class DevblocksEngine {
 	 */
 	static function readRequest() {
 		$url = DevblocksPlatform::getUrlService();
+
+		$parts = $url->parseURL($_SERVER['REQUEST_URI']);
+		$query = $_SERVER['QUERY_STRING'];
 		
-		if(DEVBLOCKS_REWRITE) {
-			$parts = $url->parseURL($_SERVER['REQUEST_URI']);
-			$query = $_SERVER['QUERY_STRING'];
-			
-		} else {
-			$argc = $url->parseQueryString($_SERVER['QUERY_STRING']);
-			$parts = array_values($argc);
-			$query = '';
-		}
+//		if(DEVBLOCKS_REWRITE) {
+//			$parts = $url->parseURL($_SERVER['REQUEST_URI']);
+//			$query = $_SERVER['QUERY_STRING'];
+//			
+//		} else {
+////		    echo $_SERVER['REQUEST_URI'];
+//		    $parts = $url->parseURL($_SERVER['REQUEST_URI']);
+////			$argc = $url->parseQueryString($_SERVER['QUERY_STRING']);
+////			$parts = array_values($argc);
+//			$query = $_SERVER['QUERY_STRING'];
+//		}
 
 		if(empty($parts)) {
 			// Overrides (Form POST, etc.)
@@ -599,17 +604,21 @@ class _DevblocksUrlManager {
 		// [JAS]: Use the index.php page as a reference to deconstruct the URI
 		$pos = stripos($_SERVER['PHP_SELF'],'index.php',0);
 		if($pos === FALSE) return null;
-		
+
 		// [JAS]: Extract the basedir of the path
 		$basedir = substr($url,0,$pos);
-		
+
 		// [JAS]: Remove query string
 		$pos = stripos($url,'?',0);
 		if($pos !== FALSE) {
 			$url = substr($url,0,$pos);
 		}
 		
-		$request = substr($url,strlen($basedir));
+		$len = strlen($basedir);
+		if(!DEVBLOCKS_REWRITE) $len += strlen("index.php/");
+		
+		$request = substr($url, $len);
+		
 		if(empty($request)) return array();
 		
 		$parts = split('/', $request);
@@ -638,9 +647,10 @@ class _DevblocksUrlManager {
 				);
 				
 			} else {
-				$contents = sprintf("%sindex.php?",
+				$contents = sprintf("%sindex.php/%s",
 					DEVBLOCKS_WEBPATH,
-					(!empty($args) ? $args : '')
+					(!empty($args) ? implode('/',array_values($args)) : '')
+//					(!empty($args) ? $sQuery : '')
 				);
 			}
 		}

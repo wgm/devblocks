@@ -52,10 +52,68 @@ abstract class DevblocksORMHelper {
 	/**
 	 * [TODO]: Import the searchDAO functionality + combine the extraneous classes
 	 */
-	static protected function _search() {
+	static protected function _parseSearchParams($params,$fields) {
+		$db = DevblocksPlatform::getDatabaseService();
 		
+		$tables = array();
+		$wheres = array();
+		
+		if(is_array($params))
+		foreach($params as $param) { /* @var $param DevblocksSearchCriteria */
+			if(!is_a($param,'DevblocksSearchCriteria')) continue;
+			$where = "";
+			
+			// [JAS]: Filter allowed columns (ignore invalid/deprecated)
+			if(!isset($fields[$param->field]))
+				continue;
+
+			$db_field_name = $fields[$param->field]->db_table . '.' . $fields[$param->field]->db_column; 
+			
+			// [JAS]: Indexes for optimization
+			$tables[$fields[$param->field]->db_table] = $fields[$param->field]->db_table;
+				
+			// [JAS]: Operators
+			switch($param->operator) {
+				case "=":
+					$where = sprintf("%s = %s",
+						$db_field_name,
+						$db->qstr($param->value)
+					);
+					break;
+					
+				case "!=":
+					$where = sprintf("%s != %s",
+						$db_field_name,
+						$db->qstr($param->value)
+					);
+					break;
+				
+				case "in":
+					if(!is_array($param->value)) break;
+					$where = sprintf("%s IN ('%s')",
+						$db_field_name,
+						implode("','",$param->value)
+					);
+					break;
+					
+				case "like":
+//					if(!is_array($param->value)) break;
+					$where = sprintf("%s LIKE %s",
+						$db_field_name,
+						$db->qstr(str_replace('*','%%',$param->value))
+					);
+					break;
+				
+				default:
+					break;
+			}
+			
+			if(!empty($where)) $wheres[] = $where;
+		}
+		
+		return array($tables, $wheres);
 	}
-}
+};
 
 class DAO_Platform {
 	

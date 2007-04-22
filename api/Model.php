@@ -1,4 +1,48 @@
 <?php
+interface IDevblocksSearchFields {
+    static function getFields();
+}
+class DevblocksSearchCriteria {
+    const OPER_EQ = '=';
+    const OPER_NEQ = '!=';
+    const OPER_IN = 'in';
+    const OPER_NIN = 'not in';
+    const OPER_LIKE = 'like';
+    const OPER_GT = '>';
+    const OPER_LT = '<';
+    const OPER_GTE = '>=';
+    const OPER_LTE = '<=';
+    
+	public $field;
+	public $operator;
+	public $value;
+	
+	/**
+	 * Enter description here...
+	 *
+	 * @param string $field
+	 * @param string $oper
+	 * @param mixed $value
+	 * @return DevblocksSearchCriteria
+	 */
+	 public function DevblocksSearchCriteria($field,$oper,$value) {
+		$this->field = $field;
+		$this->operator = $oper;
+		$this->value = $value;
+	}
+};
+class DevblocksSearchField {
+	public $token;
+	public $db_table;
+	public $db_column;
+	
+	function __construct($token, $db_table, $db_column) {
+		$this->token = $token;
+		$this->db_table = $db_table;
+		$this->db_column = $db_column;
+	}
+}
+
 class DevblocksExtensionPoint {
 	var $id = '';
 	var $extensions = array();
