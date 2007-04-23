@@ -9,7 +9,7 @@ var DevblocksUrl = function() {
 	this.base_url = '{$smarty.const.DEVBLOCKS_WEBPATH}';
 	this.rewrite = true;
 {else}
-	this.base_url = '{$smarty.const.DEVBLOCKS_WEBPATH}index.php';
+	this.base_url = '{$smarty.const.DEVBLOCKS_WEBPATH}index.php/';
 	this.rewrite = false;
 {/if}
 
@@ -22,14 +22,7 @@ var DevblocksUrl = function() {
 	
 	// [JAS]: Write our URL using either Apache Rewrite or Query String
 	this.getUrl = function() {
-		if(this.rewrite) {
-			var url = this.base_url + this.vars.join('/');
-		} else {
-			var url = this.base_url;
-			for(var x=0;x<this.vars.length;x++) {
-				url += ((x>0) ? '&' : '?') + 'a'+x+'='+this.vars[x];
-			}
-		}
+		var url = this.base_url + this.vars.join('/');
 		return url;
 	}
 }

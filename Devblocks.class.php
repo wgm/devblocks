@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',58);
+define('PLATFORM_BUILD',64);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -26,16 +26,18 @@ define('PLATFORM_BUILD',58);
 /**
  * A platform container for plugin/extension registries.
  *
- * @static 
  * @ingroup core
  * @author Jeff Standen <jeff@webgroupmedia.com>
  */
 class DevblocksPlatform extends DevblocksEngine {
-	/**
-	 * @private
-	 */
 	private function __construct() {}
-	
+
+	/**
+	 * @param mixed $var
+	 * @param string $cast
+	 * @param mixed $default
+	 * @return mixed
+	 */
 	static function importGPC($var,$cast=null,$default=null) {
 		if(is_string($var))
 			return get_magic_quotes_gpc() ? stripslashes($var) : $var;
@@ -50,6 +52,10 @@ class DevblocksPlatform extends DevblocksEngine {
 		return $var;
 	}
 	
+	/**
+	 * Clears any platform-level plugin caches.
+	 * 
+	 */
 	static function clearCache() {
 		self::$plugins_cache = array();
 		self::$extensions_cache = array();
@@ -57,6 +63,11 @@ class DevblocksPlatform extends DevblocksEngine {
 		self::$mapping_cache = array();
 	}
 	
+	/**
+	 * Checks whether the active database has any tables.
+	 * 
+	 * @return boolean
+	 */
 	static function isDatabaseEmpty() {
 		$db = DevblocksPlatform::getDatabaseService();
 		$tables = $db->MetaTables('TABLE',false);

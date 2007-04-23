@@ -2,6 +2,11 @@
 require_once("Zend.php");
 require_once("Zend/Registry.php");
 
+/**
+ * Description
+ * 
+ * @ingroup core
+ */
 abstract class DevblocksEngine {
 	protected static $plugins_cache = array();
 	protected static $extensions_cache = array();
@@ -153,6 +158,8 @@ abstract class DevblocksEngine {
 	}
 	
 	/**
+	 * Reads the HTTP Request object.
+	 * 
 	 * @return DevblocksHttpRequest
 	 */
 	static function readRequest() {
@@ -192,7 +199,10 @@ abstract class DevblocksEngine {
 	}
 	
 	/**
+	 * Processes the HTTP request.
+	 * 
 	 * @param DevblocksHttpRequest $request
+	 * @param boolean $is_ajax
 	 */
 	static function processRequest($request,$is_ajax=false) {
 		if(!is_a($request,'DevblocksHttpRequest')) return null;
