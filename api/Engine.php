@@ -443,8 +443,8 @@ class _DevblocksEmailManager {
 		//require_once(DEVBLOCKS_PATH . 'libs/pear/mimeDecode.php');
 		
 		$mailbox = imap_open("{".$server.":".$port."/service=".$service."/notls}INBOX",
-							 !empty($username)?$username:"superuser",
-							 !empty($password)?$password:"superuser")
+							 !empty($username)?$username:"",
+							 !empty($password)?$password:"")
 			or die("Failed with error: ".imap_last_error());
 		$check = imap_check($mailbox);
 		
@@ -531,6 +531,7 @@ class _DevblocksDatabaseManager {
 			@$instance =& ADONewConnection(APP_DB_DRIVER); /* @var $instance ADOConnection */
 			@$instance->Connect(APP_DB_HOST,APP_DB_USER,APP_DB_PASS,APP_DB_DATABASE);
 			@$instance->SetFetchMode(ADODB_FETCH_ASSOC);
+			@$instance->LogSQL(false);
 		}
 		return $instance;
 	}

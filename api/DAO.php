@@ -96,7 +96,7 @@ abstract class DevblocksORMHelper {
 					);
 					break;
 					
-				case "like":
+				case DevblocksSearchCriteria::OPER_LIKE:
 //					if(!is_array($param->value)) break;
 					$where = sprintf("%s LIKE %s",
 						$db_field_name,
@@ -104,6 +104,17 @@ abstract class DevblocksORMHelper {
 					);
 					break;
 				
+				case DevblocksSearchCriteria::OPER_GT:
+				case DevblocksSearchCriteria::OPER_GTE:
+				case DevblocksSearchCriteria::OPER_LT:
+				case DevblocksSearchCriteria::OPER_LTE:
+					$where = sprintf("%s %s %s",
+						$db_field_name,
+						$param->operator,
+						$db->qstr($param->value)
+					);
+				    break;
+					
 				default:
 					break;
 			}
