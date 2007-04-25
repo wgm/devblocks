@@ -34,7 +34,7 @@ if(!defined('DEVBLOCKS_THEME'))
 define('DEVBLOCKS_THEME','default');
 
 if(!defined('DEVBLOCKS_REWRITE'))
-define('DEVBLOCKS_REWRITE',true);
+define('DEVBLOCKS_REWRITE',false);
 
 if(!defined('DEVBLOCKS_DEBUG'))
 define('DEVBLOCKS_DEBUG',false);
