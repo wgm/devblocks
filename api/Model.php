@@ -6,6 +6,7 @@ class DevblocksSearchCriteria {
     const OPER_EQ = '=';
     const OPER_NEQ = '!=';
     const OPER_IN = 'in';
+    const OPER_IS_NULL = 'is null';
     const OPER_NIN = 'not in';
     const OPER_LIKE = 'like';
     const OPER_GT = '>';
@@ -25,7 +26,7 @@ class DevblocksSearchCriteria {
 	 * @param mixed $value
 	 * @return DevblocksSearchCriteria
 	 */
-	 public function DevblocksSearchCriteria($field,$oper,$value) {
+	 public function DevblocksSearchCriteria($field,$oper,$value=null) {
 		$this->field = $field;
 		$this->operator = $oper;
 		$this->value = $value;

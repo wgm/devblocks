@@ -104,6 +104,12 @@ abstract class DevblocksORMHelper {
 					);
 					break;
 				
+				case DevblocksSearchCriteria::OPER_IS_NULL:
+					$where = sprintf("%s IS NULL",
+						$db_field_name
+					);
+					break;
+				
 				case DevblocksSearchCriteria::OPER_GT:
 				case DevblocksSearchCriteria::OPER_GTE:
 				case DevblocksSearchCriteria::OPER_LT:
