@@ -136,4 +136,3 @@ class PlatformPatch extends DevblocksPatch {
 	
 };
 
-?>

@@ -63,4 +63,4 @@ define('LANG_CHARSET_CODE','iso-8859-1');
 
 if(!defined('APP_SESSION_NAME'))
 define('APP_SESSION_NAME', 'Devblocks');
-?>
+

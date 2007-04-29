@@ -174,4 +174,3 @@ abstract class DevblocksHttpIO {
 //		$this->query = $query;
 	}
 }
-?>

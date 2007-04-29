@@ -704,4 +704,3 @@ class DevblocksACL {
 	private function __construct() {}
 };
 
-?>

@@ -474,5 +474,3 @@ class DevblocksPlatform extends DevblocksEngine {
 	}
 	
 };
-
-?>
