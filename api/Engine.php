@@ -316,7 +316,7 @@ class _DevblocksSessionManager {
 			
 			$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 			
-			include_once(DEVBLOCKS_PATH . "libs/adodb/session/adodb-session2.php");
+			include_once(DEVBLOCKS_PATH . "libs/adodb5/session/adodb-session2.php");
 			$options = array();
 			$options['table'] = $prefix.'session';
 			ADOdb_Session::config(APP_DB_DRIVER, APP_DB_HOST, APP_DB_USER, APP_DB_PASS, APP_DB_DATABASE, $options);
@@ -524,7 +524,7 @@ class _DevblocksDatabaseManager {
 	static function getInstance() {
 		static $instance = null;
 		if(null == $instance) {
-			include_once(DEVBLOCKS_PATH . "libs/adodb/adodb.inc.php");
+			include_once(DEVBLOCKS_PATH . "libs/adodb5/adodb.inc.php");
 			$ADODB_CACHE_DIR = APP_PATH . "/tmp/cache";
 			@$instance =& ADONewConnection(APP_DB_DRIVER); /* @var $instance ADOConnection */
 			@$instance->Connect(APP_DB_HOST,APP_DB_USER,APP_DB_PASS,APP_DB_DATABASE);
