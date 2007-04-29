@@ -96,17 +96,13 @@ class CloudGlueCloud {
 	/**
 	 * @param CloudGlueTag $tag
 	 */
-	function addToPath($tag) {
-		if(!is_a($tag,'cloudgluetag')) return;
-		
+	function addToPath(cloudgluetag $tag) {
 		$path = $this->getPath();
 		$path[$tag->id] = $tag;
 		$_SESSION[$this->cfg->divName . '_path'] = $path;
 	}
 	
-	function removeFromPath($tag) {
-		if(!is_a($tag,'cloudgluetag')) return;
-		
+	function removeFromPath(cloudgluetag $tag) {
 		$path = $this->getPath();
 		unset($path[$tag->id]);
 		$_SESSION[$this->cfg->divName . '_path'] = $path;
