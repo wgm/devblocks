@@ -238,7 +238,7 @@ abstract class DevblocksEngine {
 				 * [JAS]: Try to find our command in the URI lookup first, and if we
 				 * fail then fall back to raw extension ids.
 				 */
-				if(null == ($extension_id = $mapping[$command])) {
+				if(!isset($mapping[$command]) || null == ($extension_id = $mapping[$command])) {
 					$extension_id = $command;
 				}
 				
