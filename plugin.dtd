@@ -15,6 +15,13 @@
 	<!ELEMENT class (file,name)>
 		<!ELEMENT file (#PCDATA)>
 	<!ELEMENT params (param*)>
-	<!ELEMENT param EMPTY>
+	<!ELEMENT param (value*)>
+		<!ELEMENT value (data*)>
+			<!ELEMENT data (#PCDATA)>
+
 		<!ATTLIST param key CDATA #REQUIRED>
-		<!ATTLIST param value CDATA #REQUIRED>
+		<!ATTLIST param value CDATA #IMPLIED>
+		
+		<!ATTLIST data key CDATA #REQUIRED>
+		<!ATTLIST data value CDATA #IMPLIED>
+		
