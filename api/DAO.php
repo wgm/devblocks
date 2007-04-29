@@ -35,9 +35,14 @@ abstract class DevblocksORMHelper {
 			return;
 		
 		foreach($fields as $k => $v) {
+		    if(is_null($v))
+		        $value = 'NULL';
+		    else
+		        $value = $db->qstr($v);
+		    
 			$sets[] = sprintf("%s = %s",
 				$k,
-				$db->qstr($v)
+				$value
 			);
 		}
 			

@@ -467,7 +467,7 @@ class DevblocksPlatform extends DevblocksEngine {
 			    $php_self = substr($php_self,0,$pos) . '/';
 			    @define('DEVBLOCKS_WEBPATH',$php_self);
 			} else {
-			    $pos = strrpos($php_self,'index.php/');
+			    $pos = strrpos($php_self,'index.php');
 			    if(false === $pos) $pos = strrpos($php_self,'ajax.php');
 			    $php_self = substr($php_self,0,$pos);
 			    @define('DEVBLOCKS_WEBPATH',$php_self);
