@@ -204,9 +204,7 @@ abstract class DevblocksEngine {
 	 * @param DevblocksHttpRequest $request
 	 * @param boolean $is_ajax
 	 */
-	static function processRequest($request,$is_ajax=false) {
-		if(!is_a($request,'DevblocksHttpRequest')) return null;
-		
+	static function processRequest(DevblocksHttpRequest $request,$is_ajax=false) {
 		$path = $request->path;
 		$command = array_shift($path);
 		

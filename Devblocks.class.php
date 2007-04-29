@@ -429,8 +429,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	/**
 	 * @param DevblocksHttpRequest $request
 	 */
-	static function setHttpRequest($request) {
-		if(!is_a($request,'DevblocksHttpRequest')) return null;
+	static function setHttpRequest(DevblocksHttpRequest $request) {
 		self::$request = $request;
 	}
 	
@@ -446,8 +445,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	/**
 	 * @param DevblocksHttpResponse $response
 	 */
-	static function setHttpResponse($response) {
-		if(!is_a($response,'DevblocksHttpResponse')) return null;
+	static function setHttpResponse(DevblocksHttpResponse $response) {
 		self::$response = $response;
 	}
 	
