@@ -1,7 +1,4 @@
 <?php
-require_once("Zend.php");
-require_once("Zend/Registry.php");
-
 /**
  * Description
  * 
@@ -41,6 +38,7 @@ abstract class DevblocksEngine {
 		
 		$db = DevblocksPlatform::getDatabaseService();
 
+		// [JAS]: [TODO] Move to platform DAO
 		$db->Replace(
 			$prefix.'plugin',
 			array(
@@ -65,16 +63,17 @@ abstract class DevblocksEngine {
 		    foreach($plugin->mapping->uri as $eUri) { /* @var $eUri DOMIT_Node */
 		        $sUri = (string) $eUri['value'];
 		        $sExtensionId = (string) $eUri['extension_id'];
-		        	
+		        
+		        // [JAS]: [TODO] Move to platform DAO
 		        $db->Replace(
-		        $prefix.'uri',
-		        array(
-		        'uri' => $db->qstr($sUri),
-		        'plugin_id' => $db->qstr($manifest->id),
-		        'extension_id' => $db->qstr($sExtensionId)
-		        ),
-		        array('uri'),
-		        false
+			        $prefix.'uri',
+			        array(
+				        'uri' => $db->qstr($sUri),
+				        'plugin_id' => $db->qstr($manifest->id),
+				        'extension_id' => $db->qstr($sExtensionId)
+			        ),
+			        array('uri'),
+			        false
 		        );
 		    }
 		}
@@ -137,6 +136,7 @@ abstract class DevblocksEngine {
 		// [JAS]: Extension caching
 		if(is_array($manifest->extensions))
 		foreach($manifest->extensions as $pos => $extension) { /* @var $extension DevblocksExtensionManifest */
+		    // [JAS]: [TODO] Move to platform DAO
 			$db->Replace(
 				$prefix.'extension',
 				array(
@@ -668,6 +668,7 @@ class _DevblocksUrlManager {
 	}
 };
 
+// [JAS]: [TODO] Replace with Zend_Acl
 class DevblocksACL {
 	// [JAS]: Unsigned 32 bit number, with room to enable all flags
 	const BITFLAG_1 = 1;

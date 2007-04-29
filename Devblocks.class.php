@@ -363,7 +363,6 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return Zend_Date
 	 */
 	static function getDateService($date=null) {
-		require_once 'Zend/Date.php';
 		$locale = DevblocksPlatform::getLocaleService();
 		$date = new Zend_Date($date);
 		$date->setLocale($locale);
@@ -374,8 +373,6 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return Zend_Locale
 	 */
 	static function getLocaleService() {
-		require_once("Zend/Locale.php");
-		
 		if(!Zend_Registry::isRegistered('locale')) {
 			$locale = new Zend_Locale('en_US');
 			Zend_Registry::set('locale', $locale);			
@@ -390,8 +387,6 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return Zend_Translate
 	 */
 	static function getTranslationService() {
-		require_once("Zend/Translate.php");
-		
 		if(!Zend_Registry::isRegistered('translate')) {
 			$locale = DevblocksPlatform::getLocaleService();
 			$translate = new Zend_Translate('tmx', DEVBLOCKS_PATH . 'resources/strings.xml', $locale);
