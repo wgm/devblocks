@@ -91,6 +91,16 @@ class DevblocksExtension {
 	}
 };
 
+abstract class DevblocksHttpResponseListenerExtension extends DevblocksExtension {
+	function __construct($manifest) {
+		$this->DevblocksExtension($manifest, 1);
+	}
+    
+	function run(DevblocksHttpResponse $request, Smarty $tpl) {
+	    
+	}
+}
+
 abstract class DevblocksTranslationsExtension extends DevblocksExtension {
 	function __construct($manifest) {
 		$this->DevblocksExtension($manifest, 1);
@@ -146,8 +156,8 @@ class DevblocksHttpRequest extends DevblocksHttpIO {
 	/**
 	 * @param array $path
 	 */
-	function __construct($path) {
-		parent::__construct($path);
+	function __construct($path, $query=array()) {
+		parent::__construct($path, $query);
 	}
 }
 
@@ -162,15 +172,15 @@ class DevblocksHttpResponse extends DevblocksHttpIO {
 
 abstract class DevblocksHttpIO {
 	public $path = array();
-//	public $query = null;
+	public $query = array();
 	
 	/**
 	 * Enter description here...
 	 *
 	 * @param array $path
 	 */
-	function __construct($path) {
+	function __construct($path,$query=array()) {
 		$this->path = $path;
-//		$this->query = $query;
+		$this->query = $query;
 	}
 }

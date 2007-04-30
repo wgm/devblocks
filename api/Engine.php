@@ -167,19 +167,8 @@ abstract class DevblocksEngine {
 
 		$parts = $url->parseURL($_SERVER['REQUEST_URI']);
 		$query = $_SERVER['QUERY_STRING'];
+		$queryArgs = $url->parseQueryString($query);
 		
-//		if(DEVBLOCKS_REWRITE) {
-//			$parts = $url->parseURL($_SERVER['REQUEST_URI']);
-//			$query = $_SERVER['QUERY_STRING'];
-//			
-//		} else {
-////		    echo $_SERVER['REQUEST_URI'];
-//		    $parts = $url->parseURL($_SERVER['REQUEST_URI']);
-////			$argc = $url->parseQueryString($_SERVER['QUERY_STRING']);
-////			$parts = array_values($argc);
-//			$query = $_SERVER['QUERY_STRING'];
-//		}
-
 		if(empty($parts)) {
 			// Overrides (Form POST, etc.)
 			@$uri = DevblocksPlatform::importGPC($_REQUEST['c']); // extension
@@ -192,7 +181,7 @@ abstract class DevblocksEngine {
 			if(empty($parts)) $parts[] = APP_DEFAULT_URI;
 		}
 		
-		$request = new DevblocksHttpRequest($parts,$query); 
+		$request = new DevblocksHttpRequest($parts,$queryArgs); 
 		DevblocksPlatform::setHttpRequest($request);
 		
 		return $request;
@@ -603,7 +592,7 @@ class _DevblocksUrlManager {
 			if(empty($q)) continue;
 			$v = explode('=',$q);
 			if(empty($v)) continue;
-			$argc[$v[0]] = $v[1];
+			$argc[strtolower($v[0])] = $v[1];
 		}
 		
 		return $argc;
