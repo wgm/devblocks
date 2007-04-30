@@ -122,7 +122,7 @@ function genericAjaxPanel(request,target,modal,width) {
 				genericPanel.setBody(o.responseText);
 				
 				if(null != target && !options.fixedcenter) {
-					genericPanel.cfg.setProperty('context',[target,"tr","br"]);
+					genericPanel.cfg.setProperty('context',[target,"bl","tl"]);
 				}
 				
 				genericPanel.show();
