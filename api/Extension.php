@@ -97,7 +97,6 @@ abstract class DevblocksHttpResponseListenerExtension extends DevblocksExtension
 	}
     
 	function run(DevblocksHttpResponse $request, Smarty $tpl) {
-	    
 	}
 }
 

@@ -1,4 +1,18 @@
 <?php
+interface IDevblocksTourListener {
+    function registerCallouts();
+}
+class DevblocksTourCallout {
+    public $id = '';
+    public $title = '';
+    public $body = '';
+    
+    function __construct($id,$title='Callout',$body='...') {
+        $this->id = $id;
+        $this->title = $title;
+        $this->body = $body;
+    }
+};
 interface IDevblocksSearchFields {
     static function getFields();
 }
