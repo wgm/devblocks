@@ -133,14 +133,15 @@ function genericAjaxPanel(request,target,modal,width) {
 	);	
 }
 
-function saveGenericAjaxPanel(div,cb) {
+function saveGenericAjaxPanel(div,close,cb) {
 	YAHOO.util.Connect.setForm(div);
 	
 	var cObj = YAHOO.util.Connect.asyncRequest('POST', DevblocksAppPath+'ajax.php', {
 			success: function(o) {
 				var cb = o.argument.cb;
+				var close = o.argument.close;
 				
-				if(null != genericPanel) {
+				if(null != genericPanel && close) {
 					genericPanel.hide();
 				}
 				
@@ -150,7 +151,7 @@ function saveGenericAjaxPanel(div,cb) {
 				
 			},
 			failure: function(o) {},
-			argument:{div:div,cb:cb}
+			argument:{div:div,close:close,cb:cb}
 	});	
 }
 
