@@ -92,7 +92,7 @@ function genericAjaxPanel(request,target,modal,width) {
 		genericPanel.hide();
 	}
 
-	options = { 
+	var options = { 
 	  width : "300px",
 	  fixedcenter : false,
 	  visible : false, 
@@ -114,7 +114,7 @@ function genericAjaxPanel(request,target,modal,width) {
 				var options = o.argument.options;
 					
 				genericPanel = new YAHOO.widget.Panel("genericPanel", options);
-
+				
 				genericPanel.setBody('');
 				genericPanel.render(document.body);
 				
@@ -138,15 +138,13 @@ function saveGenericAjaxPanel(div,close,cb) {
 	
 	var cObj = YAHOO.util.Connect.asyncRequest('POST', DevblocksAppPath+'ajax.php', {
 			success: function(o) {
-				var cb = o.argument.cb;
+				var callback = o.argument.cb;
 				var close = o.argument.close;
 				
+				try { callback(o); } catch(e) {}
+
 				if(null != genericPanel && close) {
 					genericPanel.hide();
-				}
-				
-				if(null != cb) {
-					cb(o);
 				}
 				
 			},
