@@ -181,6 +181,26 @@ abstract class DevblocksEngine {
 			if(empty($parts)) $parts[] = APP_DEFAULT_URI;
 		}
 		
+		// Resource Proxy
+	    /*
+	     * [TODO] Run this code through another audit.  Is it worth a tiny hit per resource 
+	     * to verify the plugin matches exactly in the DB?  If so, make sure we cache the 
+	     * resulting file.
+	     */
+	    $path = $parts;
+		if(0 == strcasecmp("resource",array_shift($path))) {
+		    // [TODO] Set the mime-type/filename in response headers
+		    $plugin = array_shift($path);
+		    $file = implode(DIRECTORY_SEPARATOR, $path); // combine path
+	        $dir = realpath(DEVBLOCKS_PLUGIN_PATH . $plugin . DIRECTORY_SEPARATOR . 'resources');
+	        if(!is_dir($dir)) die(""); // basedir Security
+	        $resource = realpath($dir . DIRECTORY_SEPARATOR . $file);
+	        if(0 != strstr($dir,$resource)) die("");
+	        if(!is_file($resource) || '.php' == substr($resource,-4)) die(""); // extension security
+	        echo file_get_contents($resource,false);
+			exit;
+		}
+		
 		$request = new DevblocksHttpRequest($parts,$queryArgs); 
 		DevblocksPlatform::setHttpRequest($request);
 		
@@ -200,25 +220,6 @@ abstract class DevblocksEngine {
 		// [JAS]: Offer the platform a chance to intercept.
 		switch($command) {
 
-			// [JAS]: Resource proxy URI
-			case 'resource':
-				$plugin_id = $path[0];
-				$file = $path[1];
-				
-				$plugin = DevblocksPlatform::getPlugin($plugin_id);
-				if(null == $plugin) continue;
-				
-				// [JAS]: [TODO] Run through an audit to make sure this isn't abusable (../plugin.xml, etc.)
-				$dir = DEVBLOCKS_PLUGIN_PATH . $plugin->dir . '/resources/'.$file;
-				
-				if(file_exists($dir)) {
-					echo file_get_contents($dir,false);
-				} else {
-					echo "Requested resource not found!";
-				}
-								
-				break;
-				
 			// [JAS]: Plugin-supplied URIs
 			default:
 				$mapping = DevblocksPlatform::getMappingRegistry();

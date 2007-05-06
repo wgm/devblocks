@@ -49,7 +49,7 @@ if(!defined('DEVBLOCKS_PATH'))
 define('DEVBLOCKS_PATH',APP_PATH . '/libs/devblocks/');
 
 if(!defined('DEVBLOCKS_PLUGIN_PATH'))
-define('DEVBLOCKS_PLUGIN_PATH',APP_PATH.'/plugins/');
+define('DEVBLOCKS_PLUGIN_PATH',APP_PATH.DIRECTORY_SEPARATOR.'plugins'.DIRECTORY_SEPARATOR);
 
 //define('DEVBLOCKS_ATTACHMENT_SAVE_PATH',DEVBLOCKS_PATH.'tmp/');
 //define('DEVBLOCKS_ATTACHMENT_ACCESS_PATH','http://localhost/cerb4/devblocks/tmp/');
