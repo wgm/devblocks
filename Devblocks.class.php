@@ -456,12 +456,6 @@ class DevblocksPlatform extends DevblocksEngine {
 	    if(!defined('DEVBLOCKS_WEBPATH')) {
 	        $php_self = $_SERVER["PHP_SELF"];
 	        
-//	        if(defined('DEVBLOCKS_PROXY')) { // proxied
-//	            $php_self = '/';
-	            // [TODO] Change the root depending on our proxy
-
-//	        } else { // non-proxied
-	             
 		        if(DEVBLOCKS_REWRITE) {
 		            $pos = strrpos($php_self,'/');
 		            $php_self = substr($php_self,0,$pos) . '/';

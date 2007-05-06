@@ -281,7 +281,7 @@ abstract class DevblocksEngine {
 		$path = dirname(__FILE__);
 		$tpl->caching = 2;
 		$tpl->cache_lifetime = 3600*24; // 1 day
-		$tpl->display("file:$path/devblocks.tpl.js",APP_BUILD);
+		$tpl->display("file:$path/devblocks.tpl.js",APP_BUILD . '_' . intval(DEVBLOCKS_REWRITE));
 		$tpl->caching = 0;
 	}
 }
@@ -637,6 +637,14 @@ class _DevblocksUrlManager {
 		$url = DevblocksPlatform::getUrlService();
 		$args = $url->parseQueryString($sQuery);
 		$c = @$args['c'];
+		
+		// Index page
+		if(empty($sQuery)) {
+		    return sprintf("%s%s",
+		        DEVBLOCKS_WEBPATH,
+		        (DEVBLOCKS_REWRITE) ? '' : 'index.php/'
+		    );
+		}
 		
 		// [JAS]: Internal non-component URL (images/css/js/etc)
 		if(empty($c)) {

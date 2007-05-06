@@ -5,13 +5,8 @@ var DevblocksAppPath = '{$smarty.const.DEVBLOCKS_WEBPATH}';
 var DevblocksUrl = function() {
 {/literal}
 
-{if $smarty.const.DEVBLOCKS_REWRITE}
-	this.base_url = '{$smarty.const.DEVBLOCKS_WEBPATH}';
-	this.rewrite = true;
-{else}
-	this.base_url = '{$smarty.const.DEVBLOCKS_WEBPATH}index.php/';
-	this.rewrite = false;
-{/if}
+this.base_url = '{devblocks_url}{/devblocks_url}';
+this.rewrite = {if $smarty.const.DEVBLOCKS_REWRITE}true{else}false{/if};
 
 {literal}
 	this.vars = new Array();
