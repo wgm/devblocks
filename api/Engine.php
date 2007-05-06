@@ -657,10 +657,16 @@ class _DevblocksUrlManager {
 					(!empty($args) ? implode('/',array_values($args)) : '')
 				);
 				
-			    if(defined('DEVBLOCKS_PROXY')) {
-			        @$xproxy = unserialize(DEVBLOCKS_XPROXY);
-			        if(is_array($xproxy) && null != ($xproxypath = $xproxy[DEVBLOCKS_PROXY]))
-		                $contents = '/' . substr($contents,strlen($xproxypath));
+				// Proxy Overrides
+			    if(defined('DEVBLOCKS_PROXY') && defined('DEVBLOCKS_VIRTUAL')) {
+			        @$xproxy = unserialize(DEVBLOCKS_VIRTUAL);
+			        if(is_array($xproxy) && null != ($xproxypath = $xproxy[DEVBLOCKS_PROXY])) {
+			            if(false !== strpos($contents, DEVBLOCKS_WEBPATH.'resource')) {
+		                    $contents = '/' . substr($contents,strlen(DEVBLOCKS_WEBPATH));
+			            } else {
+		                    $contents = '/' . substr($contents,strlen($xproxypath));
+			            }
+			        }
 			    }
 				
 			} else {
