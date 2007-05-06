@@ -456,10 +456,11 @@ class DevblocksPlatform extends DevblocksEngine {
 	    if(!defined('DEVBLOCKS_WEBPATH')) {
 	        $php_self = $_SERVER["PHP_SELF"];
 	        
-	        if(isset($_SERVER["HTTP_X_FORWARDED_HOST"])) { // proxied
-	            $php_self = '/';
+//	        if(defined('DEVBLOCKS_PROXY')) { // proxied
+//	            $php_self = '/';
+	            // [TODO] Change the root depending on our proxy
 
-	        } else { // non-proxied
+//	        } else { // non-proxied
 	             
 		        if(DEVBLOCKS_REWRITE) {
 		            $pos = strrpos($php_self,'/');
@@ -469,7 +470,7 @@ class DevblocksPlatform extends DevblocksEngine {
 		            if(false === $pos) $pos = strrpos($php_self,'ajax.php');
 		            $php_self = substr($php_self,0,$pos);
 		        }
-	        }
+//	        }
 	        
 	        @define('DEVBLOCKS_WEBPATH',$php_self);
 	    }

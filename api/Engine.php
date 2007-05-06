@@ -181,24 +181,35 @@ abstract class DevblocksEngine {
 			if(empty($parts)) $parts[] = APP_DEFAULT_URI;
 		}
 		
-		// Resource Proxy
+		// Resource / Proxy
 	    /*
 	     * [TODO] Run this code through another audit.  Is it worth a tiny hit per resource 
 	     * to verify the plugin matches exactly in the DB?  If so, make sure we cache the 
 	     * resulting file.
 	     */
 	    $path = $parts;
-		if(0 == strcasecmp("resource",array_shift($path))) {
-		    // [TODO] Set the mime-type/filename in response headers
-		    $plugin = array_shift($path);
-		    $file = implode(DIRECTORY_SEPARATOR, $path); // combine path
-	        $dir = realpath(DEVBLOCKS_PLUGIN_PATH . $plugin . DIRECTORY_SEPARATOR . 'resources');
-	        if(!is_dir($dir)) die(""); // basedir Security
-	        $resource = realpath($dir . DIRECTORY_SEPARATOR . $file);
-	        if(0 != strstr($dir,$resource)) die("");
-	        if(!is_file($resource) || '.php' == substr($resource,-4)) die(""); // extension security
-	        echo file_get_contents($resource,false);
-			exit;
+		switch(array_shift($path)) {
+		    case "resource":
+			    // [TODO] Set the mime-type/filename in response headers
+			    $plugin = array_shift($path);
+			    $file = implode(DIRECTORY_SEPARATOR, $path); // combine path
+		        $dir = realpath(DEVBLOCKS_PLUGIN_PATH . $plugin . DIRECTORY_SEPARATOR . 'resources');
+		        if(!is_dir($dir)) die(""); // basedir Security
+		        $resource = realpath($dir . DIRECTORY_SEPARATOR . $file);
+		        if(0 != strstr($dir,$resource)) die("");
+		        if(!is_file($resource) || '.php' == substr($resource,-4)) die(""); // extension security
+		        echo file_get_contents($resource,false);
+				exit;
+    	        break;
+		        
+		    case "proxy":
+		        @$host = $_SERVER['HTTP_X_FORWARDED_HOST'];
+		        array_shift($parts); // proxy
+	            define('DEVBLOCKS_PROXY', $host);
+		        break;
+		        
+		    default:
+		        break;
 		}
 		
 		$request = new DevblocksHttpRequest($parts,$queryArgs); 
@@ -645,6 +656,12 @@ class _DevblocksUrlManager {
 					DEVBLOCKS_WEBPATH,
 					(!empty($args) ? implode('/',array_values($args)) : '')
 				);
+				
+			    if(defined('DEVBLOCKS_PROXY')) {
+			        @$xproxy = unserialize(DEVBLOCKS_XPROXY);
+			        if(is_array($xproxy) && null != ($xproxypath = $xproxy[DEVBLOCKS_PROXY]))
+		                $contents = '/' . substr($contents,strlen($xproxypath));
+			    }
 				
 			} else {
 				$contents = sprintf("%sindex.php/%s",
