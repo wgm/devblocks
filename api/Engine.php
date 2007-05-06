@@ -636,9 +636,10 @@ class _DevblocksUrlManager {
 				DEVBLOCKS_WEBPATH,
 				$sQuery
 			);
-			
+	    
 		// [JAS]: Component URL
 		} else {
+		    
 			if(DEVBLOCKS_REWRITE) {
 				$contents = sprintf("%s%s",
 					DEVBLOCKS_WEBPATH,
