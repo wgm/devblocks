@@ -202,15 +202,12 @@ abstract class DevblocksEngine {
 				exit;
     	        break;
 		        
-		    case "proxy":
-		        @$host = $_SERVER['HTTP_X_FORWARDED_HOST'];
-		        array_shift($parts); // proxy
-	            define('DEVBLOCKS_PROXY', $host);
-		        break;
-		        
 		    default:
 		        break;
 		}
+
+		if(null != ($host = $_SERVER['HTTP_X_FORWARDED_HOST']))
+	        define('DEVBLOCKS_PROXY', $host);
 		
 		$request = new DevblocksHttpRequest($parts,$queryArgs); 
 		DevblocksPlatform::setHttpRequest($request);
