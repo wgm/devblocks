@@ -279,10 +279,11 @@ abstract class DevblocksEngine {
 	static function printJavascriptLibrary() {
 		$tpl = DevblocksPlatform::getTemplateService();
 		$path = dirname(__FILE__);
-		$tpl->caching = 2;
-		$tpl->cache_lifetime = 3600*24; // 1 day
-		$tpl->display("file:$path/devblocks.tpl.js",APP_BUILD . '_' . intval(DEVBLOCKS_REWRITE));
 		$tpl->caching = 0;
+//		$tpl->caching = 2;
+//		$tpl->cache_lifetime = 3600*24; // 1 day
+//		$tpl->display("file:$path/devblocks.tpl.js",APP_BUILD . '_' . intval(DEVBLOCKS_REWRITE) . intval(DEVBLOCKS_PROXY));
+		$tpl->display("file:$path/devblocks.tpl.js");
 	}
 }
 
