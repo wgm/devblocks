@@ -371,6 +371,11 @@ class _DevblocksEmailManager {
 	 */
 	private function _DevblocksEmailManager() {}
 	
+	/**
+	 * Enter description here...
+	 *
+	 * @return _DevblocksEmailManager
+	 */
 	public function getInstance() {
 		static $instance = null;
 		if(null == $instance) {
@@ -379,39 +384,67 @@ class _DevblocksEmailManager {
 		return $instance;
 	}
 	
-	// [TODO] Implement SMTP Auth
-	static function send($server, $sRCPT, $headers, $body) {
-		// mailer setup
-		// [TODO] It's silly we call this include in every function -- we need to wrap it in platform or
-			// convert to the Zend_Mail version. 
-	//	require_once(DEVBLOCKS_PATH . 'libs/pear/Mail.php');
-		$mail_params = array();
-		$mail_params['host'] = $server;
-		$mailer =& Mail::factory("smtp", $mail_params);
+	/**
+	 * Enter description here...
+	 *
+	 * @param unknown_type $use_defaults
+	 * @return Mail
+	 */
+    // [TODO] We need a switch here from the settings for SMTP or Sendmail
+	function createInstance($transport="smtp",$mail_params=null) {
+		$settings = CerberusSettings::getInstance();
 
-		$result = $mailer->send($sRCPT, $headers, $body);
-		return $result;
+		// SMTP
+		$smtp_host = $settings->get(CerberusSettings::SMTP_HOST,'localhost');
+		$smtp_user = $settings->get(CerberusSettings::SMTP_AUTH_USER,null);
+		$smtp_pass = $settings->get(CerberusSettings::SMTP_AUTH_PASS,null);
+		
+		if(is_null($mail_params)) {
+			$mail_params = array();
+			$mail_params['host'] = $smtp_host;
+			$mail_params['timeout'] = 20;
+		}
+		
+		return Mail::factory($transport, $mail_params); /* @var $mailer Mail */
+	}
+	
+	/**
+	 * Enter description here...
+	 *
+	 * @return array
+	 */
+	function getDefaultHeaders() {
+	    $settings = CerberusSettings::getInstance();
+		$from_addy = $settings->get(CerberusSettings::DEFAULT_REPLY_FROM, $_SERVER['SERVER_ADMIN']);
+		$from_personal = $settings->get(CerberusSettings::DEFAULT_REPLY_PERSONAL,'');
+	    
+	    return array(
+	        'From' => $from_addy,
+	        'Date' => gmdate("r"),
+	        'Subject' => 'No subject',
+	        'Message-Id' => CerberusApplication::generateMessageId(),
+	        'X-Mailer' => 'Cerberus Helpdesk (Build '.APP_BUILD.')',
+	        'X-MailGenerator' => 'Cerberus Helpdesk (Build '.APP_BUILD.')',
+	    );
 	}
 	
 	/**
 	 * @return array
 	 */
-	static function getErrors() {
+	function getErrors() {
 		return imap_errors();
 	}
 	
 	// [TODO] Implement SMTP Auth
-	static function testSmtp($server,$to,$from,$smtp_auth_user=null,$smtp_auth_pass=null) {
-	//	require_once(DEVBLOCKS_PATH . 'libs/pear/Mail.php');
-		
+	function testSmtp($server,$to,$from,$smtp_auth_user=null,$smtp_auth_pass=null) {
 		$mail_params = array();
 		$mail_params['host'] = $server;
 		$mail_params['timeout'] = 20;
-		$mailer =& Mail::factory("smtp", $mail_params);
+		$mailer =& self::createInstance("smtp",$mail_params);
 
 		$headers = array(
 			'From' => $from,
-			'Subject' => 'Testing Outgoing Mail!',
+			'Subject' => 'No Subject',
 			'Date' => date("r")
 		);
 		$body = "Testing Outgoing Mail!";
@@ -420,7 +453,7 @@ class _DevblocksEmailManager {
 		return $result;
 	}
 	
-	static function testImap($server, $port, $service, $username, $password) {
+	function testImap($server, $port, $service, $username, $password) {
 		if (!extension_loaded("imap")) die("IMAP Extension not loaded!");
 		
 		@$mailbox = imap_open("{".$server.":".$port."/service=".$service."/notls}INBOX",
@@ -435,7 +468,7 @@ class _DevblocksEmailManager {
 		return TRUE;
 	}
 	
-	static function getMessages($server, $port, $service, $username, $password) {
+	function getMessages($server, $port, $service, $username, $password) {
 		if (!extension_loaded("imap")) die("IMAP Extension not loaded!");
 		//require_once(DEVBLOCKS_PATH . 'libs/pear/mimeDecode.php');
 		

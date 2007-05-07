@@ -202,7 +202,8 @@ class DevblocksPlatform extends DevblocksEngine {
 	    $prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 
 	    $sql = sprintf("SELECT p.id , p.enabled , p.name, p.description, p.author, p.revision, p.dir ".
-			"FROM %splugin p",
+			"FROM %splugin p ".
+			"ORDER BY p.enabled DESC, p.name ASC ",
 			$prefix
 			);
 			$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
