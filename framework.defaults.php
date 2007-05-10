@@ -39,8 +39,14 @@ define('DEVBLOCKS_REWRITE',false);
 if(!defined('DEVBLOCKS_DEBUG'))
 define('DEVBLOCKS_DEBUG',false);
 
+if(!defined('DEVBLOCKS_MEMCACHE_HOST'))
+define('DEVBLOCKS_MEMCACHE_HOST','');
+
+if(!defined('DEVBLOCKS_MEMCACHE_PORT'))
+define('DEVBLOCKS_MEMCACHE_PORT','11211');
+
 if(!defined('APP_DEFAULT_URI'))
-define('APP_DEFAULT_URI','');
+define('APP_DEFAULT_URI',''); // 404?
 
 if(!defined('APP_PATH'))
 define('APP_PATH',realpath(dirname(__FILE__)));

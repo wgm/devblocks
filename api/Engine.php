@@ -5,11 +5,6 @@
  * @ingroup core
  */
 abstract class DevblocksEngine {
-	protected static $plugins_cache = array();
-	protected static $extensions_cache = array();
-	protected static $points_cache = array();
-	protected static $mapping_cache = array();
-	
 	protected static $request = null;
 	protected static $response = null;
 	
@@ -24,7 +19,7 @@ abstract class DevblocksEngine {
 	static protected function _readPluginManifest($dir) {
 		if(!file_exists(DEVBLOCKS_PLUGIN_PATH.$dir.'/plugin.xml'))
 			return NULL;
-			
+		
 		$plugin = simplexml_load_file(DEVBLOCKS_PLUGIN_PATH.$dir.'/plugin.xml');
 		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 				
@@ -165,7 +160,10 @@ abstract class DevblocksEngine {
 	static function readRequest() {
 		$url = DevblocksPlatform::getUrlService();
 
+		// Read the relative URL into an array
 		$parts = $url->parseURL($_SERVER['REQUEST_URI']);
+		
+		// Add any query string arguments (?arg=value&arg=value)
 		$query = $_SERVER['QUERY_STRING'];
 		$queryArgs = $url->parseQueryString($query);
 		
@@ -186,6 +184,8 @@ abstract class DevblocksEngine {
 	     * [TODO] Run this code through another audit.  Is it worth a tiny hit per resource 
 	     * to verify the plugin matches exactly in the DB?  If so, make sure we cache the 
 	     * resulting file.
+	     * 
+	     * [TODO] Make this a controller
 	     */
 	    $path = $parts;
 		switch(array_shift($path)) {
@@ -197,7 +197,15 @@ abstract class DevblocksEngine {
 		        if(!is_dir($dir)) die(""); // basedir Security
 		        $resource = realpath($dir . DIRECTORY_SEPARATOR . $file);
 		        if(0 != strstr($dir,$resource)) die("");
-		        if(!is_file($resource) || '.php' == substr($resource,-4)) die(""); // extension security
+		        $ext = array_pop(explode('.', $resource));
+		        if(!is_file($resource) || 'php' == $ext) die(""); // extension security
+		        
+                // Caching
+	            if($ext == 'js' || $ext == 'png' || $ext == 'gif' || $ext == 'jpg') {
+	                header('Cache-control: max-age=604800', true); // 1 wk // , must-revalidate
+	                header('Expires: ' . gmdate('D, d M Y H:i:s',time()+604800) . ' GMT'); // 1 wk
+	            }
+		        
 		        echo file_get_contents($resource,false);
 				exit;
     	        break;
@@ -221,47 +229,42 @@ abstract class DevblocksEngine {
 	 * @param DevblocksHttpRequest $request
 	 * @param boolean $is_ajax
 	 */
-	static function processRequest(DevblocksHttpRequest $request,$is_ajax=false) {
+	static function processRequest(DevblocksHttpRequest $request, $is_ajax=false) {
 		$path = $request->path;
-		$command = array_shift($path);
+		$controller_uri = array_shift($path);
 		
 		// [JAS]: Offer the platform a chance to intercept.
-		switch($command) {
+		switch($controller_uri) {
 
 			// [JAS]: Plugin-supplied URIs
 			default:
-				$mapping = DevblocksPlatform::getMappingRegistry();
-				
+	            $controllers = DevblocksPlatform::getExtensions('devblocks.controller', true);
+	            $router = DevblocksPlatform::getRoutingService();
+	            
 				/*
 				 * [JAS]: Try to find our command in the URI lookup first, and if we
 				 * fail then fall back to raw extension ids.
 				 */
-				if(!isset($mapping[$command]) || null == ($extension_id = $mapping[$command])) {
-					$extension_id = $command;
+                if(null == ($controller_id = $router->getRoute($controller_uri))
+                    || null == ($controller = $controllers[$controller_id]) ) {
+	                die("404"); // [TODO] Improve
 				}
 				
-				if(null != ($manifest = DevblocksPlatform::getExtension($extension_id))) {
-					$inst = $manifest->createInstance(); /* @var $inst DevblocksHttpRequestHandler */
+				if($controller instanceof DevblocksHttpRequestHandler) {
+					$controller->handleRequest($request);
 					
-					if($inst instanceof DevblocksHttpRequestHandler) {
-						$inst->handleRequest($request);
-						
-						// [JAS]: If we didn't write a new response, repeat the request
-						if(null == ($response = DevblocksPlatform::getHttpResponse())) {
-							$response = new DevblocksHttpResponse($request->path);
-							DevblocksPlatform::setHttpResponse($response);
-						}
-						
-						// [JAS]: An Ajax request doesn't need the full Http cycle
-						if(!$is_ajax) {
-							$inst->writeResponse($response);
-						}
+					// [JAS]: If we didn't write a new response, repeat the request
+					if(null == ($response = DevblocksPlatform::getHttpResponse())) {
+						$response = new DevblocksHttpResponse($request->path);
+						DevblocksPlatform::setHttpResponse($response);
 					}
 					
-				} else {
-					// [JAS]: [TODO] This would be a good point for a 404 URI Platform option		
-					echo "No request handler was found for this URI.";
+					// [JAS]: An Ajax request doesn't need the full Http cycle
+					if(!$is_ajax) {
+						$controller->writeResponse($response);
+					}
 				}
+					
 				break;
 		}
 		
@@ -359,6 +362,47 @@ class _DevblocksSessionManager {
 	}
 }
 
+class _DevblocksCacheManager {
+    private static $instance = null;
+    
+    private function __construct() {}
+
+    /**
+     * @return Zend_Cache_Core
+     */
+    public static function getInstance() {
+		if(null == self::$instance) {
+
+	        $frontendOptions = array(
+			   'lifetime' => 7200, // 2 hours 
+			   'automaticSerialization' => true
+			);
+
+			// [TODO] Later this should support multiple servers from config file
+		    if(extension_loaded('memcache') && DEVBLOCKS_MEMCACHE_HOST && DEVBLOCKS_MEMCACHE_PORT) {
+				$backendOptions = array(
+					'servers' => array(array(
+					    'host' => DEVBLOCKS_MEMCACHE_HOST,
+					    'port' => DEVBLOCKS_MEMCACHE_PORT, 
+					    'persistent' => true
+					))
+				);
+				
+				self::$instance = Zend_Cache::factory('Core', 'Memcached', $frontendOptions, $backendOptions);
+		    }
+
+		    if(null == self::$instance) {
+				$backendOptions = array(
+				    'cacheDir' => DEVBLOCKS_PATH . 'tmp/'
+				);
+				
+				self::$instance = Zend_Cache::factory('Core', 'File', $frontendOptions, $backendOptions);
+		    }
+		}
+		return self::$instance;
+    }
+};
+
 /**
  * Email Management Singleton
  *
@@ -366,22 +410,23 @@ class _DevblocksSessionManager {
  * @ingroup services
  */
 class _DevblocksEmailManager {
+    private static $instance = null;
+    
 	/**
 	 * @private
 	 */
-	private function _DevblocksEmailManager() {}
+	private function __construct() {}
 	
 	/**
 	 * Enter description here...
 	 *
 	 * @return _DevblocksEmailManager
 	 */
-	public function getInstance() {
-		static $instance = null;
-		if(null == $instance) {
-			$instance = new _DevblocksEmailManager();
+	public static function getInstance() {
+		if(null == self::$instance) {
+			self::$instance = new _DevblocksEmailManager();
 		}
-		return $instance;
+		return self::$instance;
 	}
 	
 	/**
@@ -568,10 +613,11 @@ class _DevblocksDatabaseManager {
 };
 
 class _DevblocksPatchManager {
-	private function __construct() {}
 	private static $instance = null; 
 	private $containers = array(); // DevblocksPatchContainerExtension[]
 	private $errors = array();
+
+	private function __construct() {}
 	
 	public static function getInstance() {
 		if(null == self::$instance) {
@@ -611,18 +657,48 @@ class _DevblocksPatchManager {
 
 };
 
+class _DevblocksRoutingManager {
+    private static $instance = null;
+    private $routes = array();
+    
+    private function __construct() {}
+    
+	/**
+	 * @return _DevblocksRoutingManager
+	 */
+	public static function getInstance() {
+		if(null == self::$instance) {
+			self::$instance = new _DevblocksRoutingManager();
+		}
+		return self::$instance;
+	}
+	
+	function addRoute($route, $controller_id) {
+	    $this->routes[$route] = $controller_id;
+	}
+	
+	function getRoutes() {
+	    return $this->routes;
+	}
+	
+	function getRoute($route) {
+	    return $this->routes[$route];
+	}
+};
+
 class _DevblocksUrlManager {
-	private function __construct() {}
+    private static $instance = null;
+        
+   	private function __construct() {}
 	
 	/**
 	 * @return _DevblocksUrlManager
 	 */
 	public static function getInstance() {
-		static $instance = null;
-		if(null == $instance) {
-			$instance = new _DevblocksUrlManager();
+		if(null == self::$instance) {
+			self::$instance = new _DevblocksUrlManager();
 		}
-		return $instance;
+		return self::$instance;
 	}
 	
 	function parseQueryString($args) {

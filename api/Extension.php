@@ -10,10 +10,10 @@ abstract class DevblocksApplication {
  * @ingroup plugin
  */
 class DevblocksExtension {
-	var $manifest = null;
-	var $instance_id = 1;
-	var $id  = '';
-	var $params = array();
+	public $manifest = null;
+	public $instance_id = 1;
+	public $id  = '';
+	private $params = array();
 	
 	/**
 	 * Constructor
@@ -27,7 +27,14 @@ class DevblocksExtension {
 		$this->manifest = $manifest;
 		$this->id = $manifest->id;
 		$this->instance_id = $instance_id;
-		$this->params = $this->_getParams();
+//		$this->params = $this->_getParams();
+	}
+	
+	function getParams() {
+	    if(empty($this->params)) {
+	        $this->params = $this->_getParams();
+	    }
+	    return $this->params;
 	}
 	
 	/**
@@ -37,7 +44,7 @@ class DevblocksExtension {
 	 * @private
 	 * @return array
 	 */
-	function _getParams() {
+	private function _getParams() {
 //		static $params = null;
 		
 		if(empty($this->id) || empty($this->instance_id))
@@ -142,13 +149,22 @@ abstract class DevblocksPatchContainerExtension extends DevblocksExtension {
 	}
 };
 
+abstract class DevblocksControllerExtension extends DevblocksExtension implements DevblocksHttpRequestHandler {
+    function __construct($manifest) {
+        self::DevblocksExtension($manifest);
+    }
+
+	public function handleRequest(DevblocksHttpRequest $request) {}
+	public function writeResponse(DevblocksHttpResponse $response) {}
+}
+
 interface DevblocksHttpRequestHandler {
 	/**
 	 * @param DevblocksHttpRequest
 	 * @return DevblocksHttpResponse
 	 */
-	public function handleRequest($request);
-	public function writeResponse($response);
+	public function handleRequest(DevblocksHttpRequest $request);
+	public function writeResponse(DevblocksHttpResponse $response);
 }
 
 class DevblocksHttpRequest extends DevblocksHttpIO {

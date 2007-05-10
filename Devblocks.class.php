@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',93);
+define('PLATFORM_BUILD',100);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -30,6 +30,12 @@ define('PLATFORM_BUILD',93);
  * @author Jeff Standen <jeff@webgroupmedia.com>
  */
 class DevblocksPlatform extends DevblocksEngine {
+    const CACHE_POINTS = 'devblocks_points';
+    const CACHE_PLUGINS = 'devblocks_plugins';
+    const CACHE_EXTENSIONS = 'devblocks_extensions';
+    const CACHE_TABLES = 'devblocks_tables';
+    const CACHE_TRANSLATIONS = 'devblocks_translations';
+    
     private function __construct() {}
 
 	/**
@@ -57,10 +63,8 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * 
 	 */
 	static function clearCache() {
-	    self::$plugins_cache = array();
-	    self::$extensions_cache = array();
-	    self::$points_cache = array();
-	    self::$mapping_cache = array();
+	    $cache = self::getCacheService();
+	    $cache->clean();
 	}
 
 	/**
@@ -69,8 +73,13 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return boolean
 	 */
 	static function isDatabaseEmpty() {
-	    $db = DevblocksPlatform::getDatabaseService();
-	    $tables = $db->MetaTables('TABLE',false);
+	    $cache = self::getCacheService();
+	    
+	    if(false === ($tables = $cache->load(self::CACHE_TABLES))) {
+	        $db = self::getDatabaseService();
+	        $tables = $db->MetaTables('TABLE',false);
+	        $cache->save($tables, self::CACHE_TABLES);
+	    }
 	    return empty($tables);
 	}
 
@@ -81,14 +90,14 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @param string $point
 	 * @return DevblocksExtensionManifest[]
 	 */
-	static function getExtensions($point) {
+	static function getExtensions($point,$as_instances=false) {
 	    $results = array();
 	    $extensions = DevblocksPlatform::getExtensionRegistry();
 
 	    if(is_array($extensions))
 	    foreach($extensions as $extension) { /* @var $extension DevblocksExtensionManifest */
 	        if(0 == strcasecmp($extension->point,$point)) {
-	            $results[] = $extension;
+	            $results[$extension->id] = ($as_instances) ? $extension->createInstance() : $extension;
 	        }
 	    }
 	    return $results;
@@ -116,10 +125,9 @@ class DevblocksPlatform extends DevblocksEngine {
 	}
 
 	static function getExtensionPoints() {
-	    $points =& self::$points_cache;
-
-	    if(!empty($points))
-	    return $points;
+	    $cache = self::getCacheService();
+	    if(false !== ($points = $cache->load(self::CACHE_POINTS)))
+	        return $points;
 
 	    $extensions = DevblocksPlatform::getExtensionRegistry();
 	    foreach($extensions as $extension) { /* @var $extension DevblocksExtensionManifest */
@@ -133,6 +141,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	        $points[$point]->extensions[$extension->id] = $extension;
 	    }
 
+	    $cache->save($points, self::CACHE_POINTS);
 	    return $points;
 	}
 
@@ -143,14 +152,13 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return DevblocksExtensionManifest[]
 	 */
 	static function getExtensionRegistry() {
-	    $extensions =& self::$extensions_cache;
-
-	    if(!empty($extensions))
-	    return $extensions;
+	    $cache = self::getCacheService();
+	    if(false !== ($extensions = $cache->load(self::CACHE_EXTENSIONS)))
+    	    return $extensions;
 
 	    $db = DevblocksPlatform::getDatabaseService();
 
-	    $plugins = DevblocksPlatform::getPluginRegistry();
+//	    $plugins = DevblocksPlatform::getPluginRegistry();
 	    $prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 
 	    $sql = sprintf("SELECT e.id , e.plugin_id, e.point, e.pos, e.name , e.file , e.class, e.params ".
@@ -175,14 +183,15 @@ class DevblocksPlatform extends DevblocksEngine {
 			    if(empty($extension->params))
 			    $extension->params = array();
 		
-			    @$plugin = $plugins[$extension->plugin_id]; /* @var $plugin DevblocksPluginManifest */
-			    if(!empty($plugin)) {
+//			    @$plugin = $plugins[$extension->plugin_id]; /* @var $plugin DevblocksPluginManifest */
+//			    if(!empty($plugin)) {
 			        $extensions[$extension->id] = $extension;
-			    }
+//			    }
 			    	
 			    $rs->MoveNext();
 			}
 
+			$cache->save($extensions, self::CACHE_EXTENSIONS);
 			return $extensions;
 	}
 
@@ -193,10 +202,9 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return DevblocksPluginManifest[]
 	 */
 	static function getPluginRegistry() {
-	    $plugins =& self::$plugins_cache;
-
-	    if(!empty($plugins))
-	    return $plugins;
+	    $cache = self::getCacheService();
+	    if(false !== ($plugins = $cache->load(self::CACHE_PLUGINS)))
+    	    return $plugins;
 
 	    $db = DevblocksPlatform::getDatabaseService();
 	    $prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
@@ -224,14 +232,15 @@ class DevblocksPlatform extends DevblocksEngine {
 			    $rs->MoveNext();
 			}
 
-			$extensions = DevblocksPlatform::getExtensionRegistry();
-			foreach($extensions as $extension_id => $extension) { /* @var $extension DevblocksExtensionManifest */
-			    $plugin_id = $extension->plugin_id;
-			    if(isset($plugin_id)) {
-			        $plugins[$plugin_id]->extensions[$extension_id] = $extension;
-			    }
-			}
+//			$extensions = DevblocksPlatform::getExtensionRegistry();
+//			foreach($extensions as $extension_id => $extension) { /* @var $extension DevblocksExtensionManifest */
+//			    $plugin_id = $extension->plugin_id;
+//			    if(isset($plugin_id)) {
+//			        $plugins[$plugin_id]->extensions[$extension_id] = $extension;
+//			    }
+//			}
 
+			$cache->save($plugins, self::CACHE_PLUGINS);
 			return $plugins;
 	}
 
@@ -250,31 +259,6 @@ class DevblocksPlatform extends DevblocksEngine {
 	    return null;
 	}
 
-	static function getMappingRegistry() {
-	    $maps =& self::$mapping_cache;
-
-	    if(!empty($maps))
-	    return $maps;
-
-	    $db = DevblocksPlatform::getDatabaseService();
-	    $prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
-
-	    $sql = sprintf("SELECT uri,extension_id ".
-			"FROM %suri",
-			$prefix
-			);
-			$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
-			while(!$rs->EOF) {
-			    $uri = $rs->fields['uri'];
-			    $extension_id = $rs->fields['extension_id'];
-			    $maps[$uri] = $extension_id;
-		
-			    $rs->MoveNext();
-			}
-
-			return $maps;
-	}
-
 	/**
 	 * Reads and caches manifests from the plugin directory.
 	 *
@@ -282,6 +266,8 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return DevblocksPluginManifest[]
 	 */
 	static function readPlugins() {
+	    DevblocksPlatform::clearCache();
+	    
 	    $dir = DEVBLOCKS_PLUGIN_PATH;
 	    $plugins = array();
 
@@ -295,7 +281,6 @@ class DevblocksPlatform extends DevblocksEngine {
 	                if(is_dir($path) && file_exists($path.'/plugin.xml')) {
 	                    $manifest = self::_readPluginManifest($file);
 	                    if(null != $manifest) {
-	                        //							print_r($manifest);
 	                        $plugins[] = $manifest;
 	                    }
 	                }
@@ -304,9 +289,18 @@ class DevblocksPlatform extends DevblocksEngine {
 	        }
 	    }
 
+	    DAO_Platform::cleanupPluginTables();
+	    
 	    return $plugins; // [TODO] Move this to the DB
 	}
 
+	/**
+	 * @return Zend_Cache_Core
+	 */
+	static function getCacheService() {
+	    return _DevblocksCacheManager::getInstance();
+	}
+	
 	/**
 	 * Enter description here...
 	 *
@@ -332,6 +326,13 @@ class DevblocksPlatform extends DevblocksEngine {
 	    return CloudGlue::getInstance();
 	}
 
+	/**
+	 * @return _DevblocksRoutingManager
+	 */
+    static function getRoutingService() {
+        return _DevblocksRoutingManager::getInstance();
+    }	
+	
 	/**
 	 * @return _DevblocksUrlManager
 	 */
@@ -388,13 +389,15 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return Zend_Translate
 	 */
 	static function getTranslationService() {
-	    if(!Zend_Registry::isRegistered('translate')) {
+	    $cache = self::getCacheService();
+	    if(false === ($translate = $cache->load(self::CACHE_TRANSLATIONS))) {
 	        $locale = DevblocksPlatform::getLocaleService();
 	        $translate = new Zend_Translate('tmx', DEVBLOCKS_PATH . 'resources/strings.xml', $locale);
 		
 	        // [JAS]: Read in translations from the extension point
-	        if(!self::isDatabaseEmpty())
-	        $translations = DevblocksPlatform::getExtensions("devblocks.i18n.strings");
+	        if(!self::isDatabaseEmpty()) {
+	            $translations = DevblocksPlatform::getExtensions("devblocks.i18n.strings");
+	        }
 		
 	        if(is_array($translations))
 	        foreach($translations as $translationManifest) { /* @var $translationManifest DevblocksExtensionManifest */
@@ -405,9 +408,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	            $translate->addTranslation($file, $locale);
 	        }
 	        	
-	        Zend_Registry::set('translate', $translate);
-	    } else {
-	        $translate = Zend_Registry::get('translate');
+	        $cache->save($translate,self::CACHE_TRANSLATIONS);
 	    }
 
 	    return $translate;

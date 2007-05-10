@@ -138,7 +138,38 @@ abstract class DevblocksORMHelper {
 };
 
 class DAO_Platform {
-	
+    function cleanupPluginTables() {
+		$db = DevblocksPlatform::getDatabaseService();
+		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
+
+        $sql = sprintf("SELECT id FROM %splugin ",
+            $prefix
+        );
+		$rs = $db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+
+		$plugins = DevblocksPlatform::getPluginRegistry();
+		
+		// [JAS]: Remove any plugins that are no longer in the filesystem
+		while(!$rs->EOF) {
+		    $plugin_id = $rs->fields['id'];
+		    if(!isset($plugins[$plugin_id])) {
+		        $db->Execute(sprintf("DELETE FROM %splugin WHERE id = %s",
+		            $prefix,
+		            $db->qstr($plugin_id)
+		        ));
+		        $db->Execute(sprintf("DELETE FROM %sextension WHERE id = %s",
+		            $prefix,
+		            $db->qstr($plugin_id)
+		        ));
+		        $db->Execute(sprintf("DELETE FROM %sproperty_store WHERE id = %s",
+		            $prefix,
+		            $db->qstr($plugin_id)
+		        ));
+		    }
+		    $rs->MoveNext();
+		}
+    }
+    
 	function updatePlugin($id, $fields) {
 		$db = DevblocksPlatform::getDatabaseService();
 		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup

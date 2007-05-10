@@ -83,11 +83,11 @@ class PlatformPatchContainer extends DevblocksPatchContainerExtension {
 			sessdata B
 		";
 		
-		$tables[$prefix.'uri'] = "
-			uri C(32) PRIMARY,
-			plugin_id C(128) NOTNULL,
-			extension_id C(128) NOTNULL
-		";
+//		$tables[$prefix.'uri'] = "
+//			uri C(32) PRIMARY,
+//			plugin_id C(128) NOTNULL,
+//			extension_id C(128) NOTNULL
+//		";
 
 		$currentTables = $db->MetaTables('TABLE', false);
 
