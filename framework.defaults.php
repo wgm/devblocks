@@ -45,8 +45,8 @@ define('DEVBLOCKS_MEMCACHE_HOST','');
 if(!defined('DEVBLOCKS_MEMCACHE_PORT'))
 define('DEVBLOCKS_MEMCACHE_PORT','11211');
 
-if(!defined('APP_DEFAULT_URI'))
-define('APP_DEFAULT_URI',''); // 404?
+if(!defined('APP_DEFAULT_CONTROLLER'))
+define('APP_DEFAULT_CONTROLLER',''); // 404?
 
 if(!defined('APP_PATH'))
 define('APP_PATH',realpath(dirname(__FILE__)));

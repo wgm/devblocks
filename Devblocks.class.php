@@ -77,6 +77,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	    
 	    if(false === ($tables = $cache->load(self::CACHE_TABLES))) {
 	        $db = self::getDatabaseService();
+	        if(is_null($db)) return null;
 	        $tables = $db->MetaTables('TABLE',false);
 	        $cache->save($tables, self::CACHE_TABLES);
 	    }
@@ -157,6 +158,7 @@ class DevblocksPlatform extends DevblocksEngine {
     	    return $extensions;
 
 	    $db = DevblocksPlatform::getDatabaseService();
+	    if(is_null($db)) return;
 
 //	    $plugins = DevblocksPlatform::getPluginRegistry();
 	    $prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
@@ -207,6 +209,7 @@ class DevblocksPlatform extends DevblocksEngine {
     	    return $plugins;
 
 	    $db = DevblocksPlatform::getDatabaseService();
+	    if(is_null($db)) return;
 	    $prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 
 	    $sql = sprintf("SELECT p.id , p.enabled , p.name, p.description, p.author, p.revision, p.dir ".
@@ -397,18 +400,18 @@ class DevblocksPlatform extends DevblocksEngine {
 	        // [JAS]: Read in translations from the extension point
 	        if(!self::isDatabaseEmpty()) {
 	            $translations = DevblocksPlatform::getExtensions("devblocks.i18n.strings");
+	            
+		        if(is_array($translations))
+		        foreach($translations as $translationManifest) { /* @var $translationManifest DevblocksExtensionManifest */
+		            $translation = $translationManifest->createInstance(); /* @var $translation DevblocksTranslationsExtension */
+		            $file = $translation->getTmxFile();
+	
+		            if(@is_readable($file))
+		            $translate->addTranslation($file, $locale);
+		        }
+		        
+       	        $cache->save($translate,self::CACHE_TRANSLATIONS);
 	        }
-		
-	        if(is_array($translations))
-	        foreach($translations as $translationManifest) { /* @var $translationManifest DevblocksExtensionManifest */
-	            $translation = $translationManifest->createInstance(); /* @var $translation DevblocksTranslationsExtension */
-	            $file = $translation->getTmxFile();
-
-	            if(@is_readable($file))
-	            $translate->addTranslation($file, $locale);
-	        }
-	        	
-	        $cache->save($translate,self::CACHE_TRANSLATIONS);
 	    }
 
 	    return $translate;

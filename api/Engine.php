@@ -32,6 +32,7 @@ abstract class DevblocksEngine {
 		$manifest->name = (string) $plugin->name;
 		
 		$db = DevblocksPlatform::getDatabaseService();
+		if(is_null($db)) return;
 
 		// [JAS]: [TODO] Move to platform DAO
 		$db->Replace(
@@ -174,9 +175,6 @@ abstract class DevblocksEngine {
 
 			@$listener = DevblocksPlatform::importGPC($_REQUEST['a']); // listener
 			if(!empty($listener)) $parts[] = $listener;
-			
-			// Use our default URI if we didn't have an override
-			if(empty($parts)) $parts[] = APP_DEFAULT_URI;
 		}
 		
 		// Resource / Proxy
@@ -247,7 +245,7 @@ abstract class DevblocksEngine {
 				 */
                 if(null == ($controller_id = $router->getRoute($controller_uri))
                     || null == ($controller = $controllers[$controller_id]) ) {
-	                die("404"); // [TODO] Improve
+	                $controller = $controllers[APP_DEFAULT_CONTROLLER];
 				}
 				
 				if($controller instanceof DevblocksHttpRequestHandler) {
@@ -263,6 +261,10 @@ abstract class DevblocksEngine {
 					if(!$is_ajax) {
 						$controller->writeResponse($response);
 					}
+					
+				} else {
+				    header("Status: 404");
+                    die(); // [TODO] Improve
 				}
 					
 				break;
@@ -313,8 +315,9 @@ class _DevblocksSessionManager {
 	static function getInstance() {
 		static $instance = null;
 		if(null == $instance) {
-			$db = DevblocksPlatform::getDatabaseService();
-			if(!$db->IsConnected()) return null;
+		    $db = DevblocksPlatform::getDatabaseService();
+		    
+			if(is_null($db) || !$db->IsConnected()) { return null; }
 			
 			$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 			
@@ -603,6 +606,10 @@ class _DevblocksDatabaseManager {
 		if(null == $instance) {
 			include_once(DEVBLOCKS_PATH . "libs/adodb5/adodb.inc.php");
 			$ADODB_CACHE_DIR = APP_PATH . "/tmp/cache";
+			
+			if('' == APP_DB_DRIVER || '' == APP_DB_HOST)
+			    return null;
+			
 			@$instance =& ADONewConnection(APP_DB_DRIVER); /* @var $instance ADOConnection */
 			@$instance->Connect(APP_DB_HOST,APP_DB_USER,APP_DB_PASS,APP_DB_DATABASE);
 			@$instance->SetFetchMode(ADODB_FETCH_ASSOC);
