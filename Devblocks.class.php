@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',100);
+define('PLATFORM_BUILD',102);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -293,6 +293,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	    }
 
 	    DAO_Platform::cleanupPluginTables();
+	    DevblocksPlatform::clearCache();
 	    
 	    return $plugins; // [TODO] Move this to the DB
 	}
@@ -461,17 +462,19 @@ class DevblocksPlatform extends DevblocksEngine {
 	    if(!defined('DEVBLOCKS_WEBPATH')) {
 	        $php_self = $_SERVER["PHP_SELF"];
 	        
-	            if(defined('DEVBLOCKS_PROXY')) {
-	                $php_self = '/';  
-	            } elseif(DEVBLOCKS_REWRITE) {
-		            $pos = strrpos($php_self,'/');
-		            $php_self = substr($php_self,0,$pos) . '/';
-		        } else {
-		            $pos = strrpos($php_self,'index.php');
-		            if(false === $pos) $pos = strrpos($php_self,'ajax.php');
-		            $php_self = substr($php_self,0,$pos);
-		        }
-//	        }
+		    $proxyhost = $_SERVER['HTTP_DEVBLOCKSPROXYHOST'];
+		    $proxybase = $_SERVER['HTTP_DEVBLOCKSPROXYBASE'];
+        
+            if(!empty($proxybase)) {
+                $php_self = $proxybase . '/';
+            } elseif(DEVBLOCKS_REWRITE) {
+	            $pos = strrpos($php_self,'/');
+	            $php_self = substr($php_self,0,$pos) . '/';
+	        } else {
+	            $pos = strrpos($php_self,'index.php');
+	            if(false === $pos) $pos = strrpos($php_self,'ajax.php');
+	            $php_self = substr($php_self,0,$pos);
+	        }
 	        
 	        @define('DEVBLOCKS_WEBPATH',$php_self);
 	    }

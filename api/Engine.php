@@ -212,10 +212,7 @@ abstract class DevblocksEngine {
 		        break;
 		}
 
-		if(null != ($host = $_SERVER['HTTP_X_FORWARDED_HOST']))
-	        define('DEVBLOCKS_PROXY', $host);
-		
-		$request = new DevblocksHttpRequest($parts,$queryArgs); 
+		$request = new DevblocksHttpRequest($parts,$queryArgs);
 		DevblocksPlatform::setHttpRequest($request);
 		
 		return $request;
@@ -285,9 +282,6 @@ abstract class DevblocksEngine {
 		$tpl = DevblocksPlatform::getTemplateService();
 		$path = dirname(__FILE__);
 		$tpl->caching = 0;
-//		$tpl->caching = 2;
-//		$tpl->cache_lifetime = 3600*24; // 1 day
-//		$tpl->display("file:$path/devblocks.tpl.js",APP_BUILD . '_' . intval(DEVBLOCKS_REWRITE) . intval(DEVBLOCKS_PROXY));
 		$tpl->display("file:$path/devblocks.tpl.js");
 	}
 }
@@ -778,18 +772,6 @@ class _DevblocksUrlManager {
 					DEVBLOCKS_WEBPATH,
 					(!empty($args) ? implode('/',array_values($args)) : '')
 				);
-				
-				// Proxy Overrides
-			    if(defined('DEVBLOCKS_PROXY') && defined('DEVBLOCKS_VIRTUAL')) {
-			        @$xproxy = unserialize(DEVBLOCKS_VIRTUAL);
-			        if(is_array($xproxy) && null != ($xproxypath = $xproxy[DEVBLOCKS_PROXY])) {
-			            if(false !== strpos($contents, DEVBLOCKS_WEBPATH.'resource')) {
-		                    $contents = '/' . substr($contents,strlen(DEVBLOCKS_WEBPATH));
-			            } else {
-		                    $contents = '/' . substr($contents,strlen($xproxypath));
-			            }
-			        }
-			    }
 				
 			} else {
 				$contents = sprintf("%sindex.php/%s",

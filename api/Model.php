@@ -122,22 +122,15 @@ class DevblocksExtensionManifest {
 		if(empty($this->id) || empty($this->plugin_id)) // empty($instance_id) || 
 			return null;
 
-//		$plugins = DevblocksPlatform::getPluginRegistry();
-//		
-//		if(!isset($plugins[$this->plugin_id]))
-//			return null;
-//		
-//		$plugin = $plugins[$this->plugin_id]; /* @var $plugin DevblocksPluginManifest */
-
-		$plugin = DevblocksPlatform::getPlugin($this->plugin_id);
-			
+		$plugin = DevblocksPlatform::getPlugin($this->plugin_id);  /* @var $plugin DevblocksPluginManifest */
+	    
 		$class_file = DEVBLOCKS_PLUGIN_PATH . $plugin->dir . '/' . $this->file;
 		$class_name = $this->class;
 
-		if(!file_exists($class_file))
-			return null;
-
-		include_once($class_file);
+		CerberusClassLoader::registerClasses($class_file,array(
+		    $class_name
+		));
+		
 		if(!class_exists($class_name)) {
 			return null;
 		}
