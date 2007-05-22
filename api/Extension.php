@@ -156,7 +156,18 @@ abstract class DevblocksControllerExtension extends DevblocksExtension implement
 
 	public function handleRequest(DevblocksHttpRequest $request) {}
 	public function writeResponse(DevblocksHttpResponse $response) {}
-}
+};
+
+abstract class DevblocksEventListenerExtension extends DevblocksExtension {
+    function __construct($manifest) {
+        self::DevblocksExtension($manifest);
+    }
+    
+    /**
+     * @param Model_DevblocksEvent $event
+     */
+    function handleEvent(Model_DevblocksEvent $event) {}
+};
 
 interface DevblocksHttpRequestHandler {
 	/**

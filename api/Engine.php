@@ -49,28 +49,29 @@ abstract class DevblocksEngine {
 			false
 		);
 		
-		// [JAS]: URI Mapping
-		$db->Execute("DELETE FROM %suri WHERE plugin_id = %s",
-			$prefix,
-			$db->qstr($manifest->id)
-		);
-		
-		if(isset($plugin->mapping->uri)) {
-		    foreach($plugin->mapping->uri as $eUri) { /* @var $eUri DOMIT_Node */
-		        $sUri = (string) $eUri['value'];
-		        $sExtensionId = (string) $eUri['extension_id'];
+		if(isset($plugin->event_points->event)) {
+		    foreach($plugin->event_points->event as $eEvent) {
+		        $sId = (string) $eEvent['id'];
+		        $sName = (string) $eEvent->name;
 		        
-		        // [JAS]: [TODO] Move to platform DAO
-		        $db->Replace(
-			        $prefix.'uri',
-			        array(
-				        'uri' => $db->qstr($sUri),
-				        'plugin_id' => $db->qstr($manifest->id),
-				        'extension_id' => $db->qstr($sExtensionId)
-			        ),
-			        array('uri'),
-			        false
-		        );
+		        if(empty($sId) || empty($sName))
+		            continue;
+		        
+		        $point = new DevblocksEventPoint();
+		        $point->id = $sId;
+		        $point->plugin_id = $plugin->id;
+		        $point->name = $sName;
+		        $point->params = array();
+		        
+		        if(isset($eEvent->param)) {
+		            foreach($eEvent->param as $eParam) {
+		                $key = (string) $eParam['key']; 
+		                $val = (string) $eParam['value']; 
+		                $point->param[$key] = $val;
+		            }
+		        }
+		        
+		        $manifest->event_points[] = $point;
 		    }
 		}
 		
@@ -128,7 +129,7 @@ abstract class DevblocksEngine {
 		        $manifest->extensions[] = $extension;
 		    }
 		}
-						
+
 		// [JAS]: Extension caching
 		if(is_array($manifest->extensions))
 		foreach($manifest->extensions as $pos => $extension) { /* @var $extension DevblocksExtensionManifest */
@@ -149,7 +150,25 @@ abstract class DevblocksEngine {
 				false
 			);
 		}
+		
+        // [JAS]: Extension point caching
 
+        // [JAS]: Event point caching
+		if(is_array($manifest->event_points))
+		foreach($manifest->event_points as $event) { /* @var $event DevblocksEventPoint */
+			$db->Replace(
+				$prefix.'event_point',
+				array(
+					'id' => $db->qstr($event->id),
+					'plugin_id' => $db->qstr($event->plugin_id),
+					'name' => $db->qstr($event->name),
+					'params' => $db->qstr(serialize($event->params))
+				),
+				array('id'),
+				false
+			);
+		}
+		
 		return $manifest;
 	}
 	
@@ -398,6 +417,46 @@ class _DevblocksCacheManager {
 		}
 		return self::$instance;
     }
+};
+
+class _DevblocksEventManager {
+    private static $instance = null;
+    
+    private function __construct() {}
+
+    /**
+     * @return _DevblocksEventManager
+     */
+	public static function getInstance() {
+		if(null == self::$instance) {
+			self::$instance = new _DevblocksEventManager();
+		}
+		return self::$instance;
+	}
+	
+	function trigger(Model_DevblocksEvent $event) {
+	    /*
+	     * [TODO] Look at the hash and spawn our listeners for this particular point
+	     */
+		$events = DevblocksPlatform::getEventRegistry();
+
+		if(null == ($listeners = $events[$event->id]))
+		    return;
+
+		// [TODO] Make sure we can't get a double listener
+	    if(is_array($events['*']))
+	    foreach($events['*'] as $evt) {
+	        $listeners[] = $evt;
+	    }
+		    
+		if(is_array($listeners))
+		foreach($listeners as $listener) { /* @var $listener DevblocksExtensionManifest */
+            $manifest = DevblocksPlatform::getExtension($listener);
+		    $inst = $manifest->createInstance(); /* @var $inst DevblocksEventListenerExtension */
+            $inst->handleEvent($event);
+		}
+		
+	}
 };
 
 /**

@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',102);
+define('PLATFORM_BUILD',103);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -35,6 +35,8 @@ class DevblocksPlatform extends DevblocksEngine {
     const CACHE_EXTENSIONS = 'devblocks_extensions';
     const CACHE_TABLES = 'devblocks_tables';
     const CACHE_TRANSLATIONS = 'devblocks_translations';
+    const CACHE_EVENT_POINTS = 'devblocks_event_points';
+    const CACHE_EVENTS = 'devblocks_events';
     
     private function __construct() {}
 
@@ -198,6 +200,56 @@ class DevblocksPlatform extends DevblocksEngine {
 	}
 
 	/**
+	 * @return DevblocksEventPoint[]
+	 */
+	static function getEventPointRegistry() {
+	    $cache = self::getCacheService();
+	    if(false !== ($events = $cache->load(self::CACHE_EVENT_POINTS)))
+    	    return $events;
+
+        $events = array();
+        $plugins = self::getPluginRegistry();
+    	 
+		// [JAS]: Event point hashing/caching
+		if(is_array($plugins))
+		foreach($plugins as $plugin) { /* @var $plugin DevblocksPluginManifest */
+            $events = array_merge($events,$plugin->event_points);
+		}
+    	
+		$cache->save($events, self::CACHE_EVENT_POINTS);
+		return $events;
+	}
+	
+	static function getEventRegistry() {
+	    $cache = self::getCacheService();
+	    if(false !== ($events = $cache->load(self::CACHE_EVENTS)))
+    	    return $events;
+	    
+    	$extensions = self::getExtensions('devblocks.listener.event');
+    	$events = array('*');
+    	 
+		// [JAS]: Event point hashing/caching
+		if(is_array($extensions))
+		foreach($extensions as $extension) { /* @var $extension DevblocksExtensionManifest */
+            @$evts = $extension->params['events'][0];
+            
+            // Global listeners (every point)
+            if(empty($evts) && !is_array($evts)) {
+                $events['*'][] = $extension->id;
+                continue;
+            }
+            
+            if(is_array($evts))
+            foreach(array_keys($evts) as $evt) {
+                $events[$evt][] = $extension->id; 
+            }
+		}
+    	
+		$cache->save($events, self::CACHE_EVENTS);
+		return $events;
+	}
+	
+	/**
 	 * Returns an array of all contributed plugin manifests.
 	 *
 	 * @static
@@ -216,25 +268,47 @@ class DevblocksPlatform extends DevblocksEngine {
 			"FROM %splugin p ".
 			"ORDER BY p.enabled DESC, p.name ASC ",
 			$prefix
-			);
-			$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
-			while(!$rs->EOF) {
-			    $plugin = new DevblocksPluginManifest();
-			    $plugin->id = $rs->fields['id'];
-			    $plugin->enabled = intval($rs->fields['enabled']);
-			    $plugin->name = $rs->fields['name'];
-			    $plugin->description = $rs->fields['description'];
-			    $plugin->author = $rs->fields['author'];
-			    $plugin->revision = intval($rs->fields['revision']);
-			    $plugin->dir = $rs->fields['dir'];
-		
-			    if(file_exists(DEVBLOCKS_PLUGIN_PATH . $plugin->dir)) {
-			        $plugins[$plugin->id] = $plugin;
-			    }
-			    	
-			    $rs->MoveNext();
-			}
+		);
+		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		while(!$rs->EOF) {
+		    $plugin = new DevblocksPluginManifest();
+		    $plugin->id = $rs->fields['id'];
+		    $plugin->enabled = intval($rs->fields['enabled']);
+		    $plugin->name = $rs->fields['name'];
+		    $plugin->description = $rs->fields['description'];
+		    $plugin->author = $rs->fields['author'];
+		    $plugin->revision = intval($rs->fields['revision']);
+		    $plugin->dir = $rs->fields['dir'];
+	
+		    if(file_exists(DEVBLOCKS_PLUGIN_PATH . $plugin->dir)) {
+		        $plugins[$plugin->id] = $plugin;
+		    }
+		    	
+		    $rs->MoveNext();
+		}
 
+		$sql = sprintf("SELECT p.id, p.name, p.params, p.plugin_id ".
+		    "FROM %sevent_point p ",
+		    $prefix
+		);
+		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg() . var_dump(debug_backtrace())); /* @var $rs ADORecordSet */
+
+		while(!$rs->EOF) {
+		    $point = new DevblocksEventPoint();
+		    $point->id = $rs->fields['id'];
+		    $point->name = $rs->fields['name'];
+		    $point->plugin_id = $rs->fields['plugin_id'];
+		    
+		    $params = $rs->fields['params'];
+		    $point->params = !empty($params) ? unserialize($params) : array();
+
+		    if(!isset($plugins[$point->plugin_id]))
+		        continue;
+		    
+		    $plugins[$point->plugin_id]->event_points[$point->id] = $point;
+		    $rs->MoveNext();
+		}
+			
 //			$extensions = DevblocksPlatform::getExtensionRegistry();
 //			foreach($extensions as $extension_id => $extension) { /* @var $extension DevblocksExtensionManifest */
 //			    $plugin_id = $extension->plugin_id;
@@ -351,6 +425,13 @@ class DevblocksPlatform extends DevblocksEngine {
 	    return _DevblocksEmailManager::getInstance();
 	}
 
+	/**
+	 * @return _DevblocksEventManager
+	 */
+	static function getEventService() {
+	    return _DevblocksEventManager::getInstance();
+	}
+	
 	/**
 	 * @return _DevblocksSessionManager
 	 */

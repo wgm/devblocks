@@ -39,6 +39,18 @@ class PlatformPatchContainer extends DevblocksPatchContainerExtension {
 		// ***** Platform
 		$tables = array();
 		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : '';
+
+		$tables[$prefix.'event_point'] = "
+			id C(128) DEFAULT '' NOTNULL PRIMARY,
+			plugin_id C(128) DEFAULT 0 NOTNULL,
+			name C(128) DEFAULT '' NOTNULL,
+			params B DEFAULT ''
+		";
+		
+		$tables[$prefix.'extension_point'] = "
+			id C(128) DEFAULT '' NOTNULL PRIMARY,
+			plugin_id C(128) DEFAULT 0 NOTNULL
+		";
 		
 		$tables[$prefix.'extension'] = "
 			id C(128) DEFAULT '' NOTNULL PRIMARY,

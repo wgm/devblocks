@@ -56,12 +56,20 @@ class DevblocksSearchField {
 		$this->db_table = $db_table;
 		$this->db_column = $db_column;
 	}
-}
+};
+
+class DevblocksEventPoint {
+    var $id = '';
+    var $plugin_id = '';
+    var $name = '';
+    var $param = array();
+};
 
 class DevblocksExtensionPoint {
 	var $id = '';
+    var $plugin_id = '';
 	var $extensions = array();
-}
+};
 
 /**
  * Manifest information for plugin.
@@ -75,7 +83,9 @@ class DevblocksPluginManifest {
 	var $author = '';
 	var $revision = 0;
 	var $dir = '';
+	var $extension_points = array();
 	var $extensions = array();
+	var $event_points = array();
 	
 	function setEnabled($bool) {
 		$this->enabled = ($bool) ? 1 : 0;
@@ -221,4 +231,12 @@ abstract class DevblocksPatch {
 		
 };
 
+class Model_DevblocksEvent {
+  public $id = '';
+  public $params = array(); 
 
+  function __construct($id='',$params=array()) {
+      $this->id = $id;
+      $this->params = $params;
+  }
+};

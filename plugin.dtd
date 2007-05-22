@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!ELEMENT plugin (id,name,description,author,revision,mapping?,extensions?)>
+<!ELEMENT plugin (id,name,description,author,revision,mapping?,event_points?,extensions?)>
 <!ELEMENT id (#PCDATA)>
 <!ELEMENT name (#PCDATA)>
 <!ELEMENT description (#PCDATA)>
@@ -9,6 +9,9 @@
 	<!ELEMENT uri EMPTY>
 		<!ATTLIST uri value CDATA #REQUIRED>
 		<!ATTLIST uri extension_id CDATA #REQUIRED>
+<!ELEMENT event_points (event*)>
+	<!ATTLIST event id CDATA #REQUIRED>
+	<!ELEMENT event (name,param*)>
 <!ELEMENT extensions (extension*)>
 	<!ATTLIST extension point CDATA #REQUIRED>
 	<!ELEMENT extension (id,name,class,params?)>
