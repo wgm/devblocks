@@ -569,13 +569,37 @@ class _DevblocksEmailManager {
 		return TRUE;
 	}
 	
-	function getMessages($server, $port, $service, $username, $password) {
+	// [JAS]: [TODO] Why wouldn't we pass the full account model object here?
+	function getMessages($server, $port, $protocol, $username, $password) {
 		if (!extension_loaded("imap")) die("IMAP Extension not loaded!");
-		//require_once(DEVBLOCKS_PATH . 'libs/pear/mimeDecode.php');
 		
-		$mailbox = imap_open("{".$server.":".$port."/service=".$service."/notls}INBOX",
-							 !empty($username)?$username:"",
-							 !empty($password)?$password:"")
+        switch($protocol) {
+            default:
+            case 'pop3': // 110
+                $connect = sprintf("{%s:%d/pop3/notls}INBOX",
+                    $server,
+                    $port
+                );
+                break;
+                
+            case 'pop3-ssl': // 995
+                $connect = sprintf("{%s:%d/pop3/ssl/novalidate-cert}INBOX",
+                    $server,
+                    $port
+                ); 
+                break;
+                
+            case 'imap': // 143
+                $connect = sprintf("{%s:%d/notls}INBOX",
+                    $server,
+                    $port
+                );
+                break;
+        }
+
+		$mailbox = imap_open($connect,
+					 !empty($username)?$username:"",
+					 !empty($password)?$password:"")
 			or die("Failed with error: ".imap_last_error());
 		$check = imap_check($mailbox);
 		
@@ -591,6 +615,7 @@ class _DevblocksEmailManager {
 			$body = imap_body($mailbox, $i);
 			$params['input'] = $headers . "\r\n\r\n" . $body;
 			$structure = Mail_mimeDecode::decode($params);
+			
 			$messages[] = $structure;
 		}
 		
