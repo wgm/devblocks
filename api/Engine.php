@@ -568,60 +568,6 @@ class _DevblocksEmailManager {
 			
 		return TRUE;
 	}
-	
-	// [JAS]: [TODO] Why wouldn't we pass the full account model object here?
-	function getMessages($server, $port, $protocol, $username, $password) {
-		if (!extension_loaded("imap")) die("IMAP Extension not loaded!");
-		
-        switch($protocol) {
-            default:
-            case 'pop3': // 110
-                $connect = sprintf("{%s:%d/pop3/notls}INBOX",
-                    $server,
-                    $port
-                );
-                break;
-                
-            case 'pop3-ssl': // 995
-                $connect = sprintf("{%s:%d/pop3/ssl/novalidate-cert}INBOX",
-                    $server,
-                    $port
-                ); 
-                break;
-                
-            case 'imap': // 143
-                $connect = sprintf("{%s:%d/notls}INBOX",
-                    $server,
-                    $port
-                );
-                break;
-        }
-
-		$mailbox = imap_open($connect,
-					 !empty($username)?$username:"",
-					 !empty($password)?$password:"")
-			or die("Failed with error: ".imap_last_error());
-		$check = imap_check($mailbox);
-		
-		$messages = array();
-		$params = array();
-		$params['include_bodies']	= true;
-		$params['decode_bodies']	= true;
-		$params['decode_headers']	= true;
-		$params['crlf']				= "\r\n";
-		
-		for ($i=1; $i<=$check->Nmsgs; $i++) {
-			$headers = imap_fetchheader($mailbox, $i);
-			$body = imap_body($mailbox, $i);
-			$params['input'] = $headers . "\r\n\r\n" . $body;
-			$structure = Mail_mimeDecode::decode($params);
-			
-			$messages[] = $structure;
-		}
-		
-		imap_close($mailbox);
-		return $messages;
-	}
 }
 
 /**

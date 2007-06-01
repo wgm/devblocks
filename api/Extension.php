@@ -37,6 +37,15 @@ class DevblocksExtension {
 	    return $this->params;
 	}
 	
+	function setParam($key, $value) {
+	    $this->params[$key] = $value;
+	}
+	
+	function getParam($key,$default=null) {
+	    $params = $this->getParams();
+	    return isset($params[$key]) ? $params[$key] : $default;
+	}
+	
 	/**
 	 * Loads parameters unique to this extension instance.  Returns an 
 	 * associative array indexed by parameter key.
