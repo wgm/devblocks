@@ -33,6 +33,22 @@ function clearDiv(divName) {
 	div.innerHTML = '';
 }
 
+function getEventTarget(e) {
+	if(!e) e = event;
+	
+	if(e.target) {
+		return e.target.nodeName;
+	} else if (e.srcElement) {
+		return e.srcElement.nodeName;
+	}
+}
+
+function toggleClass(divName,c) {
+	var div = document.getElementById(divName);
+	if(null == div) return;
+	div.className = c;	
+}
+
 function toggleDiv(divName,state) {
 	var div = document.getElementById(divName);
 	if(null == div) return;
@@ -185,6 +201,7 @@ function genericAjaxPost(formName,divName,args,cb) {
 	if(null == frm) return;
 
 	// [JAS]: [TODO] This doesn't work in IE -- probably offsetWidth/Height
+	/*
 	if(null != div) {
 		// [JAS]: [TODO] Move to a function
 		var loading = document.createElement('div');
@@ -199,22 +216,27 @@ function genericAjaxPost(formName,divName,args,cb) {
 		
 		document.body.appendChild(loading);
 	}
+	*/
 
 //	var anim = new YAHOO.util.Anim(frm, { opacity: { to: 0.2 } }, 1, YAHOO.util.Easing.easeOut);
 //	anim.animate();
 	
+	if(null == cb) {
+		var cb = function(o) {
+			var div = document.getElementById(divName);
+			if(null == div) return;
+	
+			//document.body.removeChild(loading);
+			div.innerHTML = o.responseText;
+			
+			// var anim = new YAHOO.util.Anim(frm, { opacity: { to: 1.0 } }, 1, YAHOO.util.Easing.easeOut);
+			// anim.animate();
+		};
+	}
+	
 	YAHOO.util.Connect.setForm(formName);
 	var cObj = YAHOO.util.Connect.asyncRequest('POST', DevblocksAppPath+'ajax.php?'+args, {
-			success: function(o) {
-				var div = document.getElementById(divName);
-				if(null == div) return;
-
-				document.body.removeChild(loading);
-				div.innerHTML = o.responseText;
-				
-//				var anim = new YAHOO.util.Anim(frm, { opacity: { to: 1.0 } }, 1, YAHOO.util.Easing.easeOut);
-//				anim.animate();
-			},
+			success: cb,
 			failure: function(o) {alert('fail');},
 			argument:{caller:this}
 			}

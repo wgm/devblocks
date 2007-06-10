@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',105);
+define('PLATFORM_BUILD',106);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -430,6 +430,13 @@ class DevblocksPlatform extends DevblocksEngine {
 	 */
 	static function getEventService() {
 	    return _DevblocksEventManager::getInstance();
+	}
+	
+	/**
+	 * @return DevblocksProxy
+	 */
+	static function getProxyService() {
+	    return DevblocksProxy::getProxy();
 	}
 	
 	/**
