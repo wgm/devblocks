@@ -14,6 +14,7 @@ class DevblocksExtension {
 	public $instance_id = 1;
 	public $id  = '';
 	private $params = array();
+	private $params_loaded = false;
 	
 	/**
 	 * Constructor
@@ -31,18 +32,29 @@ class DevblocksExtension {
 	}
 	
 	function getParams() {
-	    if(empty($this->params)) {
+	    if(!$this->params_loaded) {
 	        $this->params = $this->_getParams();
+	        $this->params_loaded = true;
 	    }
 	    return $this->params;
 	}
 	
 	function setParam($key, $value) {
 	    $this->params[$key] = $value;
+	    
+		$db = DevblocksPlatform::getDatabaseService();
+		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
+
+		$db->Replace(
+			$prefix.'property_store',
+			array('extension_id'=>$this->id,'instance_id'=>$this->instance_id,'property'=>$db->qstr($key),'value'=>$db->qstr($value)),
+			array('extension_id','instance_id','property'),
+			true
+		);
 	}
 	
 	function getParam($key,$default=null) {
-	    $params = $this->getParams();
+	    $params = $this->getParams(); // make sure we're fresh
 	    return isset($params[$key]) ? $params[$key] : $default;
 	}
 	
@@ -81,29 +93,6 @@ class DevblocksExtension {
 		}
 		
 		return $params;
-	}
-	
-	/**
-	 * Persists any changed instanced extension parameters.
-	 *
-	 * @return void
-	 */
-	function saveParams() {
-		if(empty($this->instance_id) || empty($this->id))
-			return FALSE;
-		
-		$db = DevblocksPlatform::getDatabaseService();
-		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
-		
-		if(is_array($this->params))
-		foreach($this->params as $k => $v) {
-			$db->Replace(
-				$prefix.'property_store',
-				array('extension_id'=>$this->id,'instance_id'=>$this->instance_id,'property'=>$db->qstr($k),'value'=>$db->qstr($v)),
-				array('extension_id','instance_id','property'),
-				true
-			);
-		}
 	}
 };
 
