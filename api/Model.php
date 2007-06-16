@@ -137,7 +137,7 @@ class DevblocksExtensionManifest {
 		$class_file = DEVBLOCKS_PLUGIN_PATH . $plugin->dir . '/' . $this->file;
 		$class_name = $this->class;
 
-		CerberusClassLoader::registerClasses($class_file,array(
+		DevblocksPlatform::registerClasses($class_file,array(
 		    $class_name
 		));
 		

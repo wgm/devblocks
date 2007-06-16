@@ -69,6 +69,16 @@ class DevblocksPlatform extends DevblocksEngine {
 	    $cache->clean();
 	}
 
+	public static function loadClass($className) {
+		$classloader = self::getClassLoaderService();
+		return $classloader->loadClass($className);
+	}
+	
+	public static function registerClasses($file,$classes=array()) {
+		$classloader = self::getClassLoaderService();
+		return $classloader->registerClasses($file,$classes);
+	}
+	
 	/**
 	 * Checks whether the active database has any tables.
 	 * 
@@ -437,6 +447,13 @@ class DevblocksPlatform extends DevblocksEngine {
 	 */
 	static function getProxyService() {
 	    return DevblocksProxy::getProxy();
+	}
+	
+	/**
+	 * @return _DevblocksClassLoadManager
+	 */
+	static function getClassLoaderService() {
+		return _DevblocksClassLoadManager::getInstance();
 	}
 	
 	/**
