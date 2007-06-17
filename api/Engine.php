@@ -218,7 +218,7 @@ abstract class DevblocksEngine {
 		        if(!is_dir($dir)) die(""); // basedir Security
 		        $resource = realpath($dir . DIRECTORY_SEPARATOR . $file);
 		        if(0 != strstr($dir,$resource)) die("");
-		        $ext = array_pop(explode('.', $resource));
+		        $ext = @array_pop(explode('.', $resource));
 		        if(!is_file($resource) || 'php' == $ext) die(""); // extension security
 		        
                 // Caching
@@ -731,7 +731,7 @@ class _DevblocksClassLoadManager {
 		}
 	}
 	
-	public static function registerClasses($file,$classes=array()) {
+	public function registerClasses($file,$classes=array()) {
 		if(is_array($classes))
 		foreach($classes as $class) {
 			$this->classMap[$class] = $file;
@@ -846,7 +846,7 @@ class _DevblocksRoutingManager {
 	}
 	
 	function getRoute($route) {
-	    return $this->routes[$route];
+	    return @$this->routes[$route];
 	}
 };
 

@@ -138,7 +138,7 @@ abstract class DevblocksORMHelper {
 };
 
 class DAO_Platform {
-    function cleanupPluginTables() {
+    static function cleanupPluginTables() {
 		$db = DevblocksPlatform::getDatabaseService();
 		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 
@@ -170,7 +170,7 @@ class DAO_Platform {
 		}
     }
     
-	function updatePlugin($id, $fields) {
+	static function updatePlugin($id, $fields) {
 		$db = DevblocksPlatform::getDatabaseService();
 		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 		$sets = array();
@@ -198,7 +198,7 @@ class DAO_Platform {
 	 * @param integer $revision
 	 * @return boolean
 	 */
-	function hasPatchRun($plugin_id,$revision) {
+	static function hasPatchRun($plugin_id,$revision) {
 		$db = DevblocksPlatform::getDatabaseService();
 		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 		
@@ -220,7 +220,7 @@ class DAO_Platform {
 	 * @param string $plugin_id
 	 * @param integer $revision
 	 */
-	function setPatchRan($plugin_id,$revision) {
+	static function setPatchRan($plugin_id,$revision) {
 		$db = DevblocksPlatform::getDatabaseService();
 		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 		
