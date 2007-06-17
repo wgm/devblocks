@@ -695,11 +695,11 @@ class _DevblocksPatchManager {
 
 class _DevblocksClassLoadManager {
     private static $instance = null;
-	private static $classMap = array();
+	private $classMap = array();
 	
     private function __construct() {
-		self::_initPEAR();	
-		self::_initZend();
+		$this->_initPEAR();	
+		$this->_initZend();
 	}
     
 	/**
@@ -715,7 +715,7 @@ class _DevblocksClassLoadManager {
 	public function loadClass($className) {
 		if(class_exists($className)) return;
 		
-		$file = self::$classMap[$className];
+		$file = $this->classMap[$className];
 		
 		if(!is_null($file)) {
 			require_once($file);
@@ -734,88 +734,88 @@ class _DevblocksClassLoadManager {
 	public static function registerClasses($file,$classes=array()) {
 		if(is_array($classes))
 		foreach($classes as $class) {
-			self::$classMap[$class] = $file;
+			$this->classMap[$class] = $file;
 		}
 	}
 	
-	private static function _initPEAR() {
-		self::registerClasses('Mail.php',array(
+	private function _initPEAR() {
+		$this->registerClasses('Mail.php',array(
 			'Mail',
 		));
 		
-		self::registerClasses('Mail/Mime.php', array(
+		$this->registerClasses('Mail/Mime.php', array(
 			'Mail_mime',
 		));
 		
-		self::registerClasses('Mail/mimeDecode.php', array(
+		$this->registerClasses('Mail/mimeDecode.php', array(
 			'Mail_mimeDecode',
 		));
 
-		self::registerClasses('Mail/RFC822.php', array(
+		$this->registerClasses('Mail/RFC822.php', array(
 			'Mail_RFC822',
 		));
 
-		self::registerClasses('Text/Password.php', array(
+		$this->registerClasses('Text/Password.php', array(
 			'Text_Password',
 		));
 	}
 	
-	private static function _initZend() {
+	private function _initZend() {
 		$path = APP_PATH . '/libs/devblocks/libs/ZendFramework/Zend/';
 		
-		self::registerClasses(APP_PATH . '/libs/devblocks/libs/ZendFramework/Zend.php', array(
+		$this->registerClasses(APP_PATH . '/libs/devblocks/libs/ZendFramework/Zend.php', array(
 			'Zend',
 		));
 		
-		self::registerClasses($path . 'Cache.php', array(
+		$this->registerClasses($path . 'Cache.php', array(
 			'Zend_Cache',
 		));
 		
-		self::registerClasses($path . 'Exception.php', array(
+		$this->registerClasses($path . 'Exception.php', array(
 			'Zend_Exception',
 		));
 		
-	    self::registerClasses($path . 'Registry.php', array(
+	    $this->registerClasses($path . 'Registry.php', array(
 			'Zend_Registry',
 		));
 		
-		self::registerClasses($path . 'Date.php', array(
+		$this->registerClasses($path . 'Date.php', array(
 			'Zend_Date',
 		));
 		
-		self::registerClasses($path . 'Locale.php', array(
+		$this->registerClasses($path . 'Locale.php', array(
 			'Zend_Locale',
 		));
 		
-		self::registerClasses($path . 'Translate.php', array(
+		$this->registerClasses($path . 'Translate.php', array(
 			'Zend_Translate',
 		));
 		
-		self::registerClasses($path . 'Translate/Adapter/Tmx.php', array(
+		$this->registerClasses($path . 'Translate/Adapter/Tmx.php', array(
 			'Zend_Translate_Adapter_Tmx',
 		));
 		
-		self::registerClasses($path . 'Mail.php', array(
+		$this->registerClasses($path . 'Mail.php', array(
 			'Zend_Mail',
 		));
 		
-		self::registerClasses($path . 'Mail/Storage/Pop3.php', array(
+		$this->registerClasses($path . 'Mail/Storage/Pop3.php', array(
 			'Zend_Mail_Storage_Pop3',
 		));
 		
-		self::registerClasses($path . 'Mime.php', array(
+		$this->registerClasses($path . 'Mime.php', array(
 			'Zend_Mime',
 		));
 		
-		self::registerClasses($path . 'Validate/EmailAddress.php.php', array(
+		$this->registerClasses($path . 'Validate/EmailAddress.php.php', array(
 			'Zend_Validate_EmailAddress',
 		));
 		
-		self::registerClasses($path . 'Mail/Transport/Smtp.php', array(
+		$this->registerClasses($path . 'Mail/Transport/Smtp.php', array(
 			'Zend_Mail_Transport_Smtp',
 		));
 		
-		self::registerClasses($path . 'Mail/Transport/Sendmail.php', array(
+		$this->registerClasses($path . 'Mail/Transport/Sendmail.php', array(
 			'Zend_Mail_Transport_Sendmail',
 		));
 	}

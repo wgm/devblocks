@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',107);
+define('PLATFORM_BUILD',112);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -567,8 +567,8 @@ class DevblocksPlatform extends DevblocksEngine {
 	    if(!defined('DEVBLOCKS_WEBPATH')) {
 	        $php_self = $_SERVER["PHP_SELF"];
 	        
-		    $proxyhost = $_SERVER['HTTP_DEVBLOCKSPROXYHOST'];
-		    $proxybase = $_SERVER['HTTP_DEVBLOCKSPROXYBASE'];
+		    @$proxyhost = $_SERVER['HTTP_DEVBLOCKSPROXYHOST'];
+		    @$proxybase = $_SERVER['HTTP_DEVBLOCKSPROXYBASE'];
         
             if(!empty($proxybase)) {
                 $php_self = $proxybase . '/';
