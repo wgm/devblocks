@@ -731,7 +731,7 @@ class _DevblocksClassLoadManager {
 		}
 	}
 	
-	public function registerClasses($file,$classes=array()) {
+	public static function registerClasses($file,$classes=array()) {
 		if(is_array($classes))
 		foreach($classes as $class) {
 			self::$classMap[$class] = $file;
