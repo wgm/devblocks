@@ -49,6 +49,27 @@ function toggleClass(divName,c) {
 	div.className = c;	
 }
 
+/* From:
+ * http://www.webmasterworld.com/forum91/4527.htm
+ */
+function setElementSelRange(e, selStart, selEnd) { 
+	if (e.setSelectionRange) { 
+		e.focus(); 
+		e.setSelectionRange(selStart, selEnd); 
+	} else if (e.createTextRange) { 
+		var range = e.createTextRange(); 
+		range.collapse(true); 
+		range.moveEnd('character', selEnd); 
+		range.moveStart('character', selStart); 
+		range.select(); 
+	} 
+}
+
+function scrollElementToBottom(e) {
+	if(null == e) return;
+	e.scrollTop = e.scrollHeight - e.clientHeight;
+}
+
 function toggleDiv(divName,state) {
 	var div = document.getElementById(divName);
 	if(null == div) return;
