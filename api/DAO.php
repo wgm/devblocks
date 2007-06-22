@@ -27,11 +27,12 @@ abstract class DevblocksORMHelper {
 	 * @param integer $id
 	 * @param array $fields
 	 */
-	static protected function _update($id, $table, $fields) {
+	static protected function _update($ids=array(), $table, $fields) {
+	    if(!is_array($ids)) $ids = array($ids);
 		$db = DevblocksPlatform::getDatabaseService();
 		$sets = array();
 		
-		if(!is_array($fields) || empty($fields) || empty($id))
+		if(!is_array($fields) || empty($fields) || empty($ids))
 			return;
 		
 		foreach($fields as $k => $v) {
@@ -46,10 +47,10 @@ abstract class DevblocksORMHelper {
 			);
 		}
 			
-		$sql = sprintf("UPDATE %s SET %s WHERE id = %d",
+		$sql = sprintf("UPDATE %s SET %s WHERE id IN (%s)",
 			$table,
 			implode(', ', $sets),
-			$id
+			implode(',', $ids)
 		);
 		$db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 	}

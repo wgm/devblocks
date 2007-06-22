@@ -445,8 +445,9 @@ class _DevblocksEventManager {
 	     */
 		$events = DevblocksPlatform::getEventRegistry();
 
-		if(null == ($listeners = $events[$event->id]))
-		    return;
+		if(null == ($listeners = $events[$event->id])) {
+		    $listeners = array();
+		}
 
 		// [TODO] Make sure we can't get a double listener
 	    if(is_array($events['*']))
@@ -454,7 +455,7 @@ class _DevblocksEventManager {
 	        $listeners[] = $evt;
 	    }
 		    
-		if(is_array($listeners))
+		if(is_array($listeners) && !empty($listeners))
 		foreach($listeners as $listener) { /* @var $listener DevblocksExtensionManifest */
             $manifest = DevblocksPlatform::getExtension($listener);
 		    $inst = $manifest->createInstance(); /* @var $inst DevblocksEventListenerExtension */
