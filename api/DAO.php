@@ -228,7 +228,7 @@ class DAO_Platform {
 		$db->Replace(
 			$prefix.'patch_history',
 			array('plugin_id'=>$plugin_id,'revision'=>$revision,'run_date'=>time()),
-			array('plugin_id','revision'),
+			array('plugin_id'),
 			true,
 			false
 		);

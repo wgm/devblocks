@@ -25,6 +25,8 @@ class DevblocksExtension {
 	 * @return DevblocksExtension
 	 */
 	function DevblocksExtension($manifest,$instance_id=1) { /* @var $manifest DevblocksExtensionManifest */
+        if(empty($manifest)) return;
+        
 		$this->manifest = $manifest;
 		$this->id = $manifest->id;
 		$this->instance_id = $instance_id;

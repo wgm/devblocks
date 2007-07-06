@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',119);
+define('PLATFORM_BUILD',121);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -585,4 +585,22 @@ class DevblocksPlatform extends DevblocksEngine {
 	    }
 	}
 
+};
+
+// [TODO] This doesn't belong! (ENGINE)
+class PlatformPatchContainer extends DevblocksPatchContainerExtension {
+	
+	function __construct() {
+		parent::__construct(null);
+		
+		/*
+		 * [JAS]: Just add a build number here (from your commit revision) and write a
+		 * case in runBuild().  You should comment the milestone next to your build 
+		 * number.
+		 */
+
+		$file_prefix = dirname(__FILE__) . '/patches/';
+
+		$this->registerPatch(new DevblocksPatch('devblocks.core',1,$file_prefix.'1.0.0.php',''));
+	}
 };

@@ -186,27 +186,41 @@ abstract class DevblocksVisit {
 /**
  * 
  */
-abstract class DevblocksPatch {
+class DevblocksPatch {
 	private $plugin_id = ''; // cerberusweb.core
 	private $revision = 0; // 100
-//	private $one_run = false;
+	private $filename = ''; // 4.0.0.php
+	private $class = ''; // ChPatch400
 	
-	protected function __construct($plugin_id, $revision) { // $one_run=false
+	public function __construct($plugin_id, $revision, $filename, $class) { // $one_run=false
 		$this->plugin_id = $plugin_id;
 		$this->revision = intval($revision);
-//		$this->one_run = $one_run;
+		$this->filename = $filename;
+		$this->class = $class;
 	}
 	
-	/**
-	 * @return boolean
-	 */
 	public function run() {
-		// Override
-		die("Your patch class should overload the run() method.");
-	}
-	
-	protected function _ran() {
+	    // [TODO] Consider
+//	    if($this->hasRun())
+//	        return TRUE;
+	    
+		if(empty($this->filename)) { //  || empty($this->class)
+			return FALSE;
+		}
+		
+	    if(!file_exists($this->filename)) {
+			// [TODO] needs some file error handling
+	        return FALSE;   
+	    }
+
+		require_once($this->filename);
+		// [TODO] Check that the class we want exists
+//		$object = new $$this->class;
+	    // [TODO] Need to catch failures here (when we wrap in classes)
+		
 		DAO_Platform::setPatchRan($this->plugin_id,$this->revision);
+		
+		return TRUE;
 	}
 	
 	/**
@@ -225,10 +239,6 @@ abstract class DevblocksPatch {
 		return $this->revision;
 	}
 	
-	public function getOneRun() {
-		return $this->one_run;
-	}
-		
 };
 
 class Model_DevblocksEvent {

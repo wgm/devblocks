@@ -445,7 +445,7 @@ class _DevblocksEventManager {
 	     */
 		$events = DevblocksPlatform::getEventRegistry();
 
-		if(null == ($listeners = $events[$event->id])) {
+		if(null == ($listeners = @$events[$event->id])) {
 		    $listeners = array();
 		}
 
@@ -668,6 +668,7 @@ class _DevblocksPatchManager {
 		$this->containers[] = $container;
 	}
 	
+	// [TODO] This delegate needs to be smart enough to order our patches by dependency
 	public function run() {
 		$result = TRUE;
 		
