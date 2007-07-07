@@ -23,6 +23,7 @@ class DevblocksSearchCriteria {
     const OPER_IS_NULL = 'is null';
     const OPER_NIN = 'not in';
     const OPER_LIKE = 'like';
+    const OPER_NOT_LIKE = 'not like';
     const OPER_GT = '>';
     const OPER_LT = '<';
     const OPER_GTE = '>=';

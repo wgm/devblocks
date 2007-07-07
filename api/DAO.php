@@ -110,6 +110,14 @@ abstract class DevblocksORMHelper {
 					);
 					break;
 				
+				case DevblocksSearchCriteria::OPER_NOT_LIKE:
+//					if(!is_array($param->value)) break;
+					$where = sprintf("%s NOT LIKE %s",
+						$db_field_name,
+						$db->qstr(str_replace('*','%%',$param->value))
+					);
+					break;
+				
 				case DevblocksSearchCriteria::OPER_IS_NULL:
 					$where = sprintf("%s IS NULL",
 						$db_field_name
