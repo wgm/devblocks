@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',121);
+define('PLATFORM_BUILD',123);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -47,15 +47,21 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return mixed
 	 */
 	static function importGPC($var,$cast=null,$default=null) {
-	    if(is_string($var))
-	    return get_magic_quotes_gpc() ? stripslashes($var) : $var;
-
-	    if(is_null($var) && !is_null($default)) {
+	    if(!is_null($var)) {
+	        if(is_string($var)) {
+	            $var = get_magic_quotes_gpc() ? stripslashes($var) : $var;
+	        } elseif(is_array($var)) {
+                foreach($var as $k => $v) {
+                    $var[$k] = get_magic_quotes_gpc() ? stripslashes($v) : $v;
+                }
+	        }
+	        
+	    } elseif (is_null($var) && !is_null($default)) {
 	        $var = $default;
 	    }
 	    	
 	    if(!is_null($cast))
-	    @settype($var,$cast);
+	        @settype($var, $cast);
 
 	    return $var;
 	}

@@ -55,6 +55,69 @@ abstract class DevblocksORMHelper {
 		$db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 	}
 	
+	static protected function _escapeSearchParam(DevblocksSearchCriteria $param, $fields) {
+	    $db = DevblocksPlatform::getDatabaseService();
+	    $field = $fields[$param->field];
+	    $where_value = null;
+/*	    
+   	 *	C for character < 250 chars
+	 *	X for teXt (>= 250 chars)
+	 *	B for Binary
+	 * 	N for numeric or floating point
+	 *	D for date
+	 *	T for timestamp
+	 * 	L for logical/Boolean
+	 *	I for integer
+	 *	R for autoincrement counter/integer
+*/	    
+//	    $datadict = new ADODB_DataDict($db);
+//	    $datadict->MetaType()
+
+        if($field) {
+            switch(strtoupper($field->db_type)) {
+                case 'B':
+                case 'X':
+                    if(!is_array($param->value)) {
+                        $where_value = "'" . $db->BlobEncode($param->value) . "'";
+                    } else {
+                        $where_value = array();
+                        foreach($param->value as $v) {
+                            $where_value[] = "'" . $db->BlobEncode($v) . "'";
+                        }
+                    }
+                    break;
+                    
+                case 'I':
+                case 'N':
+                case 'L':
+                case 'R':
+                    if(!is_array($param->value)) {
+                        $where_value = $param->value;
+                    } else {
+                        $where_value = array();
+                        foreach($param->value as $v) {
+                            $where_value[] = $v;
+                        }
+                    }
+                    break;
+                
+                case 'C':
+                default:
+                    if(!is_array($param->value)) {
+                        $where_value = $db->qstr($param->value);
+                    } else {
+                        $where_value = array();
+                        foreach($param->value as $v) {
+                            $where_value[] = $db->qstr($v);
+                        }
+                    }
+                    break; 
+            }
+        }
+        
+        return $where_value;
+	}
+	
 	/**
 	 * [TODO]: Import the searchDAO functionality + combine the extraneous classes
 	 */
@@ -77,20 +140,20 @@ abstract class DevblocksORMHelper {
 			
 			// [JAS]: Indexes for optimization
 			$tables[$fields[$param->field]->db_table] = $fields[$param->field]->db_table;
-				
+
 			// [JAS]: Operators
 			switch($param->operator) {
 				case "=":
 					$where = sprintf("%s = %s",
 						$db_field_name,
-						$db->qstr($param->value)
+						self::_escapeSearchParam($param, $fields)
 					);
 					break;
 					
 				case "!=":
 					$where = sprintf("%s != %s",
 						$db_field_name,
-						$db->qstr($param->value)
+						self::_escapeSearchParam($param, $fields)
 					);
 					break;
 				
@@ -98,7 +161,7 @@ abstract class DevblocksORMHelper {
 					if(!is_array($param->value)) break;
 					$where = sprintf("%s IN ('%s')",
 						$db_field_name,
-						implode("','",$param->value)
+						implode("','",$param->value) // [TODO] Needs BlobEncode compat
 					);
 					break;
 					
@@ -106,7 +169,7 @@ abstract class DevblocksORMHelper {
 //					if(!is_array($param->value)) break;
 					$where = sprintf("%s LIKE %s",
 						$db_field_name,
-						$db->qstr(str_replace('*','%%',$param->value))
+						str_replace('*','%%',self::_escapeSearchParam($param, $fields))
 					);
 					break;
 				
@@ -114,7 +177,7 @@ abstract class DevblocksORMHelper {
 //					if(!is_array($param->value)) break;
 					$where = sprintf("%s NOT LIKE %s",
 						$db_field_name,
-						$db->qstr(str_replace('*','%%',$param->value))
+						str_replace('*','%%',self::_escapeSearchParam($param, $fields))
 					);
 					break;
 				
@@ -131,7 +194,7 @@ abstract class DevblocksORMHelper {
 					$where = sprintf("%s %s %s",
 						$db_field_name,
 						$param->operator,
-						$db->qstr($param->value)
+						self::_escapeSearchParam($param, $fields)
 					);
 				    break;
 					
