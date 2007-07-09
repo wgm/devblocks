@@ -77,13 +77,24 @@ abstract class DevblocksORMHelper {
             switch(strtoupper($field->db_type)) {
                 case 'B':
                 case 'X':
-                    if(!is_array($param->value)) {
-                        $where_value = "'" . $db->BlobEncode($param->value) . "'";
+                    if($db->blobEncodeType) {
+	                    if(!is_array($param->value)) {
+	                        $where_value = "'" . $db->BlobEncode($param->value) . "'";
+	                    } else {
+	                        $where_value = array();
+	                        foreach($param->value as $v) {
+	                            $where_value[] = "'" . $db->BlobEncode($v) . "'";
+	                        }
+	                    }
                     } else {
-                        $where_value = array();
-                        foreach($param->value as $v) {
-                            $where_value[] = "'" . $db->BlobEncode($v) . "'";
-                        }
+	                    if(!is_array($param->value)) {
+	                        $where_value = $db->qstr($param->value);
+	                    } else {
+	                        $where_value = array();
+	                        foreach($param->value as $v) {
+	                            $where_value[] = $db->qstr($v);
+	                        }
+	                    }
                     }
                     break;
                     
