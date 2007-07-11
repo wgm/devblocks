@@ -494,13 +494,16 @@ class _DevblocksEmailManager {
 	/**
 	 * Enter description here...
 	 *
-	 * @param unknown_type $use_defaults
-	 * @return Zend_Mail
+	 * @return Email
 	 */
-    // [TODO] We need a switch here from the settings for SMTP or Sendmail
-	function createInstance() {
-//		$transport="smtp",$mail_params=null
-		
+	function createEmail() {
+		return new Email();
+	}
+	
+	/**
+	 * @return boolean
+	 */
+	function send($from, $to=array(), Email $email) {
 		$settings = CerberusSettings::getInstance();
 
 		// SMTP
@@ -508,40 +511,41 @@ class _DevblocksEmailManager {
 		$smtp_user = $settings->get(CerberusSettings::SMTP_AUTH_USER,null);
 		$smtp_pass = $settings->get(CerberusSettings::SMTP_AUTH_PASS,null);
 		
-		$config = array();
-		if(!empty($smtp_user) && !empty($smtp_pass)) {
-			$config = array('auth' => 'login',
-	                'username' => $smtp_user,
-	                'password' => $smtp_pass);
+		$mailer = new Mailer_SMTP();
+		
+		if(!$mailer->connect($smtp_host, 25)) { // $smtp_user, $smtp_pass
+			return false;
 		}
 		
-		$mail = new Zend_Mail();
+		if(!$mailer->from($from)) {
+			return false;
+		}
 		
-		$tr = new Zend_Mail_Transport_Smtp($smtp_host, $config);
-		Zend_Mail::setDefaultTransport($tr);
+		foreach($to as $address) {
+			if(!$mailer->to($address)) {
+				return false;
+			}
+		}
 		
-		return $mail;
+		if(!$mailer->send($email)) {
+			return false;
+		}
+		
+		$mailer->quit();
+		
+		return true;
 	}
 
 	function testSmtp($server,$to,$from,$smtp_auth_user=null,$smtp_auth_pass=null) {
-		$mail = $this->createInstance(); /* @var $mail Zend_Mail */
-		$mail->addTo($to);
+		$mail = $this->createEmail();
+		
+		$mail->addRecipient($to);
 		$mail->setFrom($from, 'Your New Helpdesk');
 		$mail->setSubject('Testing Outgoing Mail!');
-		$mail->addHeader('Date', date('r'));
-		$mail->setBodyText('This is a test message.');
-		
-		$config = array();
-		if(!empty($smtp_auth_user) && !empty($smtp_auth_pass)) {
-			$config = array('auth' => 'login',
-	                'username' => $smtp_auth_user,
-	                'password' => $smtp_auth_pass);
-		}
-		// [TODO] Could probably connect without sending anything, using the log/last
-		$tr = new Zend_Mail_Transport_Smtp($server, $config);
-		$mail->send($tr);
-//		$conn = $tr->getConnection();
-//		print_r(array_shift($conn->getResponse()));
+		$mail->headers->set('Date', date('r'));
+		$mail->setTextBody('This is a test message.');
+
+		$this->send($from, array($to), $mail);
 	}
 	
 	function testImap($server, $port, $service, $username, $password) {
@@ -693,6 +697,7 @@ class _DevblocksClassLoadManager {
 	
     private function __construct() {
 		$this->_initPEAR();	
+		$this->_initLibs();	
 		$this->_initZend();
 	}
     
@@ -730,6 +735,18 @@ class _DevblocksClassLoadManager {
 		foreach($classes as $class) {
 			$this->classMap[$class] = $file;
 		}
+	}
+	
+	private function _initLibs() {
+		$path = DEVBLOCKS_PATH . 'libs/wamailer/';
+		
+		$this->registerClasses($path . 'mailer.class.php',array(
+			'Email',
+		));
+
+		$this->registerClasses($path . 'smtp.class.php',array(
+			'Mailer_SMTP',
+		));
 	}
 	
 	private function _initPEAR() {
