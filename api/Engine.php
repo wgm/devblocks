@@ -495,10 +495,12 @@ class _DevblocksEmailManager {
 	 * Enter description here...
 	 *
 	 * @param unknown_type $use_defaults
-	 * @return Mail
+	 * @return Zend_Mail
 	 */
     // [TODO] We need a switch here from the settings for SMTP or Sendmail
-	function createInstance($transport="smtp",$mail_params=null) {
+	function createInstance() {
+//		$transport="smtp",$mail_params=null
+		
 		$settings = CerberusSettings::getInstance();
 
 		// SMTP
@@ -506,58 +508,40 @@ class _DevblocksEmailManager {
 		$smtp_user = $settings->get(CerberusSettings::SMTP_AUTH_USER,null);
 		$smtp_pass = $settings->get(CerberusSettings::SMTP_AUTH_PASS,null);
 		
-		if(is_null($mail_params)) {
-			$mail_params = array();
-			$mail_params['host'] = $smtp_host;
-			$mail_params['timeout'] = 20;
+		$config = array();
+		if(!empty($smtp_user) && !empty($smtp_pass)) {
+			$config = array('auth' => 'login',
+	                'username' => $smtp_user,
+	                'password' => $smtp_pass);
 		}
 		
-		return Mail::factory($transport, $mail_params); /* @var $mailer Mail */
-	}
-	
-	/**
-	 * Enter description here...
-	 *
-	 * @return array
-	 */
-	function getDefaultHeaders() {
-	    $settings = CerberusSettings::getInstance();
-		$from_addy = $settings->get(CerberusSettings::DEFAULT_REPLY_FROM, $_SERVER['SERVER_ADMIN']);
-		$from_personal = $settings->get(CerberusSettings::DEFAULT_REPLY_PERSONAL,'');
-	    
-	    return array(
-	        'From' => $from_addy,
-	        'Date' => gmdate("r"),
-	        'Subject' => 'No subject',
-	        'Message-Id' => CerberusApplication::generateMessageId(),
-	        'X-Mailer' => 'Cerberus Helpdesk (Build '.APP_BUILD.')',
-	        'X-MailGenerator' => 'Cerberus Helpdesk (Build '.APP_BUILD.')',
-	    );
-	}
-	
-	/**
-	 * @return array
-	 */
-	function getErrors() {
-		return imap_errors();
-	}
-	
-	// [TODO] Implement SMTP Auth
-	function testSmtp($server,$to,$from,$smtp_auth_user=null,$smtp_auth_pass=null) {
-		$mail_params = array();
-		$mail_params['host'] = $server;
-		$mail_params['timeout'] = 20;
-		$mailer =& self::createInstance("smtp",$mail_params);
-
-		$headers = array(
-			'From' => $from,
-			'Subject' => 'No Subject',
-			'Date' => date("r")
-		);
-		$body = "Testing Outgoing Mail!";
-		$result = $mailer->send($to, $headers, $body);
+		$mail = new Zend_Mail();
 		
-		return $result;
+		$tr = new Zend_Mail_Transport_Smtp($smtp_host, $config);
+		Zend_Mail::setDefaultTransport($tr);
+		
+		return $mail;
+	}
+
+	function testSmtp($server,$to,$from,$smtp_auth_user=null,$smtp_auth_pass=null) {
+		$mail = $this->createInstance(); /* @var $mail Zend_Mail */
+		$mail->addTo($to);
+		$mail->setFrom($from, 'Your New Helpdesk');
+		$mail->setSubject('Testing Outgoing Mail!');
+		$mail->addHeader('Date', date('r'));
+		$mail->setBodyText('This is a test message.');
+		
+		$config = array();
+		if(!empty($smtp_auth_user) && !empty($smtp_auth_pass)) {
+			$config = array('auth' => 'login',
+	                'username' => $smtp_auth_user,
+	                'password' => $smtp_auth_pass);
+		}
+		// [TODO] Could probably connect without sending anything, using the log/last
+		$tr = new Zend_Mail_Transport_Smtp($server, $config);
+		$mail->send($tr);
+//		$conn = $tr->getConnection();
+//		print_r(array_shift($conn->getResponse()));
 	}
 	
 	function testImap($server, $port, $service, $username, $password) {
@@ -574,6 +558,14 @@ class _DevblocksEmailManager {
 			
 		return TRUE;
 	}
+	
+	/**
+	 * @return array
+	 */
+	function getErrors() {
+		return imap_errors();
+	}
+	
 }
 
 /**
@@ -909,15 +901,26 @@ class _DevblocksUrlManager {
 		return $parts;
 	}
 	
-	function write($sQuery='') {
+	// [TODO] Add ability to write full URLs rather than relative
+	function write($sQuery='',$full=false) {
 		$url = DevblocksPlatform::getUrlService();
 		$args = $url->parseQueryString($sQuery);
 		$c = @$args['c'];
 		
+		if($full) {
+			$prefix = sprintf("%s://%s%s",
+				'http', // [TODO] Should support SSL
+				$_SERVER['HTTP_HOST'],
+				DEVBLOCKS_WEBPATH
+			);
+		} else {
+			$prefix = DEVBLOCKS_WEBPATH;
+		}
+		
 		// Index page
 		if(empty($sQuery)) {
 		    return sprintf("%s%s",
-		        DEVBLOCKS_WEBPATH,
+		        $prefix,
 		        (DEVBLOCKS_REWRITE) ? '' : 'index.php/'
 		    );
 		}
@@ -925,7 +928,7 @@ class _DevblocksUrlManager {
 		// [JAS]: Internal non-component URL (images/css/js/etc)
 		if(empty($c)) {
 			$contents = sprintf("%s%s",
-				DEVBLOCKS_WEBPATH,
+				$prefix,
 				$sQuery
 			);
 	    
@@ -934,13 +937,13 @@ class _DevblocksUrlManager {
 		    
 			if(DEVBLOCKS_REWRITE) {
 				$contents = sprintf("%s%s",
-					DEVBLOCKS_WEBPATH,
+					$prefix,
 					(!empty($args) ? implode('/',array_values($args)) : '')
 				);
 				
 			} else {
 				$contents = sprintf("%sindex.php/%s",
-					DEVBLOCKS_WEBPATH,
+					$prefix,
 					(!empty($args) ? implode('/',array_values($args)) : '')
 //					(!empty($args) ? $sQuery : '')
 				);
