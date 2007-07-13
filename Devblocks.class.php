@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',124);
+define('PLATFORM_BUILD',127);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -37,6 +37,10 @@ class DevblocksPlatform extends DevblocksEngine {
     const CACHE_TRANSLATIONS = 'devblocks_translations';
     const CACHE_EVENT_POINTS = 'devblocks_event_points';
     const CACHE_EVENTS = 'devblocks_events';
+    
+    static private$start_time = 0;
+    static private $start_memory = 0;
+    static private $start_peak_memory = 0;
     
     private function __construct() {}
 
@@ -83,6 +87,18 @@ class DevblocksPlatform extends DevblocksEngine {
 	public static function registerClasses($file,$classes=array()) {
 		$classloader = self::getClassLoaderService();
 		return $classloader->registerClasses($file,$classes);
+	}
+	
+	public static function getStartTime() {
+		return self::$start_time;
+	}
+	
+	public static function getStartMemory() {
+		return self::$start_memory;
+	}
+	
+	public static function getStartPeakMemory() {
+		return self::$start_peak_memory;
 	}
 	
 	/**
@@ -568,6 +584,10 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return void
 	 */
 	static function init() {
+		self::$start_time = microtime(true);
+		self::$start_memory = memory_get_usage();
+		self::$start_peak_memory = memory_get_peak_usage();
+		
 	    // [JAS]: [TODO] Do we need an explicit init() call?
 	    // [JAS] [MDF]: Automatically determine the relative webpath to Devblocks files
 	    if(!defined('DEVBLOCKS_WEBPATH')) {

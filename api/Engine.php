@@ -501,6 +501,46 @@ class _DevblocksEmailManager {
 	}
 	
 	/**
+	 * Enter description here...
+	 *
+	 * @param unknown_type $infile
+	 * @param unknown_type $outfile
+	 * 
+	 * @author Jeff Standen <jeff@webgroupmedia.com>
+	 */
+	function streamedBase64Encode($infile, $outfile) {
+		/*
+		 * STREAMED ENCODE
+		 */
+
+		if(!file_exists($infile) || !is_writeable($outfile))
+			return FALSE;
+		
+		$in = fopen($infile, "rb");
+		$out = fopen($outfile, "wb");
+		
+		if(!$in || !$out)
+			return FALSE;
+			
+		$linelen = 0;
+		while(!feof($in)) {
+			$bytes = base64_encode(fread($in,3));
+		
+			$linelen += fwrite($out, $bytes, strlen($bytes));
+			
+			if($linelen >= 76) {
+				fwrite($out, "\n", 1);
+				$linelen = 0;
+			}
+		}
+		
+		@fclose($in);
+		@fclose($out);
+		
+		return TRUE;
+	}
+	
+	/**
 	 * @return boolean
 	 */
 	function send($from, $to=array(), Email $email) {

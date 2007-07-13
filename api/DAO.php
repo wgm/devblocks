@@ -140,7 +140,8 @@ abstract class DevblocksORMHelper {
 		
 		if(is_array($params))
 		foreach($params as $param) { /* @var $param DevblocksSearchCriteria */
-			if(!($param instanceOf DevblocksSearchCriteria)) continue;
+			if(!$param instanceOf DevblocksSearchCriteria) 
+				continue;
 			$where = "";
 			
 			// [JAS]: Filter allowed columns (ignore invalid/deprecated)
