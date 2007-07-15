@@ -28,6 +28,7 @@ class DevblocksSearchCriteria {
     const OPER_LT = '<';
     const OPER_GTE = '>=';
     const OPER_LTE = '<=';
+    const OPER_BETWEEN = 'between';
     
 	public $field;
 	public $operator;

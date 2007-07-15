@@ -199,6 +199,21 @@ abstract class DevblocksORMHelper {
 					);
 					break;
 				
+				/*
+				 * [TODO] Someday we may want to call this OPER_DATE_BETWEEN so it doesn't interfere 
+				 * with the operator in other uses
+				 */
+				case DevblocksSearchCriteria::OPER_BETWEEN:
+					if(!is_array($param->value) && 2 != count($param->value))
+						break;
+						
+					$where = sprintf("%s BETWEEN %s and %s",
+						$db_field_name,
+						(!is_numeric($param->value[0]) ? strtotime($param->value[0]) : $param->value[0]),
+						(!is_numeric($param->value[1]) ? strtotime($param->value[1]) : $param->value[1])
+					);
+					break;
+				
 				case DevblocksSearchCriteria::OPER_GT:
 				case DevblocksSearchCriteria::OPER_GTE:
 				case DevblocksSearchCriteria::OPER_LT:
