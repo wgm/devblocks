@@ -173,7 +173,7 @@ abstract class DevblocksVisit {
 	}
 	
 	public function get($key, $default=null) {
-		$value = $this->registry[$key];
+		@$value = $this->registry[$key];
 		
 		if(is_null($value) && !is_null($default)) 
 			$value = $default;
