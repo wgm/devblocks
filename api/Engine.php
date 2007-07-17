@@ -543,17 +543,21 @@ class _DevblocksEmailManager {
 	/**
 	 * @return boolean
 	 */
-	function send($from, $to=array(), Email $email) {
+	function send($from, $to=array(), Email $email, $smtp_host=null, $smtp_user=null, $smtp_pass=null, $smtp_port=null) {
 		$settings = CerberusSettings::getInstance();
 
-		// SMTP
-		$smtp_host = $settings->get(CerberusSettings::SMTP_HOST,'localhost');
-		$smtp_user = $settings->get(CerberusSettings::SMTP_AUTH_USER,null);
-		$smtp_pass = $settings->get(CerberusSettings::SMTP_AUTH_PASS,null);
-		
+		// SMTP settings from config unless overridden in function call
+		if (empty($smtp_host)) $smtp_host = $settings->get(CerberusSettings::SMTP_HOST,'localhost');
+		if (empty($smtp_user)) $smtp_user = $settings->get(CerberusSettings::SMTP_AUTH_USER,null);
+		if (empty($smtp_pass)) $smtp_pass = $settings->get(CerberusSettings::SMTP_AUTH_PASS,null);
+		if (empty($smtp_port)) $smtp_port = $settings->get(CerberusSettings::SMTP_PORT,'25');
 		$mailer = new Mailer_SMTP();
 		
-		if(!$mailer->connect($smtp_host, 25)) { // $smtp_user, $smtp_pass
+		// connect() function requires null for user/pass, not empty string
+		if (empty($smtp_user)) $smtp_user = null;
+		if (empty($smtp_pass)) $smtp_pass = null;
+		
+		if(!$mailer->connect($smtp_host, $smtp_port, $smtp_user, $smtp_pass)) {
 			return false;
 		}
 		
@@ -576,7 +580,7 @@ class _DevblocksEmailManager {
 		return true;
 	}
 
-	function testSmtp($server,$to,$from,$smtp_auth_user=null,$smtp_auth_pass=null) {
+	function testSmtp($server,$to,$from,$smtp_auth_user=null,$smtp_auth_pass=null,$smtp_port='25') {
 		$mail = $this->createEmail();
 		
 		$mail->addRecipient($to);
@@ -584,8 +588,8 @@ class _DevblocksEmailManager {
 		$mail->setSubject('Testing Outgoing Mail!');
 		$mail->headers->set('Date', date('r'));
 		$mail->setTextBody('This is a test message.');
-
-		$this->send($from, array($to), $mail);
+		
+		$this->send($from, array($to), $mail, $server, $smtp_auth_user, $smtp_auth_pass, $smtp_port);
 	}
 	
 	function testImap($server, $port, $service, $username, $password) {
