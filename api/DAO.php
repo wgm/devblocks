@@ -55,6 +55,33 @@ abstract class DevblocksORMHelper {
 		$db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 	}
 	
+	static protected function _updateWhere($table, $fields, $where) {
+		$db = DevblocksPlatform::getDatabaseService();
+		$sets = array();
+		
+		if(!is_array($fields) || empty($fields) || empty($where))
+			return;
+		
+		foreach($fields as $k => $v) {
+		    if(is_null($v))
+		        $value = 'NULL';
+		    else
+		        $value = $db->qstr($v);
+		    
+			$sets[] = sprintf("%s = %s",
+				$k,
+				$value
+			);
+		}
+			
+		$sql = sprintf("UPDATE %s SET %s WHERE %s",
+			$table,
+			implode(', ', $sets),
+			$where
+		);
+		$db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+	}
+	
 	static protected function _escapeSearchParam(DevblocksSearchCriteria $param, $fields) {
 	    $db = DevblocksPlatform::getDatabaseService();
 	    $field = $fields[$param->field];
