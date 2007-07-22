@@ -334,10 +334,10 @@ class DevblocksPlatform extends DevblocksEngine {
 		    $params = $rs->fields['params'];
 		    $point->params = !empty($params) ? unserialize($params) : array();
 
-		    if(!isset($plugins[$point->plugin_id]))
-		        continue;
+		    if(isset($plugins[$point->plugin_id])) {
+		    	$plugins[$point->plugin_id]->event_points[$point->id] = $point;
+		    }
 		    
-		    $plugins[$point->plugin_id]->event_points[$point->id] = $point;
 		    $rs->MoveNext();
 		}
 			
