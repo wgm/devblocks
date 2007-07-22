@@ -86,10 +86,36 @@ class DevblocksPluginManifest {
 	var $description = '';
 	var $author = '';
 	var $revision = 0;
+	var $file = '';
+	var $class = '';
 	var $dir = '';
 	var $extension_points = array();
 	var $extensions = array();
 	var $event_points = array();
+	
+	/**
+	 * @return DevblocksPlugin
+	 */
+	function createInstance() {
+		if(empty($this->id)) 
+			return null;
+
+//		$plugin = DevblocksPlatform::getPlugin($this->plugin_id);  /* @var $plugin DevblocksPluginManifest */
+	    
+		$class_file = DEVBLOCKS_PLUGIN_PATH . $this->dir . '/' . $this->file;
+		$class_name = $this->class;
+
+		DevblocksPlatform::registerClasses($class_file,array(
+		    $class_name
+		));
+		
+		if(!class_exists($class_name)) {
+			return null;
+		}
+		
+		$instance = new $class_name($this);
+		return $instance;
+	}
 	
 	function setEnabled($bool) {
 		$this->enabled = ($bool) ? 1 : 0;

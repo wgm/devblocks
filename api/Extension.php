@@ -3,6 +3,14 @@ abstract class DevblocksApplication {
 	
 }
 
+abstract class DevblocksPlugin {
+	public $id = '';
+	public $manifest = null;
+	
+	public function install(DevblocksPluginManifest $manifest) { return true; }
+	public function activate(DevblocksPluginManifest $manifest) { return true; }
+}
+
 /**
  * The superclass of instanced extensions.
  *

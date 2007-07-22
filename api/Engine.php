@@ -34,9 +34,19 @@ abstract class DevblocksEngine {
 		$manifest->author = (string) $plugin->author;
 		$manifest->revision = (integer) $plugin->revision;
 		$manifest->name = (string) $plugin->name;
+        $manifest->file = (string) $plugin->class->file;
+        $manifest->class = (string) $plugin->class->name;
 		
 		$db = DevblocksPlatform::getDatabaseService();
 		if(is_null($db)) return;
+		
+		// Instance and query the plugin::install before adding
+		/*
+		 * [TODO] This should be smart enough to know if a plugin is installed already.
+		 */
+		$plugin_instance = $manifest->createInstance();
+		if(!$plugin_instance->install($manifest))
+			return;
 
 		// [JAS]: [TODO] Move to platform DAO
 		$db->Replace(
@@ -47,6 +57,8 @@ abstract class DevblocksEngine {
 				'description' => $db->qstr($manifest->description),
 				'author' => $db->qstr($manifest->author),
 				'revision' => $manifest->revision,
+				'file' => $db->qstr($manifest->file),
+				'class' => $db->qstr($manifest->class),
 				'dir' => $db->qstr($manifest->dir)
 			),
 			array('id'),
@@ -494,102 +506,28 @@ class _DevblocksEmailManager {
 	/**
 	 * Enter description here...
 	 *
-	 * @return Email
+	 * @return Swift_Message
 	 */
-	function createEmail() {
-		return new Email();
+	function createMessage() {
+		return new Swift_Message();
 	}
 	
 	/**
-	 * Enter description here...
-	 *
-	 * @param unknown_type $infile
-	 * @param unknown_type $outfile
-	 * 
-	 * @author Jeff Standen <jeff@webgroupmedia.com>
+	 * @return Swift
 	 */
-	function streamedBase64Encode($infile, $outfile) {
-		/*
-		 * STREAMED ENCODE
-		 */
-
-		if(!file_exists($infile) || !is_writeable($outfile))
-			return FALSE;
-		
-		$in = fopen($infile, "rb");
-		$out = fopen($outfile, "wb");
-		
-		if(!$in || !$out)
-			return FALSE;
-			
-		$linelen = 0;
-		while(!feof($in)) {
-			$bytes = base64_encode(fread($in,3));
-		
-			$linelen += fwrite($out, $bytes, strlen($bytes));
-			
-			if($linelen >= 76) {
-				fwrite($out, "\n", 1);
-				$linelen = 0;
-			}
-		}
-		
-		@fclose($in);
-		@fclose($out);
-		
-		return TRUE;
-	}
-	
-	/**
-	 * @return boolean
-	 */
-	function send($from, $to=array(), Email $email, $smtp_host=null, $smtp_user=null, $smtp_pass=null, $smtp_port=null) {
+	function getMailer($smtp_host=null, $smtp_user=null, $smtp_pass=null, $smtp_port=null) {
 		$settings = CerberusSettings::getInstance();
 
-		// SMTP settings from config unless overridden in function call
+		// [TODO] This shouldn't have Cerberus-specific settings in it.
 		if (empty($smtp_host)) $smtp_host = $settings->get(CerberusSettings::SMTP_HOST,'localhost');
 		if (empty($smtp_user)) $smtp_user = $settings->get(CerberusSettings::SMTP_AUTH_USER,null);
 		if (empty($smtp_pass)) $smtp_pass = $settings->get(CerberusSettings::SMTP_AUTH_PASS,null);
 		if (empty($smtp_port)) $smtp_port = $settings->get(CerberusSettings::SMTP_PORT,'25');
-		$mailer = new Mailer_SMTP();
 		
-		// connect() function requires null for user/pass, not empty string
-		if (empty($smtp_user)) $smtp_user = null;
-		if (empty($smtp_pass)) $smtp_pass = null;
+		// [TODO] Reimplement SMTP Auth
 		
-		if(!$mailer->connect($smtp_host, $smtp_port, $smtp_user, $smtp_pass)) {
-			return false;
-		}
-		
-		if(!$mailer->from($from)) {
-			return false;
-		}
-		
-		foreach($to as $address) {
-			if(!$mailer->to($address)) {
-				return false;
-			}
-		}
-		
-		if(!$mailer->send($email)) {
-			return false;
-		}
-		
-		$mailer->quit();
-		
-		return true;
-	}
-
-	function testSmtp($server,$to,$from,$smtp_auth_user=null,$smtp_auth_pass=null,$smtp_port='25') {
-		$mail = $this->createEmail();
-		
-		$mail->addRecipient($to);
-		$mail->setFrom($from, 'Your New Helpdesk');
-		$mail->setSubject('Testing Outgoing Mail!');
-		$mail->headers->set('Date', date('r'));
-		$mail->setTextBody('This is a test message.');
-		
-		$this->send($from, array($to), $mail, $server, $smtp_auth_user, $smtp_auth_pass, $smtp_port);
+		$swift =& new Swift(new Swift_Connection_SMTP($smtp_host, $smtp_port));
+		return $swift;
 	}
 	
 	function testImap($server, $port, $service, $username, $password) {
@@ -782,14 +720,18 @@ class _DevblocksClassLoadManager {
 	}
 	
 	private function _initLibs() {
-		$path = DEVBLOCKS_PATH . 'libs/wamailer/';
+		$path = DEVBLOCKS_PATH . 'libs/swiftmailer/lib/';
 		
-		$this->registerClasses($path . 'mailer.class.php',array(
-			'Email',
+		$this->registerClasses($path . 'Swift.php',array(
+			'Swift',
+			'Swift_Message_Part',
+			'Swift_Message_Attachment',
+			'Swift_File',
+			'Swift_Address'
 		));
-
-		$this->registerClasses($path . 'smtp.class.php',array(
-			'Mailer_SMTP',
+			
+		$this->registerClasses($path . 'Swift/Connection/SMTP.php',array(
+			'Swift_Connection_SMTP',
 		));
 	}
 	

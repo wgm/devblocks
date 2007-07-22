@@ -37,7 +37,7 @@ $tables[$prefix.'patch_history'] = "
 
 $tables[$prefix.'plugin'] = "
 	id C(128) PRIMARY,
-	enabled I1 DEFAULT 1 NOTNULL,
+	enabled I1 DEFAULT 0 NOTNULL,
 	name C(128) DEFAULT '' NOTNULL,
 	description C(255) DEFAULT '' NOTNULL,
 	author C(64) DEFAULT '' NOTNULL,
