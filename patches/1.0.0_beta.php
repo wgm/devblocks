@@ -56,24 +56,24 @@ $prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 $tables = $datadict->MetaTables();
 
 // `plugin` ========================
-$columns = $datadict->MetaColumns($prefix.'plugin', false, false);
+$columns = $datadict->MetaColumns($prefix.'plugin');
 $indexes = $datadict->MetaIndexes($prefix.'plugin',false);
 
-if(!isset($columns['file'])) {
+if(!isset($columns['FILE'])) {
 	$sql = $datadict->AddColumnSQL($prefix.'plugin',"file C(128) DEFAULT '' NOTNULL");
 	$datadict->ExecuteSQLArray($sql);
 }
 
-if(!isset($columns['class'])) {
+if(!isset($columns['CLASS'])) {
 	$sql = $datadict->AddColumnSQL($prefix.'plugin',"class C(128) DEFAULT '' NOTNULL");
 	$datadict->ExecuteSQLArray($sql);
 }
 
 // `property_store` ========================
-$columns = $datadict->MetaColumns($prefix.'property_store', false, false);
+$columns = $datadict->MetaColumns($prefix.'property_store');
 $indexes = $datadict->MetaIndexes($prefix.'property_store',false);
 
-if(255 == @$columns['value']->max_length) {
+if(255 == @$columns['VALUE']->max_length) {
 	$datadict->ExecuteSQLArray($datadict->RenameColumnSQL($prefix.'property_store', 'value', 'value_old'));
 	$datadict->ExecuteSQLArray($datadict->AddColumnSQL($prefix.'property_store', "value B DEFAULT '' NOTNULL"));
 	
