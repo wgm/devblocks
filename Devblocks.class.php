@@ -107,7 +107,13 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return boolean
 	 */
 	static function isDatabaseEmpty() {
+		$tables = self::getDatabaseTables();
+	    return empty($tables);
+	}
+	
+	static function getDatabaseTables() {
 	    $cache = self::getCacheService();
+	    $tables = array();
 	    
 	    if(false === ($tables = $cache->load(self::CACHE_TABLES))) {
 	        $db = self::getDatabaseService();
@@ -115,7 +121,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	        $tables = $db->MetaTables('TABLE',false);
 	        $cache->save($tables, self::CACHE_TABLES);
 	    }
-	    return empty($tables);
+	    return $tables;
 	}
 
 	/**
