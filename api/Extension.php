@@ -199,8 +199,8 @@ class DevblocksHttpResponse extends DevblocksHttpIO {
 	/**
 	 * @param array $path
 	 */
-	function __construct($path) {
-		parent::__construct($path);
+	function __construct($path, $query=array()) {
+		parent::__construct($path, $query);
 	}
 }
 

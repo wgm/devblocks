@@ -900,6 +900,10 @@ class _DevblocksUrlManager {
 		if(empty($request)) return array();
 		
 		$parts = split('/', $request);
+
+		if(trim($parts[count($parts)-1]) == '') {
+			unset($parts[count($parts)-1]);
+		}
 		
 		return $parts;
 	}
@@ -954,6 +958,26 @@ class _DevblocksUrlManager {
 		}
 		
 		return $contents;
+	}
+	
+	/**
+	 * Useful for converting DevblocksRequest and DevblocksResponse objects to a URL
+	 */
+	function writeDevblocksHttpIO($request, $full=false) {
+		$url_str = '';
+		$prefix = '';
+		for($i=0; $i < sizeof($request->path); $i++) {//print_r($request);echo "<br>\n". $request->path;exit();
+			$url_str .= $request->path[$i] . '/';
+		}
+		$prefix = '?';
+		$query_str = '';
+		foreach($request->query as $key=>$val) {
+			$url_str .= $prefix . $key . '=' . $val;
+			$prefix = '&';
+		}
+		$url_str .= $query_str;
+		
+		return $this->write($url_str, $full);
 	}
 };
 
