@@ -619,6 +619,7 @@ class DevblocksPlatform extends DevblocksEngine {
 
 	static function redirect(DevblocksHttpIO $httpIO) {
 		$url_service = self::getUrlService();
+		session_write_close();
 		header('location: '.$url_service->writeDevblocksHttpIO($httpIO));
 	}
 };
