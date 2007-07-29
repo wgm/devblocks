@@ -964,19 +964,21 @@ class _DevblocksUrlManager {
 	 * Useful for converting DevblocksRequest and DevblocksResponse objects to a URL
 	 */
 	function writeDevblocksHttpIO($request, $full=false) {
-		$url_str = '';
-		$prefix = '';
-		for($i=0; $i < sizeof($request->path); $i++) {//print_r($request);echo "<br>\n". $request->path;exit();
-			$url_str .= $request->path[$i] . '/';
+		$url_str='';
+
+		if($request->path[0] != '') {
+			$c = array_shift($request->path);
 		}
+		if(sizeof($request->path) > 0) {
+			$url_str = implode('/', $request->path) . '/';
+		}
+		
 		$prefix = '?';
-		$query_str = '';
 		foreach($request->query as $key=>$val) {
 			$url_str .= $prefix . $key . '=' . $val;
 			$prefix = '&';
 		}
-		$url_str .= $query_str;
-		
+		$url_str = 'c='.$c.'&f='.$url_str;
 		return $this->write($url_str, $full);
 	}
 };

@@ -591,8 +591,10 @@ class DevblocksPlatform extends DevblocksEngine {
 	 */
 	static function init() {
 		self::$start_time = microtime(true);
-		self::$start_memory = memory_get_usage();
-		self::$start_peak_memory = memory_get_peak_usage();
+		if(function_exists('memory_get_usage')) {
+			self::$start_memory = memory_get_usage();
+			self::$start_peak_memory = memory_get_peak_usage();
+		}
 		
 	    // [JAS]: [TODO] Do we need an explicit init() call?
 	    // [JAS] [MDF]: Automatically determine the relative webpath to Devblocks files
