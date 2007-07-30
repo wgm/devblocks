@@ -271,14 +271,15 @@ abstract class DevblocksEngine {
 			default:
 	            $controllers = DevblocksPlatform::getExtensions('devblocks.controller', true);
 	            $router = DevblocksPlatform::getRoutingService();
-	            
 				/*
 				 * [JAS]: Try to find our command in the URI lookup first, and if we
 				 * fail then fall back to raw extension ids.
 				 */
-                if(null == ($controller_id = $router->getRoute($controller_uri))
-                    || null == ($controller = $controllers[$controller_id]) ) {
-	                $controller = $controllers[APP_DEFAULT_CONTROLLER];
+				if(null == ($controller_id = $router->getRoute($controller_uri))
+						|| null == ($controller = $controllers[$controller_id]) ) {
+					if(trim($controller_uri)==='') {
+						$controller = $controllers[APP_DEFAULT_CONTROLLER];
+					}
 				}
 				
 				if($controller instanceof DevblocksHttpRequestHandler) {
