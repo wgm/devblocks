@@ -277,9 +277,7 @@ abstract class DevblocksEngine {
 				 */
 				if(null == ($controller_id = $router->getRoute($controller_uri))
 						|| null == ($controller = $controllers[$controller_id]) ) {
-					if(trim($controller_uri)==='') {
 						$controller = $controllers[APP_DEFAULT_CONTROLLER];
-					}
 				}
 				
 				if($controller instanceof DevblocksHttpRequestHandler) {
