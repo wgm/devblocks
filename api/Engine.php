@@ -779,6 +779,18 @@ class _DevblocksClassLoadManager {
 			'Zend_Date',
 		));
 		
+		$this->registerClasses($path . 'Feed/Exception.php', array(
+			'Zend_Feed_Exception',
+		));
+		
+		$this->registerClasses($path . 'Feed/Atom.php', array(
+			'Zend_Feed_Atom',
+		));
+		
+		$this->registerClasses($path . 'Feed/Rss.php', array(
+			'Zend_Feed_Rss',
+		));
+		
 		$this->registerClasses($path . 'Locale.php', array(
 			'Zend_Locale',
 		));

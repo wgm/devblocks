@@ -38,7 +38,7 @@ class DevblocksPlatform extends DevblocksEngine {
     const CACHE_EVENT_POINTS = 'devblocks_event_points';
     const CACHE_EVENTS = 'devblocks_events';
     
-    static private$start_time = 0;
+    static private $start_time = 0;
     static private $start_memory = 0;
     static private $start_peak_memory = 0;
     
