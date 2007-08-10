@@ -695,19 +695,20 @@ class _DevblocksClassLoadManager {
 	public function loadClass($className) {
 		if(class_exists($className)) return;
 		
-		$file = $this->classMap[$className];
+		@$file = $this->classMap[$className];
 		
 		if(!is_null($file)) {
 			require_once($file);
 		} else {
 	       	// [TODO]: Exception, log
 	       	// [TODO] It's probably not a good idea to send this much info to the browser
-	       	echo sprintf("<b>ERROR: ClassLoader could not find '%s':</b><br><pre>",
+	       	echo sprintf("<b>ERROR: ClassLoader could not find '%s':</b><br>",
 	       	    $className
 	       	);
-	       	print_r(debug_backtrace());
-	       	echo "</pre>";
-	       	die;
+//	       	echo "<pre>";
+//	       	print_r(debug_backtrace());
+//	       	echo "</pre>";
+//	       	die;
 		}
 	}
 	
