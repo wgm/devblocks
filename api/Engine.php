@@ -784,6 +784,10 @@ class _DevblocksClassLoadManager {
 			'Zend_Feed_Exception',
 		));
 		
+		$this->registerClasses($path . 'Feed.php', array(
+			'Zend_Feed',
+		));
+		
 		$this->registerClasses($path . 'Feed/Atom.php', array(
 			'Zend_Feed_Atom',
 		));

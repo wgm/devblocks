@@ -101,6 +101,30 @@ function checkAll(divName, state) {
 	}
 }
 
+// [MDF]
+function insertAtCursor(field, value) {
+	if (document.selection) {
+		field.focus();
+		sel = document.selection.createRange();
+		sel.text = value;
+		field.focus();
+	} 
+	else if (field.selectionStart || field.selectionStart == '0') {
+		var startPos = field.selectionStart;
+		var endPos = field.selectionEnd;
+		var cursorPos = startPos + value.length;
+
+		field.value = field.value.substring(0, startPos) + value	+ field.value.substring(endPos, field.value.length);
+
+		field.selectionStart = cursorPos;
+		field.selectionEnd = cursorPos;
+	}
+	else{
+		field.value += value;
+	} 
+
+}
+
 // [JAS]: [TODO] Make this a little more generic?
 function appendTextboxAsCsv(formName, field, oLink) {
 	var frm = document.getElementById(formName);
@@ -129,24 +153,32 @@ function genericAjaxPanel(request,target,modal,width) {
 	  fixedcenter : false,
 	  visible : false, 
 	  constraintoviewport : true,
-	  underlay : "none",
+	  underlay : "shadow",
 	  modal : false,
-	  close : false,
-	  draggable : false
+	  close : true,
+	  draggable : true
 	};
 
 	if(null != width) options.width = width;
 	if(null != modal) options.modal = modal;
 	if(true == modal) options.fixedcenter = true;
+//	if(true != modal) options.draggable = true;
 	
 	var cObj = YAHOO.util.Connect.asyncRequest('GET', DevblocksAppPath+'ajax.php?'+request, {
 			success: function(o) {
 				var caller = o.argument.caller;
 				var target = o.argument.target;
 				var options = o.argument.options;
-					
-				genericPanel = new YAHOO.widget.Panel("genericPanel", options);
 				
+				if(null == genericPanel) {
+					genericPanel = new YAHOO.widget.Panel("genericPanel", options);
+				} else {
+					genericPanel.cfg.setProperty('width',options.width);
+					genericPanel.cfg.setProperty('fixedcenter',options.fixedcenter);
+					genericPanel.cfg.setProperty('modal',options.modal);
+				}
+				
+				genericPanel.setHeader('&nbsp;');
 				genericPanel.setBody('');
 				genericPanel.render(document.body);
 				
