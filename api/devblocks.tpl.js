@@ -143,7 +143,7 @@ function appendTextboxAsCsv(formName, field, oLink) {
 }
 
 var genericPanel;
-function genericAjaxPanel(request,target,modal,width) {
+function genericAjaxPanel(request,target,modal,width,cb) {
 	if(null != genericPanel) {
 		genericPanel.hide();
 	}
@@ -169,7 +169,8 @@ function genericAjaxPanel(request,target,modal,width) {
 				var caller = o.argument.caller;
 				var target = o.argument.target;
 				var options = o.argument.options;
-				
+				var callback = o.argument.cb;
+								
 				if(null == genericPanel) {
 					genericPanel = new YAHOO.widget.Panel("genericPanel", options);
 				} else {
@@ -189,10 +190,12 @@ function genericAjaxPanel(request,target,modal,width) {
 					genericPanel.cfg.setProperty('context',[target,"bl","tl"]);
 				}
 				
+				try { callback(o); } catch(e) {}				
+				
 				genericPanel.show();
 			},
 			failure: function(o) {},
-			argument:{request:request,target:target,options:options}
+			argument:{request:request,target:target,options:options,cb:cb}
 		}
 	);	
 }

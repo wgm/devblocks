@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',148);
+define('PLATFORM_BUILD',149);
 
 /**
  *  @defgroup core Devblocks Framework Core
