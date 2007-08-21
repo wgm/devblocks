@@ -26,6 +26,22 @@ function selectValue(e) {
 	return e.options[e.selectedIndex].value;
 }
 
+function radioValue(e) {
+	var	numBoxes = e.length;
+
+	if(null == e.length) { // single
+		return e.value;
+	
+	} else { // multi
+		for(x=0;x<numBoxes;x++) {
+			if(e[x].checked)
+				return e[x].value;
+		}
+	}
+
+	return null;
+}
+
 function clearDiv(divName) {
 	var div = document.getElementById(divName);
 	if(null == div) return;
@@ -145,7 +161,8 @@ function appendTextboxAsCsv(formName, field, oLink) {
 var genericPanel;
 function genericAjaxPanel(request,target,modal,width,cb) {
 	if(null != genericPanel) {
-		genericPanel.hide();
+		genericPanel.destroy();
+		genericPanel = null;
 	}
 
 	var options = { 
@@ -170,14 +187,16 @@ function genericAjaxPanel(request,target,modal,width,cb) {
 				var target = o.argument.target;
 				var options = o.argument.options;
 				var callback = o.argument.cb;
-								
-				if(null == genericPanel) {
-					genericPanel = new YAHOO.widget.Panel("genericPanel", options);
-				} else {
-					genericPanel.cfg.setProperty('width',options.width);
-					genericPanel.cfg.setProperty('fixedcenter',options.fixedcenter);
-					genericPanel.cfg.setProperty('modal',options.modal);
-				}
+
+				genericPanel = new YAHOO.widget.Panel("genericPanel", options);
+				genericPanel.hideEvent.subscribe(function(type,args,me) {
+					try {
+						setTimeout(function(){
+							genericPanel.destroy();
+							genericPanel = null;
+						},100);
+					} catch(e){}
+				});
 				
 				genericPanel.setHeader('&nbsp;');
 				genericPanel.setBody('');
@@ -188,6 +207,8 @@ function genericAjaxPanel(request,target,modal,width,cb) {
 				
 				if(null != target && !options.fixedcenter) {
 					genericPanel.cfg.setProperty('context',[target,"bl","tl"]);
+				} else {
+					genericPanel.center();
 				}
 				
 				try { callback(o); } catch(e) {}				
@@ -208,12 +229,14 @@ function saveGenericAjaxPanel(div,close,cb) {
 				var callback = o.argument.cb;
 				var close = o.argument.close;
 				
-				try { callback(o); } catch(e) {}
-
 				if(null != genericPanel && close) {
-					genericPanel.hide();
+					try {
+						genericPanel.destroy();
+						genericPanel = null;
+					} catch(e) {}
 				}
 				
+				try { callback(o); } catch(e) {}
 			},
 			failure: function(o) {},
 			argument:{div:div,close:close,cb:cb}

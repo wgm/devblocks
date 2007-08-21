@@ -1,4 +1,7 @@
 <?php
+$path = APP_PATH . '/libs/devblocks/libs/ZendFramework/Zend/';
+require_once($path.'Cache.php');
+
 function __autoload($className) {
 	DevblocksPlatform::loadClass($className);
 }
@@ -234,7 +237,7 @@ abstract class DevblocksEngine {
 		        if(!is_file($resource) || 'php' == $ext) die(""); // extension security
 		        
                 // Caching
-	            if($ext == 'js' || $ext == 'png' || $ext == 'gif' || $ext == 'jpg') {
+	            if($ext == 'css' || $ext == 'js' || $ext == 'png' || $ext == 'gif' || $ext == 'jpg') {
 	                header('Cache-control: max-age=604800', true); // 1 wk // , must-revalidate
 	                header('Expires: ' . gmdate('D, d M Y H:i:s',time()+604800) . ' GMT'); // 1 wk
 	                header('Content-length: '. filesize($resource));
@@ -673,15 +676,31 @@ class _DevblocksPatchManager {
 };
 
 class _DevblocksClassLoadManager {
+	const CACHE_CLASS_MAP = 'devblocks_classloader_map';
+	
     private static $instance = null;
 	private $classMap = array();
+	private $newRegisters = 0;
 	
     private function __construct() {
-		$this->_initPEAR();	
-		$this->_initLibs();	
-		$this->_initZend();
+		$cache = DevblocksPlatform::getCacheService();
+		if(false !== ($map = $cache->load(self::CACHE_CLASS_MAP))) {
+			$this->classMap = $map;
+		} else {
+			$this->_initPEAR();	
+			$this->_initLibs();	
+			$this->_initZend();
+		}
 	}
     
+	public function __destruct() {
+		// [JAS]: If newly registered this instance, add to cache
+		if($this->newRegisters) {
+			$cache = _DevblocksCacheManager::getInstance();
+			$cache->save($this->classMap, self::CACHE_CLASS_MAP);
+		}
+	}
+	
 	/**
 	 * @return _DevblocksRoutingManager
 	 */
@@ -694,7 +713,7 @@ class _DevblocksClassLoadManager {
 	
 	public function loadClass($className) {
 		if(class_exists($className)) return;
-		
+
 		@$file = $this->classMap[$className];
 		
 		if(!is_null($file)) {
@@ -715,6 +734,8 @@ class _DevblocksClassLoadManager {
 	public function registerClasses($file,$classes=array()) {
 		if(is_array($classes))
 		foreach($classes as $class) {
+			if(!isset($this->classMap[$class]))
+				$this->newRegisters++;
 			$this->classMap[$class] = $file;
 		}
 	}

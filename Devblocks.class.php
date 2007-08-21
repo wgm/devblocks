@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',149);
+define('PLATFORM_BUILD',150);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -394,10 +394,20 @@ class DevblocksPlatform extends DevblocksEngine {
 
 	                $path = $dir . '/' . $file;
 	                if(is_dir($path) && file_exists($path.'/plugin.xml')) {
-	                    $manifest = self::_readPluginManifest($file);
+	                    $manifest = self::_readPluginManifest($file); /* @var $manifest DevblocksPluginManifest */
 	                    if(null != $manifest) {
 	                        $plugins[] = $manifest;
 	                    }
+
+	                   /*
+	                    * [TODO] Somehow here we need to cache the classes from the plugin so
+	                    * we don't have to load up the file unless we need it.
+	                    * 
+	                    * The main place this happens is when some class from a plugin gets 
+	                    * persisted in the session.
+	                    */
+//	                   $instance = $manifest->createInstance();
+//	                   $instance->load($manifest);
 	                }
 	            }
 	            closedir($dh);

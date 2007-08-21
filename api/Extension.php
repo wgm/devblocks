@@ -8,7 +8,7 @@ abstract class DevblocksPlugin {
 	public $manifest = null;
 	
 	public function install(DevblocksPluginManifest $manifest) { return true; }
-	public function activate(DevblocksPluginManifest $manifest) { return true; }
+	public function load(DevblocksPluginManifest $manifest) { return true; }
 }
 
 /**
