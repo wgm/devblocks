@@ -140,10 +140,40 @@ class DevblocksPlatform extends DevblocksEngine {
 		
 		if(null == ($build_cache = $cache->load("devblocks_app_build"))
 			|| $build_cache != APP_BUILD) {
-			return false;			
+			if(self::_needsToPatch()) {
+				return false;
+			} else {
+				$cache->save(APP_BUILD, "devblocks_app_build");
+				return true;
+			}
 		}
 		
 		return true;
+	}
+	
+	/**
+	 * Enter description here...
+	 *
+	 * @return boolean
+	 */
+	static private function _needsToPatch() {
+		 $plugins = DevblocksPlatform::getPluginRegistry();
+		 $containers = DevblocksPlatform::getExtensions("devblocks.patch.container", true);
+
+		 // [JAS]: Devblocks
+		 array_unshift($containers, new PlatformPatchContainer());
+		 
+		 foreach($containers as $container) { /* @var $container DevblocksPatchContainerExtension */
+			foreach($container->getPatches() as $patch) { /* @var $patch DevblocksPatch */
+				if(!$patch->hasRun()) {
+//					echo "Need to run a patch: ",$patch->getPluginId(),$patch->getRevision();
+					return true;
+				}
+			}
+		 }
+		 
+//		 echo "Don't need to run any patches.";
+		 return false;
 	}
 	
 	/**
