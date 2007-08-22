@@ -328,7 +328,8 @@ class DAO_Platform {
 		$db = DevblocksPlatform::getDatabaseService();
 		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 		
-		$sql = sprintf("SELECT run_date FROM %spatch_history WHERE plugin_id = %s AND revision = %d",
+		// [JAS]: [TODO] Does the GTE below do what we need with the primary key mucking up redundant patches?
+		$sql = sprintf("SELECT run_date FROM %spatch_history WHERE plugin_id = %s AND revision >= %d",
 			$prefix,
 			$db->qstr($plugin_id),
 			$revision

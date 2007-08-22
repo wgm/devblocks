@@ -409,7 +409,7 @@ class _DevblocksCacheManager {
 		if(null == self::$instance) {
 
 	        $frontendOptions = array(
-			   'lifetime' => 7200, // 2 hours 
+			   'lifetime' => null, // forever 
 			   'automaticSerialization' => true
 			);
 
