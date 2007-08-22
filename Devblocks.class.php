@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',150);
+define('PLATFORM_BUILD',151);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -75,8 +75,14 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * 
 	 */
 	static function clearCache() {
-	    $cache = self::getCacheService();
-	    $cache->clean();
+	    $cache = self::getCacheService(); /* @var $cache Zend_Cache_Core */
+	    $cache->remove(self::CACHE_PLUGINS);
+	    $cache->remove(self::CACHE_EXTENSIONS);
+	    $cache->remove(self::CACHE_POINTS);
+	    $cache->remove(self::CACHE_EVENT_POINTS);
+	    $cache->remove(self::CACHE_EVENTS);
+	    $cache->remove(self::CACHE_TABLES);
+	    $cache->remove(self::CACHE_TRANSLATIONS);
 	}
 
 	public static function loadClass($className) {
@@ -124,6 +130,75 @@ class DevblocksPlatform extends DevblocksEngine {
 	    return $tables;
 	}
 
+	/**
+	 * Checks to see if the application needs to patch
+	 *
+	 * @return boolean
+	 */
+	static function versionConsistencyCheck() {
+		$cache = self::getCacheService();
+		
+		if(null == ($build_cache = $cache->load("devblocks_app_build"))
+			|| $build_cache != APP_BUILD) {
+			return false;			
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * Runs patches for all active plugins
+	 *
+	 * @return boolean
+	 */
+	static function runPluginPatches() {
+	    // Log out all sessions before patching
+		$db = DevblocksPlatform::getDatabaseService();
+		$db->Execute(sprintf("DELETE FROM %s_session", APP_DB_PREFIX));
+		
+		$patchMgr = DevblocksPlatform::getPatchService();
+		
+//		echo "Patching platform... ";
+		
+		// [JAS]: Run our overloaded container for the platform
+		$patchMgr->registerPatchContainer(new PlatformPatchContainer());
+		
+		// Clean script
+		if(!$patchMgr->run()) {
+			return false;
+		    
+		} else { // success
+			// Read in plugin information from the filesystem to the database
+			DevblocksPlatform::readPlugins();
+			
+			$plugins = DevblocksPlatform::getPluginRegistry();
+			
+			DevblocksPlatform::clearCache();
+			
+			// Run enabled plugin patches
+			$patches = DevblocksPlatform::getExtensions("devblocks.patch.container");
+			
+			if(is_array($patches))
+			foreach($patches as $patch_manifest) { /* @var $patch_manifest DevblocksExtensionManifest */ 
+				 $container = $patch_manifest->createInstance(); /* @var $container DevblocksPatchContainerExtension */
+				 $patchMgr->registerPatchContainer($container);
+			}
+			
+//			echo "Patching plugins... ";
+			
+			if(!$patchMgr->run()) { // fail
+				return false;
+			}
+			
+//			echo "done!<br>";
+
+			$cache = self::getCacheService();
+			$cache->save(APP_BUILD, "devblocks_app_build");
+
+			return true;
+		}
+	}
+	
 	/**
 	 * Returns the list of extensions on a given extension point.
 	 *
