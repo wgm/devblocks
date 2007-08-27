@@ -37,41 +37,7 @@ class CloudGlue {
 	 */
 	function getCloud($cfg) {
 		return new CloudGlueCloud($cfg);
-		
-//		DAO_CloudGlue::lookupTag('cerberus helpdesk',true);
-//		DAO_CloudGlue::lookupTag('portsensor',true);
-//		DAO_CloudGlue::lookupTag('jeff',true);
-//		DAO_CloudGlue::lookupTag('dan',true);
-//		DAO_CloudGlue::lookupTag('installing',true);
-//		DAO_CloudGlue::lookupTag('cpanel',true);
-//		DAO_CloudGlue::lookupTag('linux',true);
-		
-//		DAO_CloudGlue::lookupIndex('posts',true);
-
-//		DAO_CloudGlue::applyTags(array('colors','jeff'),16,'posts');
-//		DAO_CloudGlue::applyTags(array('portsensor','cerberus helpdesk','clartok','jeff'),25,'posts');
-//		DAO_CloudGlue::applyTags(array('portsensor','german','jeff'),20,'posts');
 	}
-	
-	/**
-	 * Takes a comma-separated value string and returns an array of tokens.
-	 *
-	 * @param string $string
-	 * @return array
-	 */
-	static function parseCsvString($string) {
-		$tokens = explode(',', $string);
-
-		if(!is_array($tokens))
-			return array();
-		
-		foreach($tokens as $k => $v) {
-			$tokens[$k] = trim($v);
-		}
-		
-		return $tokens;
-	}
-	
 };
 
 class CloudGlueCloud {
@@ -135,6 +101,15 @@ class CloudGlueCloud {
 		
 		$tpl->display("file:$path/cloud.tpl.php");
 		// draw the cloud from a template
+	}
+	
+	function getPathTagInfo() {
+		$tags = DAO_CloudGlue::getCloudTags($this->cfg->indexName,$this->getPath());
+		return array(
+			'tags' => $tags[0],
+			'weights' => $tags[1],
+			'font_weights' => $this->scaleWeights($tags[1]),
+		);
 	}
 	
 	private function scaleWeights($weights) {

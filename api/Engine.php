@@ -235,14 +235,27 @@ abstract class DevblocksEngine {
 		        if(0 != strstr($dir,$resource)) die("");
 		        $ext = @array_pop(explode('.', $resource));
 		        if(!is_file($resource) || 'php' == $ext) die(""); // extension security
-		        
+
                 // Caching
 	            if($ext == 'css' || $ext == 'js' || $ext == 'png' || $ext == 'gif' || $ext == 'jpg') {
 	                header('Cache-control: max-age=604800', true); // 1 wk // , must-revalidate
 	                header('Expires: ' . gmdate('D, d M Y H:i:s',time()+604800) . ' GMT'); // 1 wk
 	                header('Content-length: '. filesize($resource));
 	            }
-		        
+
+	            // [TODO] Get a better mime list together?
+	            switch($ext) {
+	            	case 'css':
+	            		header('Content-type: text/css;');
+	            		break;
+	            	case 'js':
+	            		header('Content-type: text/javascript;');
+	            		break;
+	            	case 'xml':
+	            		header('Content-type: text/xml;');
+	            		break;
+	            }
+	            
 		        echo file_get_contents($resource,false);
 				exit;
     	        break;
