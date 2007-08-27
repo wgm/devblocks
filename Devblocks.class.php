@@ -210,8 +210,10 @@ class DevblocksPlatform extends DevblocksEngine {
 			
 			if(is_array($patches))
 			foreach($patches as $patch_manifest) { /* @var $patch_manifest DevblocksExtensionManifest */ 
-				 $container = $patch_manifest->createInstance(); /* @var $container DevblocksPatchContainerExtension */
-				 $patchMgr->registerPatchContainer($container);
+				$container = $patch_manifest->createInstance(); /* @var $container DevblocksPatchContainerExtension */
+				if(!is_null($container)) {
+					$patchMgr->registerPatchContainer($container);
+				}
 			}
 			
 //			echo "Patching plugins... ";
