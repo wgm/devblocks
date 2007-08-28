@@ -231,7 +231,6 @@ class DAO_CloudGlue {
 		if(!is_array($ids)) $ids = array($ids);
 
 		$db = DevblocksPlatform::getDatabaseService();
-		$tags = array();
 
 		$sql = "SELECT t.id, t.name ".
 			"FROM tag t ".
@@ -239,16 +238,35 @@ class DAO_CloudGlue {
 			"ORDER BY t.name "
 			;
 		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+
+		return self::_getObjectsFromResultSet($rs);
+	}
+	
+	static function getTagsWhere($where = null) {
+		$db = DevblocksPlatform::getDatabaseService();
+
+		$sql = "SELECT t.id, t.name ".
+			"FROM tag t ".
+			(!empty($where) ? sprintf("WHERE %s ",$where) : " ").
+			"ORDER BY t.name "
+			;
+		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		
+		return self::_getObjectsFromResultSet($rs);
+	}
+	
+	private static function _getObjectsFromResultSet(ADORecordSet $rs) {
+		$objects = array();
 		
 		while(!$rs->EOF) {
 			$tag = new CloudGlueTag();
 			$tag->id = intval($rs->fields['id']);
 			$tag->name = $rs->fields['name'];
-			$tags[$tag->id] = $tag;
+			$objects[$tag->id] = $tag;
 			$rs->MoveNext();
 		}
 		
-		return $tags;
+		return $objects;
 	}
 	
 	/**

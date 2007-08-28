@@ -208,7 +208,7 @@ abstract class DevblocksORMHelper {
 //					if(!is_array($param->value)) break;
 					$where = sprintf("%s LIKE %s",
 						$db_field_name,
-						str_replace('*','%%',self::_escapeSearchParam($param, $fields))
+						str_replace('*','%',self::_escapeSearchParam($param, $fields))
 					);
 					break;
 				
