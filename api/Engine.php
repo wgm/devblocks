@@ -846,6 +846,13 @@ class _DevblocksClassLoadManager {
 			'Zend_Translate_Adapter_Tmx',
 		));
 		
+		$this->registerClasses($path . 'Search/Lucene.php', array(
+			'Zend_Search_Lucene',
+			'Zend_Search_Lucene_Document',
+			'Zend_Search_Lucene_Field',
+			'Zend_Search_Lucene_Search_QueryHit',
+		));
+		
 		$this->registerClasses($path . 'Mail.php', array(
 			'Zend_Mail',
 		));
