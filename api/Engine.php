@@ -826,6 +826,10 @@ class _DevblocksClassLoadManager {
 			'Zend_Feed_Atom',
 		));
 		
+		$this->registerClasses($path . 'Feed/Builder.php', array(
+			'Zend_Feed_Builder',
+		));
+		
 		$this->registerClasses($path . 'Feed/Rss.php', array(
 			'Zend_Feed_Rss',
 		));

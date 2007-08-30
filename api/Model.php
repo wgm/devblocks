@@ -30,6 +30,9 @@ class DevblocksSearchCriteria {
     const OPER_LTE = '<=';
     const OPER_BETWEEN = 'between';
     
+    const GROUP_OR = 'OR';
+    const GROUP_AND = 'AND';
+    
 	public $field;
 	public $operator;
 	public $value;
@@ -47,6 +50,185 @@ class DevblocksSearchCriteria {
 		$this->operator = $oper;
 		$this->value = $value;
 	}
+	
+	/*
+	 * [TODO] [JAS] Having to pass $fields here is kind of silly, but I'm ignoring 
+	 * for now since it's only called in 2 abstracted places.
+	 */
+	public function getWhereSQL($fields) {
+		$where = '';
+		
+		$db_field_name = $fields[$this->field]->db_table . '.' . $fields[$this->field]->db_column; 
+
+		// [JAS]: Operators
+		switch($this->operator) {
+			case "=":
+				$where = sprintf("%s = %s",
+					$db_field_name,
+					self::_escapeSearchParam($this, $fields)
+				);
+				break;
+				
+			case "!=":
+				$where = sprintf("%s != %s",
+					$db_field_name,
+					self::_escapeSearchParam($this, $fields)
+				);
+				break;
+			
+			case "in":
+				if(!is_array($this->value)) break;
+				$where = sprintf("%s IN ('%s')",
+					$db_field_name,
+					implode("','",$this->value) // [TODO] Needs BlobEncode compat
+				);
+				break;
+				
+			case DevblocksSearchCriteria::OPER_LIKE:
+				$where = sprintf("%s LIKE %s",
+					$db_field_name,
+					str_replace('*','%',self::_escapeSearchParam($this, $fields))
+				);
+				break;
+			
+			case DevblocksSearchCriteria::OPER_NOT_LIKE:
+				$where = sprintf("%s NOT LIKE %s",
+					$db_field_name,
+					str_replace('*','%%',self::_escapeSearchParam($this, $fields))
+				);
+				break;
+			
+			case DevblocksSearchCriteria::OPER_IS_NULL:
+				$where = sprintf("%s IS NULL",
+					$db_field_name
+				);
+				break;
+			
+			/*
+			 * [TODO] Someday we may want to call this OPER_DATE_BETWEEN so it doesn't interfere 
+			 * with the operator in other uses
+			 */
+			case DevblocksSearchCriteria::OPER_BETWEEN:
+				if(!is_array($$this->value) && 2 != count($this->value))
+					break;
+					
+				$where = sprintf("%s BETWEEN %s and %s",
+					$db_field_name,
+					(!is_numeric($this->value[0]) ? strtotime($this->value[0]) : $this->value[0]),
+					(!is_numeric($this->value[1]) ? strtotime($this->value[1]) : $this->value[1])
+				);
+				break;
+			
+			case DevblocksSearchCriteria::OPER_GT:
+			case DevblocksSearchCriteria::OPER_GTE:
+			case DevblocksSearchCriteria::OPER_LT:
+			case DevblocksSearchCriteria::OPER_LTE:
+				$where = sprintf("%s %s %s",
+					$db_field_name,
+					$this->operator,
+					self::_escapeSearchParam($this, $fields)
+				);
+			    break;
+				
+			default:
+				break;
+		}
+		
+		return $where;
+	}
+	
+//	/**
+//	 * @param DevblocksSearchCriteria[] $fields
+//	 */
+//	public static function whereOr ($params, $fields) {
+//		if(!is_array($params)) return '';
+//		
+//		$wheres = array();
+//		
+//		foreach($params as $param) { /* @var $param DevblocksSearchCriteria */
+//			$wheres[] = $param->getWhereSQL($fields);
+//		}
+//		
+//		return sprintf("(%s)",
+//			implode(' OR ', $wheres)
+//		);
+//	}
+	
+	static protected function _escapeSearchParam(DevblocksSearchCriteria $param, $fields) {
+	    $db = DevblocksPlatform::getDatabaseService();
+	    $field = $fields[$param->field];
+	    $where_value = null;
+/*	    
+   	 *	C for character < 250 chars
+	 *	X for teXt (>= 250 chars)
+	 *	B for Binary
+	 * 	N for numeric or floating point
+	 *	D for date
+	 *	T for timestamp
+	 * 	L for logical/Boolean
+	 *	I for integer
+	 *	R for autoincrement counter/integer
+*/	    
+//	    $datadict = new ADODB_DataDict($db);
+//	    $datadict->MetaType()
+
+        if($field) {
+            switch(strtoupper($field->db_type)) {
+                case 'B':
+                case 'X':
+                case 'XL':
+                    if($db->blobEncodeType) {
+	                    if(!is_array($param->value)) {
+	                        $where_value = "'" . $db->BlobEncode($param->value) . "'";
+	                    } else {
+	                        $where_value = array();
+	                        foreach($param->value as $v) {
+	                            $where_value[] = "'" . $db->BlobEncode($v) . "'";
+	                        }
+	                    }
+                    } else {
+	                    if(!is_array($param->value)) {
+	                        $where_value = $db->qstr($param->value);
+	                    } else {
+	                        $where_value = array();
+	                        foreach($param->value as $v) {
+	                            $where_value[] = $db->qstr($v);
+	                        }
+	                    }
+                    }
+                    break;
+                    
+                case 'I':
+                case 'N':
+                case 'L':
+                case 'R':
+                    if(!is_array($param->value)) {
+                        $where_value = $param->value;
+                    } else {
+                        $where_value = array();
+                        foreach($param->value as $v) {
+                            $where_value[] = $v;
+                        }
+                    }
+                    break;
+                
+                case 'C':
+                default:
+                    if(!is_array($param->value)) {
+                        $where_value = $db->qstr($param->value);
+                    } else {
+                        $where_value = array();
+                        foreach($param->value as $v) {
+                            $where_value[] = $db->qstr($v);
+                        }
+                    }
+                    break; 
+            }
+        }
+        
+        return $where_value;
+	}
+	
 };
 class DevblocksSearchField {
 	public $token;
