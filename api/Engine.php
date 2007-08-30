@@ -968,12 +968,25 @@ class _DevblocksUrlManager {
 		$args = $url->parseQueryString($sQuery);
 		$c = @$args['c'];
 		
+	    @$proxyhost = $_SERVER['HTTP_DEVBLOCKSPROXYHOST'];
+	    @$proxybase = $_SERVER['HTTP_DEVBLOCKSPROXYBASE'];
+		
 		if($full) {
-			$prefix = sprintf("%s://%s%s",
-				'http', // [TODO] Should support SSL
-				$_SERVER['HTTP_HOST'],
-				DEVBLOCKS_WEBPATH
-			);
+			// Proxy
+			if(!empty($proxyhost) && !empty($proxybase)) {
+				$prefix = sprintf("%s://%s%s/",
+					'http', // [TODO] Should support SSL
+					$proxyhost,
+					$proxybase
+				);
+				
+			} else { // Normal
+				$prefix = sprintf("%s://%s%s",
+					'http', // [TODO] Should support SSL
+					$_SERVER['HTTP_HOST'],
+					DEVBLOCKS_WEBPATH
+				);
+			}
 		} else {
 			$prefix = DEVBLOCKS_WEBPATH;
 		}
