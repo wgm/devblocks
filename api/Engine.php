@@ -548,9 +548,42 @@ class _DevblocksEmailManager {
 	function testImap($server, $port, $service, $username, $password) {
 		if (!extension_loaded("imap")) die("IMAP Extension not loaded!");
 		
-		@$mailbox = imap_open("{".$server.":".$port."/service=".$service."/notls}INBOX",
-							 !empty($username)?$username:"superuser",
-							 !empty($password)?$password:"superuser");
+        switch($service) {
+            default:
+            case 'pop3': // 110
+                $connect = sprintf("{%s:%d/pop3/notls}INBOX",
+                $server,
+                $port
+                );
+                break;
+                 
+            case 'pop3-ssl': // 995
+                $connect = sprintf("{%s:%d/pop3/ssl/novalidate-cert}INBOX",
+                $server,
+                $port
+                );
+                break;
+                 
+            case 'imap': // 143
+                $connect = sprintf("{%s:%d/notls}INBOX",
+                $server,
+                $port
+                );
+                break;
+                
+            case 'imap-ssl': // 993
+                $connect = sprintf("{%s:%d/imap/ssl/novalidate-cert}INBOX",
+                $server,
+                $port
+                );
+                break;
+        }
+		
+		@$mailbox = imap_open(
+			$connect,
+			!empty($username)?$username:"superuser",
+			!empty($password)?$password:"superuser"
+		);
 
 		if($mailbox === FALSE)
 			return FALSE;
