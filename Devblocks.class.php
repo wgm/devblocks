@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',160);
+define('PLATFORM_BUILD',162);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -708,7 +708,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	 */
 	static function init() {
 		self::$start_time = microtime(true);
-		if(function_exists('memory_get_usage')) {
+		if(function_exists('memory_get_usage') && function_exists('memory_get_peak_usage')) {
 			self::$start_memory = memory_get_usage();
 			self::$start_peak_memory = memory_get_peak_usage();
 		}
