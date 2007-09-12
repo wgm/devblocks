@@ -366,16 +366,19 @@ class _DevblocksSessionManager {
 			
 			$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 			
+			@session_destroy();
+			
 			include_once(DEVBLOCKS_PATH . "libs/adodb5/session/adodb-session2.php");
 			$options = array();
 			$options['table'] = $prefix.'session';
 			ADOdb_Session::config(APP_DB_DRIVER, APP_DB_HOST, APP_DB_USER, APP_DB_PASS, APP_DB_DATABASE, $options);
 			ADOdb_session::Persist($connectMode=false);
 			ADOdb_session::lifetime($lifetime=86400);
-			
+
 			session_name(APP_SESSION_NAME);
 			session_set_cookie_params(0);
 			session_start();
+			
 			$instance = new _DevblocksSessionManager();
 			$instance->visit = isset($_SESSION['db_visit']) ? $_SESSION['db_visit'] : NULL; /* @var $visit DevblocksVisit */
 		}
