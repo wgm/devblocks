@@ -803,25 +803,6 @@ class _DevblocksClassLoadManager {
 	}
 	
 	private function _initPEAR() {
-		$this->registerClasses('Mail.php',array(
-			'Mail',
-		));
-		
-		$this->registerClasses('Mail/Mime.php', array(
-			'Mail_mime',
-		));
-		
-		$this->registerClasses('Mail/mimeDecode.php', array(
-			'Mail_mimeDecode',
-		));
-
-		$this->registerClasses('Mail/RFC822.php', array(
-			'Mail_RFC822',
-		));
-
-		$this->registerClasses('Text/Password.php', array(
-			'Text_Password',
-		));
 	}
 	
 	private function _initZend() {
