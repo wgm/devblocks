@@ -544,7 +544,12 @@ class _DevblocksEmailManager {
 		
 		// [TODO] Reimplement SMTP Auth
 		
-		$swift =& new Swift(new Swift_Connection_SMTP($smtp_host, $smtp_port));
+		$smtp = new Swift_Connection_SMTP($smtp_host, $smtp_port);
+		if(!empty($smtp_user) && !empty($smtp_pass)) {
+			$smtp->setUsername($smtp_user);
+			$smtp->setPassword($smtp_pass);
+		}
+		$swift =& new Swift($smtp);
 		return $swift;
 	}
 	
@@ -994,35 +999,61 @@ class _DevblocksUrlManager {
 		
 	    @$proxyhost = $_SERVER['HTTP_DEVBLOCKSPROXYHOST'];
 	    @$proxybase = $_SERVER['HTTP_DEVBLOCKSPROXYBASE'];
-		
-		if($full) {
-			// Proxy
-			if(!empty($proxyhost) && !empty($proxybase)) {
+
+		// Proxy (Community Tool)
+		if(!empty($proxyhost) && !empty($proxybase)) {
+			if($full) {
 				$prefix = sprintf("%s://%s%s/",
 					'http', // [TODO] Should support SSL
 					$proxyhost,
 					$proxybase
 				);
-				
-			} else { // Normal
+			} else {
+				$prefix = DEVBLOCKS_WEBPATH;
+			}
+		
+			// Index page
+			if(empty($sQuery)) {
+			    return sprintf("%s",
+			        $prefix
+			    );
+			}
+			
+			// [JAS]: Internal non-component URL (images/css/js/etc)
+			if(empty($c)) {
+				$contents = sprintf("%s%s",
+					$prefix,
+					$sQuery
+				);
+		    
+			// [JAS]: Component URL
+			} else {
+				$contents = sprintf("%s%s",
+					$prefix,
+					(!empty($args) ? implode('/',array_values($args)) : '')
+				);
+			}
+			
+		// Devblocks App
+		} else {
+			if($full) {
 				$prefix = sprintf("%s://%s%s",
 					'http', // [TODO] Should support SSL
 					$_SERVER['HTTP_HOST'],
 					DEVBLOCKS_WEBPATH
 				);
+			} else {
+				$prefix = DEVBLOCKS_WEBPATH;
 			}
-		} else {
-			$prefix = DEVBLOCKS_WEBPATH;
-		}
-		
-		// Index page
-		if(empty($sQuery)) {
-		    return sprintf("%s%s",
-		        $prefix,
-		        (DEVBLOCKS_REWRITE) ? '' : 'index.php/'
-		    );
-		}
-		
+
+			// Index page
+			if(empty($sQuery)) {
+			    return sprintf("%s%s",
+			        $prefix,
+			        (DEVBLOCKS_REWRITE) ? '' : 'index.php/'
+			    );
+			}
+			
 		// [JAS]: Internal non-component URL (images/css/js/etc)
 		if(empty($c)) {
 			$contents = sprintf("%s%s",
@@ -1030,21 +1061,21 @@ class _DevblocksUrlManager {
 				$sQuery
 			);
 	    
-		// [JAS]: Component URL
-		} else {
-		    
-			if(DEVBLOCKS_REWRITE) {
-				$contents = sprintf("%s%s",
-					$prefix,
-					(!empty($args) ? implode('/',array_values($args)) : '')
-				);
-				
+			// [JAS]: Component URL
 			} else {
-				$contents = sprintf("%sindex.php/%s",
-					$prefix,
-					(!empty($args) ? implode('/',array_values($args)) : '')
-//					(!empty($args) ? $sQuery : '')
-				);
+				if(DEVBLOCKS_REWRITE) {
+					$contents = sprintf("%s%s",
+						$prefix,
+						(!empty($args) ? implode('/',array_values($args)) : '')
+					);
+					
+				} else {
+					$contents = sprintf("%sindex.php/%s",
+						$prefix,
+						(!empty($args) ? implode('/',array_values($args)) : '')
+	//					(!empty($args) ? $sQuery : '')
+					);
+				}
 			}
 		}
 		
