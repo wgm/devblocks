@@ -75,7 +75,7 @@ $indexes = $datadict->MetaIndexes($prefix.'property_store',false);
 
 if(255 == @$columns['VALUE']->max_length) {
 	$datadict->ExecuteSQLArray($datadict->RenameColumnSQL($prefix.'property_store', 'value', 'value_old',"value_old C(255) DEFAULT '' NOTNULL"));
-	$datadict->ExecuteSQLArray($datadict->AddColumnSQL($prefix.'property_store', "value B DEFAULT '' NOTNULL"));
+	$datadict->ExecuteSQLArray($datadict->AddColumnSQL($prefix.'property_store', "value B"));
 	
 	$sql = "SELECT extension_id, instance_id, property, value_old FROM ${prefix}property_store ";
 	$rs = $db->Execute($sql);

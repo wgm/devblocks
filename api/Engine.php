@@ -200,7 +200,8 @@ abstract class DevblocksEngine {
 		$url = DevblocksPlatform::getUrlService();
 
 		// Read the relative URL into an array
-		$parts = $url->parseURL($_SERVER['REQUEST_URI']);
+   		$location = DEVBLOCKS_REWRITE ? $_SERVER['REQUEST_URI'] : $_SERVER['PHP_SELF'];
+		$parts = $url->parseURL($location);
 		
 		// Add any query string arguments (?arg=value&arg=value)
 		$query = $_SERVER['QUERY_STRING'];

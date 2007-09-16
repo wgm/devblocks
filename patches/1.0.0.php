@@ -10,7 +10,7 @@ $tables[$prefix.'event_point'] = "
 	id C(128) DEFAULT '' NOTNULL PRIMARY,
 	plugin_id C(128) DEFAULT 0 NOTNULL,
 	name C(128) DEFAULT '' NOTNULL,
-	params B DEFAULT ''
+	params B
 ";
 
 $tables[$prefix.'extension_point'] = "
@@ -26,7 +26,7 @@ $tables[$prefix.'extension'] = "
 	name C(128) DEFAULT '' NOTNULL,
 	file C(128) DEFAULT '' NOTNULL,
 	class C(128) DEFAULT '' NOTNULL,
-	params B DEFAULT '' NOTNULL
+	params B
 ";
 
 $tables[$prefix.'patch_history'] = "
