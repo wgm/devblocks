@@ -109,7 +109,7 @@ class DevblocksSearchCriteria {
 			 * with the operator in other uses
 			 */
 			case DevblocksSearchCriteria::OPER_BETWEEN:
-				if(!is_array($$this->value) && 2 != count($this->value))
+				if(!is_array($this->value) && 2 != count($this->value))
 					break;
 					
 				$where = sprintf("%s BETWEEN %s and %s",
