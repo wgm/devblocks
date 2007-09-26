@@ -200,7 +200,16 @@ abstract class DevblocksEngine {
 		$url = DevblocksPlatform::getUrlService();
 
 		// Read the relative URL into an array
-   		$location = !empty($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : $_SERVER['PHP_SELF'];
+		if(isset($_SERVER['HTTP_X_REWRITE_URL'])) { // IIS Rewrite
+			$location = $_SERVER['HTTP_X_REWRITE_URL'];
+		} elseif(isset($_SERVER['REDIRECT_URL'])) { // Apache mod_rewrite
+			$location = $_SERVER['REDIRECT_URL'];
+		} elseif(isset($_SERVER['REQUEST_URI'])) { // Apache
+			$location = $_SERVER['REQUEST_URI'];
+		} elseif(isset($_SERVER['ORIG_PATH_INFO'])) { // IIS + CGI
+			$location = $_SERVER['ORIG_PATH_INFO'];
+		}
+		
 		$parts = $url->parseURL($location);
 		
 		// Add any query string arguments (?arg=value&arg=value)
@@ -543,8 +552,6 @@ class _DevblocksEmailManager {
 		if (empty($smtp_pass)) $smtp_pass = $settings->get(CerberusSettings::SMTP_AUTH_PASS,null);
 		if (empty($smtp_port)) $smtp_port = $settings->get(CerberusSettings::SMTP_PORT,'25');
 		
-		// [TODO] Reimplement SMTP Auth
-		
 		$smtp = new Swift_Connection_SMTP($smtp_host, $smtp_port);
 		if(!empty($smtp_user) && !empty($smtp_pass)) {
 			$smtp->setUsername($smtp_user);
@@ -771,7 +778,7 @@ class _DevblocksClassLoadManager {
 
 		@$file = $this->classMap[$className];
 		
-		if(!is_null($file)) {
+		if(!is_null($file) && file_exists($file)) {
 			require_once($file);
 		} else {
 	       	// [TODO]: Exception, log
