@@ -883,6 +883,15 @@ class _DevblocksClassLoadManager {
 			'Zend_Search_Lucene_Search_QueryHit',
 		));
 		
+		$this->registerClasses($path . 'Search/Lucene/Analysis/Analyzer.php', array(
+			'Zend_Search_Lucene_Analysis_Analyzer',
+			'Zend_Search_Lucene_Analysis_Analyzer_Common',
+			));
+		
+		$this->registerClasses($path . 'Search/Lucene/Analysis/Analyzer/Common/TextNum.php', array(
+			'Zend_Search_Lucene_Analysis_Analyzer_Common_TextNum_CaseInsensitive',
+		));
+		
 		$this->registerClasses($path . 'Mail.php', array(
 			'Zend_Mail',
 		));
