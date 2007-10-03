@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',169);
+define('PLATFORM_BUILD',172);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -83,6 +83,11 @@ class DevblocksPlatform extends DevblocksEngine {
 	    $cache->remove(self::CACHE_EVENTS);
 	    $cache->remove(self::CACHE_TABLES);
 	    $cache->remove(self::CACHE_TRANSLATIONS);
+	    $cache->remove(_DevblocksClassLoadManager::CACHE_CLASS_MAP);
+	    
+	    // Recache plugins
+		$plugins = self::getPluginRegistry();
+		$extensions = self::getExtensionRegistry();
 	}
 
 	public static function loadClass($className) {
