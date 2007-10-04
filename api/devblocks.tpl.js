@@ -240,7 +240,9 @@ function saveGenericAjaxPanel(div,close,cb) {
 			},
 			failure: function(o) {},
 			argument:{div:div,close:close,cb:cb}
-	});	
+	});
+	
+	YAHOO.util.Connect.setForm(0);
 }
 
 function genericAjaxGet(divName,args,cb) {
@@ -276,8 +278,8 @@ function genericAjaxGet(divName,args,cb) {
 
 function genericAjaxPost(formName,divName,args,cb) {
 	var frm = document.getElementById(formName);
-	var div = document.getElementById(divName);
-	if(null == frm) return;
+//	var div = document.getElementById(divName);
+//	if(null == frm) return;
 
 	// [JAS]: [TODO] This doesn't work in IE -- probably offsetWidth/Height
 	/*
@@ -313,13 +315,15 @@ function genericAjaxPost(formName,divName,args,cb) {
 		};
 	}
 	
-	YAHOO.util.Connect.setForm(formName);
+	YAHOO.util.Connect.setForm(frm);
 	var cObj = YAHOO.util.Connect.asyncRequest('POST', DevblocksAppPath+'ajax.php?'+args, {
 			success: cb,
 			failure: function(o) {alert('fail');},
 			argument:{caller:this}
-			}
+			},
+			null
 	);
+	YAHOO.util.Connect.setForm(0);
 }
 
 {/literal}
