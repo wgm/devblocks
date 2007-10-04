@@ -139,6 +139,8 @@ abstract class DevblocksORMHelper {
 
 class DAO_Platform {
     static function cleanupPluginTables() {
+    	DevblocksPlatform::clearCache();
+    	
 		$db = DevblocksPlatform::getDatabaseService();
 		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 

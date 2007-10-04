@@ -208,7 +208,7 @@ class DevblocksPlatform extends DevblocksEngine {
 			
 			$plugins = DevblocksPlatform::getPluginRegistry();
 			
-			DevblocksPlatform::clearCache();
+//			DevblocksPlatform::clearCache();
 			
 			// Run enabled plugin patches
 			$patches = DevblocksPlatform::getExtensions("devblocks.patch.container");
@@ -493,8 +493,6 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return DevblocksPluginManifest[]
 	 */
 	static function readPlugins() {
-	    DevblocksPlatform::clearCache();
-	    
 	    $dir = DEVBLOCKS_PLUGIN_PATH;
 	    $plugins = array();
 
@@ -507,6 +505,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	                $path = $dir . '/' . $file;
 	                if(is_dir($path) && file_exists($path.'/plugin.xml')) {
 	                    $manifest = self::_readPluginManifest($file); /* @var $manifest DevblocksPluginManifest */
+
 	                    if(null != $manifest) {
 	                        $plugins[] = $manifest;
 	                    }
