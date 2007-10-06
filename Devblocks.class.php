@@ -509,7 +509,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	                    if(null != $manifest) {
 	                        $plugins[] = $manifest;
 	                    }
-
+	                    
 	                   /*
 	                    * [TODO] Somehow here we need to cache the classes from the plugin so
 	                    * we don't have to load up the file unless we need it.
@@ -524,6 +524,11 @@ class DevblocksPlatform extends DevblocksEngine {
 	            closedir($dh);
 	        }
 	    }
+	    
+		// [TODO] Instance the plugins in dependency order
+//		$plugin_instance = $manifest->createInstance();
+//		if(!$plugin_instance->install($manifest))
+//			return;
 
 	    DAO_Platform::cleanupPluginTables();
 	    DevblocksPlatform::clearCache();

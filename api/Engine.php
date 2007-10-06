@@ -43,14 +43,6 @@ abstract class DevblocksEngine {
 		$db = DevblocksPlatform::getDatabaseService();
 		if(is_null($db)) return;
 		
-		// Instance and query the plugin::install before adding
-		/*
-		 * [TODO] This should be smart enough to know if a plugin is installed already.
-		 */
-		$plugin_instance = $manifest->createInstance();
-		if(!$plugin_instance->install($manifest))
-			return;
-
 		// [JAS]: [TODO] Move to platform DAO
 		$db->Replace(
 			$prefix.'plugin',
