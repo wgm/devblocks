@@ -270,7 +270,7 @@ function genericAjaxGet(divName,args,cb) {
 	
 	var cObj = YAHOO.util.Connect.asyncRequest('GET', DevblocksAppPath+'ajax.php?'+args, {
 		success: cb,
-		failure: function(o) {alert('fail');},
+		failure: function(o) {},
 		argument:{caller:this,divName:divName}
 		}
 	);
@@ -318,7 +318,7 @@ function genericAjaxPost(formName,divName,args,cb) {
 	YAHOO.util.Connect.setForm(frm);
 	var cObj = YAHOO.util.Connect.asyncRequest('POST', DevblocksAppPath+'ajax.php?'+args, {
 			success: cb,
-			failure: function(o) {alert('fail');},
+			failure: function(o) {},
 			argument:{caller:this}
 			},
 			null
