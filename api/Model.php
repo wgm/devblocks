@@ -84,6 +84,14 @@ class DevblocksSearchCriteria {
 				);
 				break;
 				
+			case DevblocksSearchCriteria::OPER_NIN:
+				if(!is_array($this->value)) break;
+				$where = sprintf("%s NOT IN ('%s')",
+					$db_field_name,
+					implode("','",$this->value) // [TODO] Needs BlobEncode compat
+				);
+				break;
+				
 			case DevblocksSearchCriteria::OPER_LIKE:
 				$where = sprintf("%s LIKE %s",
 					$db_field_name,
