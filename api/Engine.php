@@ -795,7 +795,7 @@ class _DevblocksClassLoadManager {
 	}
 	
 	private function _initLibs() {
-		$path = DEVBLOCKS_PATH . 'libs/swiftmailer/lib/';
+		$path = DEVBLOCKS_PATH . 'libs/swift/';
 		
 		$this->registerClasses($path . 'Swift.php',array(
 			'Swift',
