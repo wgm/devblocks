@@ -1000,12 +1000,12 @@ class _DevblocksUrlManager {
 		return $parts;
 	}
 	
-	// [TODO] Add ability to write full URLs rather than relative
 	function write($sQuery='',$full=false) {
 		$url = DevblocksPlatform::getUrlService();
 		$args = $url->parseQueryString($sQuery);
 		$c = @$args['c'];
 		
+	    @$proxyssl = $_SERVER['HTTP_DEVBLOCKSPROXYSSL'];
 	    @$proxyhost = $_SERVER['HTTP_DEVBLOCKSPROXYHOST'];
 	    @$proxybase = $_SERVER['HTTP_DEVBLOCKSPROXYBASE'];
 
@@ -1013,7 +1013,7 @@ class _DevblocksUrlManager {
 		if(!empty($proxyhost) && !empty($proxybase)) {
 			if($full) {
 				$prefix = sprintf("%s://%s%s/",
-					'http', // [TODO] Should support SSL
+					(!empty($proxyssl) ? 'https' : 'http'),
 					$proxyhost,
 					$proxybase
 				);
@@ -1047,7 +1047,7 @@ class _DevblocksUrlManager {
 		} else {
 			if($full) {
 				$prefix = sprintf("%s://%s%s",
-					'http', // [TODO] Should support SSL
+					($this->_isSSL() ? 'https' : 'http'),
 					$_SERVER['HTTP_HOST'],
 					DEVBLOCKS_WEBPATH
 				);
@@ -1089,6 +1089,23 @@ class _DevblocksUrlManager {
 		}
 		
 		return $contents;
+	}
+	
+	/**
+	 * Enter description here...
+	 *
+	 * @return boolean
+	 */
+	private function _isSSL() {
+		if(@$_SERVER["HTTPS"] == "on"){
+			return true;
+		} elseif (@$_SERVER["HTTPS"] == 1){
+			return true;
+		} elseif (@$_SERVER['SERVER_PORT'] == 443) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 	
 	/**
