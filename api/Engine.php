@@ -1010,7 +1010,7 @@ class _DevblocksUrlManager {
 	    @$proxybase = $_SERVER['HTTP_DEVBLOCKSPROXYBASE'];
 
 		// Proxy (Community Tool)
-		if(!empty($proxyhost) && !empty($proxybase)) {
+		if(!empty($proxyhost)) {
 			if($full) {
 				$prefix = sprintf("%s://%s%s/",
 					(!empty($proxyssl) ? 'https' : 'http'),
