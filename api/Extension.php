@@ -57,9 +57,9 @@ class DevblocksExtension {
 
 		$db->Replace(
 			$prefix.'property_store',
-			array('extension_id'=>$this->id,'instance_id'=>$this->instance_id,'property'=>$db->qstr($key),'value'=>$db->qstr($value)),
+			array('extension_id'=>$db->qstr($this->id),'instance_id'=>$this->instance_id,'property'=>$db->qstr($key),'value'=>$db->qstr($value)),
 			array('extension_id','instance_id','property'),
-			true
+			false
 		);
 	}
 	

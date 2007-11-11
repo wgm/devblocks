@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!ELEMENT plugin (id,name,description,author,revision,class,mapping?,event_points?,extensions?)>
+<!ELEMENT plugin (id,name,description,author,revision,class,event_points?,extensions?)>
 <!ELEMENT id (#PCDATA)>
 <!ELEMENT name (#PCDATA)>
 <!ELEMENT description (#PCDATA)>
