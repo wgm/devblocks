@@ -1024,7 +1024,7 @@ class _DevblocksUrlManager {
 					$proxybase
 				);
 			} else {
-				$prefix = $proxybase;
+				$prefix = $proxybase.'/';
 			}
 		
 			// Index page
