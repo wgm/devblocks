@@ -975,6 +975,11 @@ class _DevblocksUrlManager {
 		$pos = stripos($_SERVER['PHP_SELF'],'index.php',0);
 		if($pos === FALSE) return null;
 
+		// Decode proxy requests
+		if(isset($_SERVER['HTTP_DEVBLOCKSPROXYHOST'])) {
+			$url = urldecode($url);
+		}
+		
 		// [JAS]: Extract the basedir of the path
 		$basedir = substr($url,0,$pos);
 
