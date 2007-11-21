@@ -280,6 +280,7 @@ abstract class DevblocksEngine {
 	 */
 	static function processRequest(DevblocksHttpRequest $request, $is_ajax=false) {
 		$path = $request->path;
+		
 		$controller_uri = array_shift($path);
 		
 		// [JAS]: Offer the platform a chance to intercept.
@@ -1023,7 +1024,7 @@ class _DevblocksUrlManager {
 					$proxybase
 				);
 			} else {
-				$prefix = DEVBLOCKS_WEBPATH;
+				$prefix = $proxybase;
 			}
 		
 			// Index page
