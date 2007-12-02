@@ -141,10 +141,14 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return boolean
 	 */
 	static function versionConsistencyCheck() {
-		$cache = self::getCacheService();
+		$cache = self::getCacheService(); /* @var Zend_Cache_Core $cache */ 
 		
 		if(null == ($build_cache = $cache->load("devblocks_app_build"))
 			|| $build_cache != APP_BUILD) {
+			
+			// If build changed, clear cache regardless of patch status
+			DevblocksPlatform::clearCache();
+				
 			if(self::_needsToPatch()) {
 				return false;
 			} else {

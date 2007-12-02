@@ -806,6 +806,10 @@ class _DevblocksClassLoadManager {
 			'Swift_Address'
 		));
 			
+		$this->registerClasses($path . 'Swift/RecipientList.php',array(
+			'Swift_RecipientList',
+		));
+		
 		$this->registerClasses($path . 'Swift/Connection/SMTP.php',array(
 			'Swift_Connection_SMTP',
 		));
