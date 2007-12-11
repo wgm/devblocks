@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',179);
+define('PLATFORM_BUILD',188);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -752,7 +752,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	static function redirect(DevblocksHttpIO $httpIO) {
 		$url_service = self::getUrlService();
 		session_write_close();
-		header('location: '.$url_service->writeDevblocksHttpIO($httpIO));
+		header('Location: '.$url_service->writeDevblocksHttpIO($httpIO));
 		exit;
 	}
 };
