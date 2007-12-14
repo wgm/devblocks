@@ -536,7 +536,7 @@ class _DevblocksEmailManager {
 	/**
 	 * @return Swift
 	 */
-	function getMailer($smtp_host=null, $smtp_user=null, $smtp_pass=null, $smtp_port=null) {
+	function getMailer($smtp_host=null, $smtp_user=null, $smtp_pass=null, $smtp_port=null, $smtp_enc=null) {
 		$settings = CerberusSettings::getInstance();
 
 		// [TODO] This shouldn't have Cerberus-specific settings in it.
@@ -544,8 +544,13 @@ class _DevblocksEmailManager {
 		if (empty($smtp_user)) $smtp_user = $settings->get(CerberusSettings::SMTP_AUTH_USER,null);
 		if (empty($smtp_pass)) $smtp_pass = $settings->get(CerberusSettings::SMTP_AUTH_PASS,null);
 		if (empty($smtp_port)) $smtp_port = $settings->get(CerberusSettings::SMTP_PORT,'25');
+		if (empty($smtp_enc)) $smtp_enc = $settings->get(CerberusSettings::SMTP_ENCRYPTION_TYPE,'None');
 		
-		$smtp = new Swift_Connection_SMTP($smtp_host, $smtp_port);
+		if ($smtp_enc == 'TLS')			$smtp_enc = Swift_Connection_SMTP::ENC_TLS;
+		else if ($smtp_enc == 'SSL')	$smtp_enc = Swift_Connection_SMTP::ENC_SSL;
+		else							$smtp_enc = Swift_Connection_SMTP::ENC_OFF;
+		
+		$smtp = new Swift_Connection_SMTP($smtp_host, $smtp_port, $smtp_enc);
 		if(!empty($smtp_user) && !empty($smtp_pass)) {
 			$smtp->setUsername($smtp_user);
 			$smtp->setPassword($smtp_pass);
