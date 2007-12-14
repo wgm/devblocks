@@ -978,7 +978,7 @@ class _DevblocksUrlManager {
 	function parseURL($url) {
 		// [JAS]: Use the index.php page as a reference to deconstruct the URI
 		$pos = stripos($_SERVER['PHP_SELF'],'index.php',0);
-		if($pos === FALSE) return null;
+		if($pos === FALSE) return array();
 
 		// Decode proxy requests
 		if(isset($_SERVER['HTTP_DEVBLOCKSPROXYHOST'])) {
