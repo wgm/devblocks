@@ -16,7 +16,7 @@
  * @param string
  * @return array
  */
-function smarty_modifier_explode($delim,$string)
+function smarty_modifier_explode($string,$delim)
 {
     return explode($delim,$string);
 }

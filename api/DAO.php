@@ -86,12 +86,25 @@ abstract class DevblocksORMHelper {
 	/**
 	 * [TODO]: Import the searchDAO functionality + combine the extraneous classes
 	 */
-	static protected function _parseSearchParams($params,$fields) {
+	static protected function _parseSearchParams($params,$columns=array(),$fields) {
 		$db = DevblocksPlatform::getDatabaseService();
 		
 		$tables = array();
 		$wheres = array();
+		$selects = array();
 		
+		// Columns
+		if(is_array($columns))
+		foreach($columns as $column) {
+			$tables[$fields[$column]->db_table] = $fields[$column]->db_table;
+			$selects[] = sprintf("%s.%s AS %s",
+				$fields[$column]->db_table,
+				$fields[$column]->db_column,
+				$column
+			);
+		}
+		
+		// Params
 		if(is_array($params))
 		foreach($params as $param) {
 			
@@ -133,7 +146,7 @@ abstract class DevblocksORMHelper {
 			if(!empty($where)) $wheres[] = $where;
 		}
 		
-		return array($tables, $wheres);
+		return array($tables, $wheres, $selects);
 	}
 };
 
