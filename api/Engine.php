@@ -540,11 +540,11 @@ class _DevblocksEmailManager {
 		$settings = CerberusSettings::getInstance();
 
 		// [TODO] This shouldn't have Cerberus-specific settings in it.
-		if (empty($smtp_host)) $smtp_host = $settings->get(CerberusSettings::SMTP_HOST,'localhost');
-		if (empty($smtp_user)) $smtp_user = $settings->get(CerberusSettings::SMTP_AUTH_USER,null);
-		if (empty($smtp_pass)) $smtp_pass = $settings->get(CerberusSettings::SMTP_AUTH_PASS,null);
-		if (empty($smtp_port)) $smtp_port = $settings->get(CerberusSettings::SMTP_PORT,'25');
-		if (empty($smtp_enc)) $smtp_enc = $settings->get(CerberusSettings::SMTP_ENCRYPTION_TYPE,'None');
+		if (!isset($smtp_host)) $smtp_host = $settings->get(CerberusSettings::SMTP_HOST,'localhost');
+		if (!isset($smtp_user)) $smtp_user = $settings->get(CerberusSettings::SMTP_AUTH_USER,null);
+		if (!isset($smtp_pass)) $smtp_pass = $settings->get(CerberusSettings::SMTP_AUTH_PASS,null);
+		if (!isset($smtp_port)) $smtp_port = $settings->get(CerberusSettings::SMTP_PORT,'25');
+		if (!isset($smtp_enc)) $smtp_enc = $settings->get(CerberusSettings::SMTP_ENCRYPTION_TYPE,'None');
 		
 		if ($smtp_enc == 'TLS')			$smtp_enc = Swift_Connection_SMTP::ENC_TLS;
 		else if ($smtp_enc == 'SSL')	$smtp_enc = Swift_Connection_SMTP::ENC_SSL;
