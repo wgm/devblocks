@@ -147,7 +147,8 @@ class DevblocksPlatform extends DevblocksEngine {
 			|| $build_cache != APP_BUILD) {
 			
 			// If build changed, clear cache regardless of patch status
-			DevblocksPlatform::clearCache();
+			$cache = DevblocksPlatform::getCacheService(); /* @var $cache Zend_Cache_Core */
+			$cache->clean('all');
 				
 			if(self::_needsToPatch()) {
 				return false;
