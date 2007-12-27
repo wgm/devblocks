@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',188);
+define('PLATFORM_BUILD',195);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -661,8 +661,9 @@ class DevblocksPlatform extends DevblocksEngine {
 	 */
 	static function getTranslationService() {
 	    $cache = self::getCacheService();
+		$locale = DevblocksPlatform::getLocaleService();
+	    
 	    if(false === ($translate = $cache->load(self::CACHE_TRANSLATIONS))) {
-	        $locale = DevblocksPlatform::getLocaleService();
 	        $translate = new Zend_Translate('tmx', DEVBLOCKS_PATH . 'resources/strings.xml', $locale);
 		
 	        // [JAS]: Read in translations from the extension point
