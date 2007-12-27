@@ -643,11 +643,14 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return Zend_Locale
 	 */
 	static function getLocaleService() {
-	    if(!Zend_Registry::isRegistered('locale')) {
+		$locale = null;
+		if(Zend_Registry::isRegistered('locale')) {
+			$locale = Zend_Registry::get('locale');
+		}
+		
+	    if(empty($locale)) {
 	        $locale = new Zend_Locale('en_US');
 	        Zend_Registry::set('locale', $locale);
-	    } else {
-	        $locale = Zend_Registry::get('locale');
 	    }
 
 	    return $locale;
