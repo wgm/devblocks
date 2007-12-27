@@ -649,7 +649,7 @@ class DevblocksPlatform extends DevblocksEngine {
 		}
 		
 	    if(empty($locale)) {
-	        $locale = new Zend_Locale('en_US');
+	        $locale = new Zend_Locale('en'); // en_US
 	        Zend_Registry::set('locale', $locale);
 	    }
 
