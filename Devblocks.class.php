@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',195);
+define('PLATFORM_BUILD',197);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -70,6 +70,51 @@ class DevblocksPlatform extends DevblocksEngine {
 	    return $var;
 	}
 
+	/**
+	 * Returns a string as a regexp. 
+	 * "*bob" returns "/(.*?)bob/".
+	 */
+	static function parseStringAsRegExp($string) {
+		$pattern = str_replace(array('*'),'__any__', $string);
+		$pattern = sprintf("/%s/i",str_replace(array('__any__'),'(.*?)', preg_quote($pattern)));
+		return $pattern;
+	}
+	
+	static function parseCrlfString($string) {
+		$parts = split("[\r\n]", $string);
+		
+		// Remove any empty tokens
+		foreach($parts as $idx => $part) {
+			$parts[$idx] = trim($part);
+			if(empty($parts[$idx])) 
+				unset($parts[$idx]);
+		}
+		
+		return $parts;
+	}
+	
+	/**
+	 * Takes a comma-separated value string and returns an array of tokens.
+	 * [TODO] Move to a FormHelper service?
+	 * 
+	 * @param string $string
+	 * @return array
+	 */
+	static function parseCsvString($string) {
+		$tokens = explode(',', $string);
+
+		if(!is_array($tokens))
+			return array();
+		
+		foreach($tokens as $k => $v) {
+			$tokens[$k] = trim($v);
+			if(empty($tokens[$k]))
+				unset($tokens[$k]);
+		}
+		
+		return $tokens;
+	}
+	
 	/**
 	 * Clears any platform-level plugin caches.
 	 * 
