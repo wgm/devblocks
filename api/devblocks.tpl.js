@@ -158,6 +158,42 @@ function appendTextboxAsCsv(formName, field, oLink) {
 	txt.value = txt.value + sAppend;
 }
 
+var loadingPanel;
+function showLoadingPanel() {
+	if(null != loadingPanel) {
+		loadingPanel.destroy();
+		loadingPanel = null;
+	}
+
+	var options = { 
+	  width : "300px",
+	  fixedcenter : true,
+	  visible : false, 
+	  constraintoviewport : true,
+	  underlay : "shadow",
+	  modal : true,
+	  close : false,
+	  draggable : false
+	};
+	
+	loadingPanel = new YAHOO.widget.Panel("loadingPanel", options);
+	
+	loadingPanel.setHeader('Running...');
+	loadingPanel.setBody('');
+	loadingPanel.render(document.body);
+	
+	loadingPanel.hide();
+	loadingPanel.setBody("This may take a few moments.  Please wait!");
+	loadingPanel.center();
+	
+	loadingPanel.show();
+}
+
+function hideLoadingPanel() {
+	loadingPanel.destroy();
+	loadingPanel = null;
+}
+
 var genericPanel;
 function genericAjaxPanel(request,target,modal,width,cb) {
 	if(null != genericPanel) {
