@@ -866,6 +866,10 @@ class _DevblocksClassLoadManager {
 			'Zend_Feed_Rss',
 		));
 		
+		$this->registerClasses($path . 'Json.php', array(
+			'Zend_Json',
+		));
+		
 		$this->registerClasses($path . 'Locale.php', array(
 			'Zend_Locale',
 		));
