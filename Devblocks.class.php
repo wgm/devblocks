@@ -464,7 +464,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	    if(is_null($db)) return;
 	    $prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 
-	    $sql = sprintf("SELECT p.id , p.enabled , p.name, p.description, p.author, p.revision, p.link, p.is_configurable, p.class, p.file, p.dir ".
+	    $sql = sprintf("SELECT * ". // p.id , p.enabled , p.name, p.description, p.author, p.revision, p.link, p.is_configurable, p.class, p.file, p.dir
 			"FROM %splugin p ".
 			"ORDER BY p.enabled DESC, p.name ASC ",
 			$prefix
@@ -472,17 +472,17 @@ class DevblocksPlatform extends DevblocksEngine {
 		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		while(!$rs->EOF) {
 		    $plugin = new DevblocksPluginManifest();
-		    $plugin->id = $rs->fields['id'];
-		    $plugin->enabled = intval($rs->fields['enabled']);
-		    $plugin->name = $rs->fields['name'];
-		    $plugin->description = $rs->fields['description'];
-		    $plugin->author = $rs->fields['author'];
-		    $plugin->revision = intval($rs->fields['revision']);
-		    $plugin->link = $rs->fields['link'];
-		    $plugin->is_configurable = intval($rs->fields['is_configurable']);
-		    $plugin->file = $rs->fields['file'];
-		    $plugin->class = $rs->fields['class'];
-		    $plugin->dir = $rs->fields['dir'];
+		    @$plugin->id = $rs->fields['id'];
+		    @$plugin->enabled = intval($rs->fields['enabled']);
+		    @$plugin->name = $rs->fields['name'];
+		    @$plugin->description = $rs->fields['description'];
+		    @$plugin->author = $rs->fields['author'];
+		    @$plugin->revision = intval($rs->fields['revision']);
+		    @$plugin->link = $rs->fields['link'];
+		    @$plugin->is_configurable = intval($rs->fields['is_configurable']);
+		    @$plugin->file = $rs->fields['file'];
+		    @$plugin->class = $rs->fields['class'];
+		    @$plugin->dir = $rs->fields['dir'];
 	
 		    if(file_exists(DEVBLOCKS_PLUGIN_PATH . $plugin->dir)) {
 		        $plugins[$plugin->id] = $plugin;
