@@ -36,10 +36,15 @@ abstract class DevblocksEngine {
 		$manifest->description = (string) $plugin->description;
 		$manifest->author = (string) $plugin->author;
 		$manifest->revision = (integer) $plugin->revision;
+		$manifest->link = (string) $plugin->link;
+		$manifest->is_configurable = (string) $plugin->is_configurable;
 		$manifest->name = (string) $plugin->name;
         $manifest->file = (string) $plugin->class->file;
         $manifest->class = (string) $plugin->class->name;
-		
+
+        // [TODO] Check that file + class exist
+		// [TODO] Clear out any removed plugins/classes/exts?
+        
 		$db = DevblocksPlatform::getDatabaseService();
 		if(is_null($db)) return;
 		
@@ -52,6 +57,8 @@ abstract class DevblocksEngine {
 				'description' => $db->qstr($manifest->description),
 				'author' => $db->qstr($manifest->author),
 				'revision' => $manifest->revision,
+				'link' => $db->qstr($manifest->link),
+				'is_configurable' => (!empty($manifest->is_configurable) ? 1 : 0),
 				'file' => $db->qstr($manifest->file),
 				'class' => $db->qstr($manifest->class),
 				'dir' => $db->qstr($manifest->dir)

@@ -69,6 +69,16 @@ if(!isset($columns['CLASS'])) {
 	$datadict->ExecuteSQLArray($sql);
 }
 
+if(!isset($columns['LINK'])) {
+	$sql = $datadict->AddColumnSQL($prefix.'plugin',"link C(128) DEFAULT '' NOTNULL");
+	$datadict->ExecuteSQLArray($sql);
+}
+
+if(!isset($columns['IS_CONFIGURABLE'])) {
+	$sql = $datadict->AddColumnSQL($prefix.'plugin',"is_configurable I1 DEFAULT 0 NOTNULL");
+	$datadict->ExecuteSQLArray($sql);
+}
+
 // `property_store` ========================
 $columns = $datadict->MetaColumns($prefix.'property_store');
 $indexes = $datadict->MetaIndexes($prefix.'property_store',false);

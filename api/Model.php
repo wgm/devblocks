@@ -56,26 +56,30 @@ class DevblocksSearchCriteria {
 	 * for now since it's only called in 2 abstracted places.
 	 */
 	public function getWhereSQL($fields) {
+		$db = DevblocksPlatform::getDatabaseService();
 		$where = '';
 		
 		$db_field_name = $fields[$this->field]->db_table . '.' . $fields[$this->field]->db_column; 
 
 		// [JAS]: Operators
 		switch($this->operator) {
+			case "eq":
 			case "=":
-				$where = sprintf("%s = %s",
+				$where = sprintf("LOWER(%s) = %s",
 					$db_field_name,
-					self::_escapeSearchParam($this, $fields)
+					strtolower(self::_escapeSearchParam($this, $fields))
 				);
 				break;
 				
+			case "neq":
 			case "!=":
-				$where = sprintf("%s != %s",
+				$where = sprintf("LOWER(%s) != %s",
 					$db_field_name,
-					self::_escapeSearchParam($this, $fields)
+					strtolower(self::_escapeSearchParam($this, $fields))
 				);
 				break;
 			
+			// [TODO] argument case?
 			case "in":
 				if(!is_array($this->value)) break;
 				$where = sprintf("%s IN ('%s')",
@@ -83,8 +87,9 @@ class DevblocksSearchCriteria {
 					implode("','",$this->value) // [TODO] Needs BlobEncode compat
 				);
 				break;
-				
-			case DevblocksSearchCriteria::OPER_NIN:
+
+			// [TODO] argument case?
+			case DevblocksSearchCriteria::OPER_NIN: // 'not in'
 				if(!is_array($this->value)) break;
 				$where = sprintf("%s NOT IN ('%s')",
 					$db_field_name,
@@ -92,21 +97,21 @@ class DevblocksSearchCriteria {
 				);
 				break;
 				
-			case DevblocksSearchCriteria::OPER_LIKE:
-				$where = sprintf("%s LIKE %s",
+			case DevblocksSearchCriteria::OPER_LIKE: // 'like'
+				$where = sprintf("LOWER(%s) LIKE %s",
 					$db_field_name,
-					str_replace('*','%',self::_escapeSearchParam($this, $fields))
+					strtolower(str_replace('*','%',self::_escapeSearchParam($this, $fields)))
 				);
 				break;
 			
-			case DevblocksSearchCriteria::OPER_NOT_LIKE:
+			case DevblocksSearchCriteria::OPER_NOT_LIKE: // 'not like'
 				$where = sprintf("%s NOT LIKE %s",
 					$db_field_name,
 					str_replace('*','%%',self::_escapeSearchParam($this, $fields))
 				);
 				break;
 			
-			case DevblocksSearchCriteria::OPER_IS_NULL:
+			case DevblocksSearchCriteria::OPER_IS_NULL: // 'is null'
 				$where = sprintf("%s IS NULL",
 					$db_field_name
 				);
@@ -116,7 +121,7 @@ class DevblocksSearchCriteria {
 			 * [TODO] Someday we may want to call this OPER_DATE_BETWEEN so it doesn't interfere 
 			 * with the operator in other uses
 			 */
-			case DevblocksSearchCriteria::OPER_BETWEEN:
+			case DevblocksSearchCriteria::OPER_BETWEEN: // 'between'
 				if(!is_array($this->value) && 2 != count($this->value))
 					break;
 					
@@ -278,6 +283,8 @@ class DevblocksPluginManifest {
 	var $description = '';
 	var $author = '';
 	var $revision = 0;
+	var $link = '';
+	var $is_configurable = 0;
 	var $file = '';
 	var $class = '';
 	var $dir = '';
@@ -300,7 +307,7 @@ class DevblocksPluginManifest {
 		DevblocksPlatform::registerClasses($class_file,array(
 		    $class_name
 		));
-		
+
 		if(!class_exists($class_name)) {
 			return null;
 		}
