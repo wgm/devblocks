@@ -190,14 +190,9 @@ abstract class DevblocksEngine {
 		return $manifest;
 	}
 	
-	/**
-	 * Reads the HTTP Request object.
-	 * 
-	 * @return DevblocksHttpRequest
-	 */
-	static function readRequest() {
-		$url = DevblocksPlatform::getUrlService();
-
+	static function getWebPath() {
+		$location = "";
+		
 		// Read the relative URL into an array
 		if(isset($_SERVER['HTTP_X_REWRITE_URL'])) { // IIS Rewrite
 			$location = $_SERVER['HTTP_X_REWRITE_URL'];
@@ -208,6 +203,19 @@ abstract class DevblocksEngine {
 		} elseif(isset($_SERVER['ORIG_PATH_INFO'])) { // IIS + CGI
 			$location = $_SERVER['ORIG_PATH_INFO'];
 		}
+		
+		return $location;
+	}
+	
+	/**
+	 * Reads the HTTP Request object.
+	 * 
+	 * @return DevblocksHttpRequest
+	 */
+	static function readRequest() {
+		$url = DevblocksPlatform::getUrlService();
+
+		$location = self::getWebPath();
 		
 		$parts = $url->parseURL($location);
 		
