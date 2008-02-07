@@ -82,18 +82,20 @@ class DevblocksSearchCriteria {
 			// [TODO] argument case?
 			case "in":
 				if(!is_array($this->value)) break;
+				$value = (!empty($this->value)) ? $this->value : array(-1);
 				$where = sprintf("%s IN ('%s')",
 					$db_field_name,
-					implode("','",$this->value) // [TODO] Needs BlobEncode compat
+					implode("','",$value) // [TODO] Needs BlobEncode compat
 				);
 				break;
 
 			// [TODO] argument case?
 			case DevblocksSearchCriteria::OPER_NIN: // 'not in'
 				if(!is_array($this->value)) break;
+				$value = (!empty($this->value)) ? $this->value : array(-1);
 				$where = sprintf("%s NOT IN ('%s')",
 					$db_field_name,
-					implode("','",$this->value) // [TODO] Needs BlobEncode compat
+					implode("','",$value) // [TODO] Needs BlobEncode compat
 				);
 				break;
 				
