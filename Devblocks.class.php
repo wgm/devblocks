@@ -265,9 +265,10 @@ class DevblocksPlatform extends DevblocksEngine {
 			
 			if(is_array($patches))
 			foreach($patches as $patch_manifest) { /* @var $patch_manifest DevblocksExtensionManifest */ 
-				$container = $patch_manifest->createInstance(); /* @var $container DevblocksPatchContainerExtension */
-				if(!is_null($container)) {
-					$patchMgr->registerPatchContainer($container);
+				if(null != ($container = $patch_manifest->createInstance())) { /* @var $container DevblocksPatchContainerExtension */
+					if(!is_null($container)) {
+						$patchMgr->registerPatchContainer($container);
+					}
 				}
 			}
 			
@@ -721,11 +722,12 @@ class DevblocksPlatform extends DevblocksEngine {
 	            
 		        if(is_array($translations))
 		        foreach($translations as $translationManifest) { /* @var $translationManifest DevblocksExtensionManifest */
-		            $translation = $translationManifest->createInstance(); /* @var $translation DevblocksTranslationsExtension */
-		            $file = $translation->getTmxFile();
-	
-		            if(@is_readable($file))
-		            $translate->addTranslation($file, $locale);
+		            if(null != ($translation = $translationManifest->createInstance())) { /* @var $translation DevblocksTranslationsExtension */
+			            $file = $translation->getTmxFile();
+		
+			            if(@is_readable($file))
+			            $translate->addTranslation($file, $locale);
+		            }
 		        }
 		        
        	        $cache->save($translate,self::CACHE_TRANSLATIONS);

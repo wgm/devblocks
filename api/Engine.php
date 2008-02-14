@@ -169,7 +169,7 @@ abstract class DevblocksEngine {
 			);
 		}
 		
-        // [JAS]: Extension point caching
+        // [JAS]: [TODO] Extension point caching
 
         // [JAS]: Event point caching
 		if(is_array($manifest->event_points))
