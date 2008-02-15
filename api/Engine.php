@@ -220,7 +220,7 @@ abstract class DevblocksEngine {
 		$parts = $url->parseURL($location);
 		
 		// Add any query string arguments (?arg=value&arg=value)
-		$query = $_SERVER['QUERY_STRING'];
+		@$query = $_SERVER['QUERY_STRING'];
 		$queryArgs = $url->parseQueryString($query);
 		
 		if(empty($parts)) {
