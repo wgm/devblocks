@@ -733,6 +733,9 @@ class DevblocksPlatform extends DevblocksEngine {
        	        $cache->save($translate,self::CACHE_TRANSLATIONS);
 	        }
 	    }
+	    
+	    // [TODO] Change for other locales later
+	    $translate->getAdapter()->setOptions(array('locale'=>'en'));
 
 	    return $translate;
 	}
