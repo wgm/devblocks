@@ -37,7 +37,6 @@ abstract class DevblocksEngine {
 		$manifest->author = (string) $plugin->author;
 		$manifest->revision = (integer) $plugin->revision;
 		$manifest->link = (string) $plugin->link;
-		$manifest->is_configurable = (string) $plugin->is_configurable;
 		$manifest->name = (string) $plugin->name;
         $manifest->file = (string) $plugin->class->file;
         $manifest->class = (string) $plugin->class->name;
@@ -58,7 +57,6 @@ abstract class DevblocksEngine {
 				'author' => $db->qstr($manifest->author),
 				'revision' => $manifest->revision,
 				'link' => $db->qstr($manifest->link),
-				'is_configurable' => (!empty($manifest->is_configurable) ? 1 : 0),
 				'file' => $db->qstr($manifest->file),
 				'class' => $db->qstr($manifest->class),
 				'dir' => $db->qstr($manifest->dir)

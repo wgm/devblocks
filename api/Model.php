@@ -286,7 +286,6 @@ class DevblocksPluginManifest {
 	var $author = '';
 	var $revision = 0;
 	var $link = '';
-	var $is_configurable = 0;
 	var $file = '';
 	var $class = '';
 	var $dir = '';

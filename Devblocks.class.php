@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',208);
+define('PLATFORM_BUILD',209);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -465,7 +465,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	    if(is_null($db)) return;
 	    $prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 
-	    $sql = sprintf("SELECT * ". // p.id , p.enabled , p.name, p.description, p.author, p.revision, p.link, p.is_configurable, p.class, p.file, p.dir
+	    $sql = sprintf("SELECT * ". // p.id , p.enabled , p.name, p.description, p.author, p.revision, p.link, p.class, p.file, p.dir
 			"FROM %splugin p ".
 			"ORDER BY p.enabled DESC, p.name ASC ",
 			$prefix
@@ -480,7 +480,6 @@ class DevblocksPlatform extends DevblocksEngine {
 		    @$plugin->author = $rs->fields['author'];
 		    @$plugin->revision = intval($rs->fields['revision']);
 		    @$plugin->link = $rs->fields['link'];
-		    @$plugin->is_configurable = intval($rs->fields['is_configurable']);
 		    @$plugin->file = $rs->fields['file'];
 		    @$plugin->class = $rs->fields['class'];
 		    @$plugin->dir = $rs->fields['dir'];
@@ -831,6 +830,6 @@ class PlatformPatchContainer extends DevblocksPatchContainerExtension {
 		$file_prefix = dirname(__FILE__) . '/patches/';
 
 		$this->registerPatch(new DevblocksPatch('devblocks.core',1,$file_prefix.'1.0.0.php',''));
-		$this->registerPatch(new DevblocksPatch('devblocks.core',200,$file_prefix.'1.0.0_beta.php',''));
+		$this->registerPatch(new DevblocksPatch('devblocks.core',201,$file_prefix.'1.0.0_beta.php',''));
 	}
 };

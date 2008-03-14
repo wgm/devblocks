@@ -74,8 +74,8 @@ if(!isset($columns['LINK'])) {
 	$datadict->ExecuteSQLArray($sql);
 }
 
-if(!isset($columns['IS_CONFIGURABLE'])) {
-	$sql = $datadict->AddColumnSQL($prefix.'plugin',"is_configurable I1 DEFAULT 0 NOTNULL");
+if(isset($columns['IS_CONFIGURABLE'])) {
+	$sql = $datadict->DropColumnSQL($prefix.'plugin','is_configurable');
 	$datadict->ExecuteSQLArray($sql);
 }
 
