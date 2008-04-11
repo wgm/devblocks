@@ -49,6 +49,16 @@ function clearDiv(divName) {
 	div.innerHTML = '';
 }
 
+function interceptInputCRLF(e,cb) {
+	var code = (window.Event) ? e.which : event.keyCode;
+	
+	if(null != cb && code == 13) {
+		try { cb(); } catch(e) {}
+	}
+	
+	return code != 13;
+}
+
 function getEventTarget(e) {
 	if(!e) e = event;
 	

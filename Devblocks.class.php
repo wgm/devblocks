@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',209);
+define('PLATFORM_BUILD',210);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -91,6 +91,33 @@ class DevblocksPlatform extends DevblocksEngine {
 		}
 		
 		return $parts;
+	}
+	
+	/**
+	 * Returns a string as alphanumerics delimited by underscores.
+	 * For example: "Devs: 1000 Ways to Improve Sales" becomes 
+	 * "devs_1000_ways_to_improve_sales", which is suitable for 
+	 * displaying in a URL of a blog, faq, etc.
+	 *
+	 * @param string $str
+	 * @return string
+	 */
+	static function getStringAsURI($str) {
+		$str = strtolower($str);
+		
+		// turn non [a-z, 0-9, _] into whitespace
+		$str = preg_replace("/[^0-9a-z]/",' ',$str);
+		
+		// condense whitespace to a single underscore
+		$str = preg_replace('/\s\s+/', ' ', $str);
+
+		// replace spaces with underscore
+		$str = str_replace(' ','_',$str);
+
+		// remove a leading/trailing underscores
+		$str = trim($str, '_');
+		
+		return $str;
 	}
 	
 	/**
@@ -484,7 +511,7 @@ class DevblocksPlatform extends DevblocksEngine {
 		    @$plugin->class = $rs->fields['class'];
 		    @$plugin->dir = $rs->fields['dir'];
 	
-		    if(file_exists(DEVBLOCKS_PLUGIN_PATH . $plugin->dir)) {
+		    if(file_exists(DEVBLOCKS_PLUGIN_PATH . $plugin->dir . DIRECTORY_SEPARATOR . 'plugin.xml')) {
 		        $plugins[$plugin->id] = $plugin;
 		    }
 		    	

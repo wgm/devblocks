@@ -1095,14 +1095,14 @@ class _DevblocksUrlManager {
 			    );
 			}
 			
-		// [JAS]: Internal non-component URL (images/css/js/etc)
-		if(empty($c)) {
-			$contents = sprintf("%s%s",
-				$prefix,
-				$sQuery
-			);
-	    
-			// [JAS]: Component URL
+			// [JAS]: Internal non-component URL (images/css/js/etc)
+			if(empty($c)) {
+				$contents = sprintf("%s%s",
+					$prefix,
+					$sQuery
+				);
+		    
+				// [JAS]: Component URL
 			} else {
 				if(DEVBLOCKS_REWRITE) {
 					$contents = sprintf("%s%s",

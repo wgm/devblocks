@@ -22,6 +22,7 @@ class DevblocksSearchCriteria {
     const OPER_IN = 'in';
     const OPER_IS_NULL = 'is null';
     const OPER_NIN = 'not in';
+    const OPER_FULLTEXT = 'fulltext';
     const OPER_LIKE = 'like';
     const OPER_NOT_LIKE = 'not like';
     const OPER_GT = '>';
@@ -65,21 +66,20 @@ class DevblocksSearchCriteria {
 		switch($this->operator) {
 			case "eq":
 			case "=":
-				$where = sprintf("LOWER(%s) = %s",
+				$where = sprintf("%s = %s",
 					$db_field_name,
-					strtolower(self::_escapeSearchParam($this, $fields))
+					self::_escapeSearchParam($this, $fields)
 				);
 				break;
 				
 			case "neq":
 			case "!=":
-				$where = sprintf("LOWER(%s) != %s",
+				$where = sprintf("%s != %s",
 					$db_field_name,
-					strtolower(self::_escapeSearchParam($this, $fields))
+					self::_escapeSearchParam($this, $fields)
 				);
 				break;
 			
-			// [TODO] argument case?
 			case "in":
 				if(!is_array($this->value)) break;
 				$value = (!empty($this->value)) ? $this->value : array(-1);
@@ -89,7 +89,6 @@ class DevblocksSearchCriteria {
 				);
 				break;
 
-			// [TODO] argument case?
 			case DevblocksSearchCriteria::OPER_NIN: // 'not in'
 				if(!is_array($this->value)) break;
 				$value = (!empty($this->value)) ? $this->value : array(-1);
@@ -99,10 +98,17 @@ class DevblocksSearchCriteria {
 				);
 				break;
 				
-			case DevblocksSearchCriteria::OPER_LIKE: // 'like'
-				$where = sprintf("LOWER(%s) LIKE %s",
+			case DevblocksSearchCriteria::OPER_FULLTEXT: // 'fulltext'
+				$where = sprintf("MATCH(%s) AGAINST (%s IN BOOLEAN MODE)", // WITH QUERY EXPANSION
 					$db_field_name,
-					strtolower(str_replace('*','%',self::_escapeSearchParam($this, $fields)))
+					self::_escapeSearchParam($this, $fields)
+				);
+				break;
+			
+			case DevblocksSearchCriteria::OPER_LIKE: // 'like'
+				$where = sprintf("%s LIKE %s",
+					$db_field_name,
+					str_replace('*','%',self::_escapeSearchParam($this, $fields))
 				);
 				break;
 			
