@@ -831,6 +831,10 @@ class _DevblocksClassLoadManager {
 		$this->registerClasses($path . 'Swift/Connection/SMTP.php',array(
 			'Swift_Connection_SMTP',
 		));
+		
+		$this->registerClasses($path . 'Swift/AddressContainer.php',array(
+			'Swift_AddressContainer',
+		));
 	}
 	
 	private function _initPEAR() {
