@@ -206,6 +206,26 @@ abstract class DevblocksEngine {
 	}
 	
 	/**
+	 * Return a string with only its alphanumeric characters
+	 *
+	 * @param string $arg
+	 * @return string
+	 */
+	static function strAlphaNum($arg) {
+		return preg_replace("/[^A-Z0-9]/i","", $arg);
+	}
+	
+	/**
+	 * Return a string with only its alphanumeric characters or punctuation
+	 *
+	 * @param string $arg
+	 * @return string
+	 */
+	static function strAlphaNumDash($arg) {
+		return preg_replace("/[^A-Z0-9_\-]/i","", $arg);
+	}
+	
+	/**
 	 * Reads the HTTP Request object.
 	 * 
 	 * @return DevblocksHttpRequest
@@ -224,10 +244,15 @@ abstract class DevblocksEngine {
 		if(empty($parts)) {
 			// Overrides (Form POST, etc.)
 			@$uri = DevblocksPlatform::importGPC($_REQUEST['c']); // extension
-			if(!empty($uri)) $parts[] = $uri;
+			if(!empty($uri)) $parts[] = self::strAlphaNum($uri);
 
 			@$listener = DevblocksPlatform::importGPC($_REQUEST['a']); // listener
-			if(!empty($listener)) $parts[] = $listener;
+			if(!empty($listener)) $parts[] = self::strAlphaNum($listener);
+		}
+		
+		// Controller XSS security (alphanum only)
+		if(isset($parts[0])) {
+			$parts[0] = self::strAlphaNum($parts[0]);
 		}
 		
 		// Resource / Proxy
