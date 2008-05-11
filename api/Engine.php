@@ -206,6 +206,21 @@ abstract class DevblocksEngine {
 	}
 	
 	/**
+	 * Return a string as a regular expression, parsing * into a non-greedy 
+	 * wildcard, etc.
+	 *
+	 * @param string $arg
+	 * @return string
+	 */
+	static function strToRegExp($arg) {
+		$arg = str_replace(array('*'),array('__WILD__'),$arg);
+		
+		return sprintf("/^%s$/i",
+			str_replace(array('__WILD__'),array('.*?'),preg_quote($arg))
+		);
+	}
+	
+	/**
 	 * Return a string with only its alphanumeric characters
 	 *
 	 * @param string $arg
