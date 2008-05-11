@@ -216,7 +216,7 @@ abstract class DevblocksEngine {
 		$arg = str_replace(array('*'),array('__WILD__'),$arg);
 		
 		return sprintf("/^%s$/i",
-			str_replace(array('__WILD__'),array('.*?'),preg_quote($arg))
+			str_replace(array('__WILD__','/'),array('.*?','\/'),preg_quote($arg))
 		);
 	}
 	
