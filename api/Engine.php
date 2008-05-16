@@ -469,45 +469,113 @@ class _DevblocksSessionManager {
 	}
 }
 
+/**
+ * This class wraps Zend_Cache and implements a more intelligent 
+ * cache manager that won't try to load the same cache twice 
+ * during the same request.
+ *
+ */
 class _DevblocksCacheManager {
     private static $instance = null;
+    private static $_zend_cache = null;
+	private $_registry = array();
+	private $_statistics = array();
+	private $_io_reads_long = 0;
+	private $_io_reads_short = 0;
+	private $_io_writes = 0;
     
     private function __construct() {}
 
     /**
-     * @return Zend_Cache_Core
+     * @return _DevblocksCacheManager
      */
     public static function getInstance() {
 		if(null == self::$instance) {
-
+			self::$instance = new _DevblocksCacheManager();
+			
 	        $frontendOptions = array(
 			   'lifetime' => null, // forever 
 			   'automaticSerialization' => true
 			);
 
+			// Shared-memory cache
 			// [TODO] Later this should support multiple servers from config file
 		    if(extension_loaded('memcache') && DEVBLOCKS_MEMCACHE_HOST && DEVBLOCKS_MEMCACHE_PORT) {
 				$backendOptions = array(
-					'servers' => array(array(
-					    'host' => DEVBLOCKS_MEMCACHE_HOST,
-					    'port' => DEVBLOCKS_MEMCACHE_PORT, 
-					    'persistent' => true
-					))
+					'servers' => array(
+						array(
+					    	'host' => DEVBLOCKS_MEMCACHE_HOST,
+					    	'port' => DEVBLOCKS_MEMCACHE_PORT, 
+					    	'persistent' => true
+						),
+					)
 				);
 				
-				self::$instance = Zend_Cache::factory('Core', 'Memcached', $frontendOptions, $backendOptions);
+				self::$_zend_cache = Zend_Cache::factory('Core', 'Memcached', $frontendOptions, $backendOptions);
 		    }
 
-		    if(null == self::$instance) {
+		    // Disk-based cache (default)
+		    if(null == self::$_zend_cache) {
 				$backendOptions = array(
 				    'cacheDir' => DEVBLOCKS_PATH . 'tmp/'
 				);
 				
-				self::$instance = Zend_Cache::factory('Core', 'File', $frontendOptions, $backendOptions);
+				self::$_zend_cache = Zend_Cache::factory('Core', 'File', $frontendOptions, $backendOptions);
 		    }
 		}
 		return self::$instance;
     }
+    
+	public function save($data, $key) {
+		$this->_registry[$key] = $data;
+		// Monitor short-term cache memory usage
+		$this->_statistics[$key] = intval($this->_statistics[$key]);
+		$this->_io_writes++;
+//		echo "Memory usage: ",memory_get_usage($true),"<BR>";
+		self::$_zend_cache->save($data, $key);
+	}
+	
+	public function load($key, $nocache=false) {
+		// Retrieving the long-term cache
+		if($nocache || !isset($this->_registry[$key])) {
+//			echo "Hit long-term cache for $key<br>";
+			$this->_registry[$key] = self::$_zend_cache->load($key);
+			$this->_statistics[$key] = intval($this->_statistics[$key]) + 1;
+			$this->_io_reads_long++;
+			return $this->_registry[$key];
+		}
+		
+		// Retrieving the short-term cache
+		if(isset($this->_registry[$key])) {
+//			echo "Hit short-term cache for $key<br>";
+			$this->_statistics[$key] = intval($this->_statistics[$key]) + 1;
+			$this->_io_reads_short++;
+			return $this->_registry[$key];
+		}
+			
+		return NULL;
+	}
+	
+	public function remove($key) {
+		unset($this->_registry[$key]);
+		unset($this->_statistics[$key]);
+		self::$_zend_cache->remove($key);
+	}
+	
+	public function clean($mode) {
+		$this->_registry = array();
+		$this->_statistics = array();
+		self::$_zend_cache->clean($mode);
+	}
+	
+	public function printStatistics() {
+		arsort($this->_statistics);
+		print_r($this->_statistics);
+		echo "<BR>";
+		echo "Reads (short): ",$this->_io_reads_short,"<BR>";
+		echo "Reads (long): ",$this->_io_reads_long,"<BR>";
+		echo "Writes: ",$this->_io_writes,"<BR>";
+	}
 };
 
 class _DevblocksEventManager {
@@ -797,7 +865,7 @@ class _DevblocksClassLoadManager {
 	
     private function __construct() {
 		$cache = DevblocksPlatform::getCacheService();
-		if(false !== ($map = $cache->load(self::CACHE_CLASS_MAP))) {
+		if(null !== ($map = $cache->load(self::CACHE_CLASS_MAP))) {
 			$this->classMap = $map;
 		} else {
 			$this->_initPEAR();	

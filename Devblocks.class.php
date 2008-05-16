@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',213);
+define('PLATFORM_BUILD',215);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -198,7 +198,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	    $cache = self::getCacheService();
 	    $tables = array();
 	    
-	    if(false === ($tables = $cache->load(self::CACHE_TABLES))) {
+	    if(null === ($tables = $cache->load(self::CACHE_TABLES))) {
 	        $db = self::getDatabaseService();
 	        if(is_null($db)) return null;
 	        $tables = $db->MetaTables('TABLE',false);
@@ -215,7 +215,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	static function versionConsistencyCheck() {
 		$cache = self::getCacheService(); /* @var Zend_Cache_Core $cache */ 
 		
-		if(null == ($build_cache = $cache->load("devblocks_app_build"))
+		if(null === ($build_cache = $cache->load("devblocks_app_build"))
 			|| $build_cache != APP_BUILD) {
 			
 			// If build changed, clear cache regardless of patch status
@@ -357,7 +357,7 @@ class DevblocksPlatform extends DevblocksEngine {
 
 	static function getExtensionPoints() {
 	    $cache = self::getCacheService();
-	    if(false !== ($points = $cache->load(self::CACHE_POINTS)))
+	    if(null !== ($points = $cache->load(self::CACHE_POINTS)))
 	        return $points;
 
 	    $extensions = DevblocksPlatform::getExtensionRegistry();
@@ -384,7 +384,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	 */
 	static function getExtensionRegistry() {
 	    $cache = self::getCacheService();
-	    if(false !== ($extensions = $cache->load(self::CACHE_EXTENSIONS)))
+	    if(null !== ($extensions = $cache->load(self::CACHE_EXTENSIONS)))
     	    return $extensions;
 
 	    $db = DevblocksPlatform::getDatabaseService();
@@ -432,7 +432,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	 */
 	static function getEventPointRegistry() {
 	    $cache = self::getCacheService();
-	    if(false !== ($events = $cache->load(self::CACHE_EVENT_POINTS)))
+	    if(null !== ($events = $cache->load(self::CACHE_EVENT_POINTS)))
     	    return $events;
 
         $events = array();
@@ -450,7 +450,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	
 	static function getEventRegistry() {
 	    $cache = self::getCacheService();
-	    if(false !== ($events = $cache->load(self::CACHE_EVENTS)))
+	    if(null !== ($events = $cache->load(self::CACHE_EVENTS)))
     	    return $events;
 	    
     	$extensions = self::getExtensions('devblocks.listener.event');
@@ -485,7 +485,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	 */
 	static function getPluginRegistry() {
 	    $cache = self::getCacheService();
-	    if(false !== ($plugins = $cache->load(self::CACHE_PLUGINS)))
+	    if(null !== ($plugins = $cache->load(self::CACHE_PLUGINS)))
     	    return $plugins;
 
 	    $db = DevblocksPlatform::getDatabaseService();
@@ -618,7 +618,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	}
 
 	/**
-	 * @return Zend_Cache_Core
+	 * @return _DevblocksCacheManager
 	 */
 	static function getCacheService() {
 	    return _DevblocksCacheManager::getInstance();
@@ -739,7 +739,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	    $cache = self::getCacheService();
 		$locale = DevblocksPlatform::getLocaleService();
 	    
-	    if(false === ($translate = $cache->load(self::CACHE_TRANSLATIONS))) {
+	    if(null === ($translate = $cache->load(self::CACHE_TRANSLATIONS))) {
 	        $translate = new Zend_Translate('tmx', DEVBLOCKS_PATH . 'resources/strings.xml', $locale);
 		
 	        // [JAS]: Read in translations from the extension point
