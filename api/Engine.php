@@ -539,7 +539,9 @@ class _DevblocksCacheManager {
 		// Retrieving the long-term cache
 		if($nocache || !isset($this->_registry[$key])) {
 //			echo "Hit long-term cache for $key<br>";
-			$this->_registry[$key] = self::$_zend_cache->load($key);
+			if(false === ($this->_registry[$key] = self::$_zend_cache->load($key)))
+				return NULL;
+			
 			$this->_statistics[$key] = intval($this->_statistics[$key]) + 1;
 			$this->_io_reads_long++;
 			return $this->_registry[$key];
@@ -562,10 +564,15 @@ class _DevblocksCacheManager {
 		self::$_zend_cache->remove($key);
 	}
 	
-	public function clean($mode) {
+	public function clean($mode=null) {
 		$this->_registry = array();
 		$this->_statistics = array();
-		self::$_zend_cache->clean($mode);
+		
+		if(!empty($mode)) {
+			self::$_zend_cache->clean($mode);
+		} else { 
+			self::$_zend_cache->clean();
+		}
 	}
 	
 	public function printStatistics() {
