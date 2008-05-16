@@ -529,7 +529,7 @@ class _DevblocksCacheManager {
 	public function save($data, $key) {
 		$this->_registry[$key] = $data;
 		// Monitor short-term cache memory usage
-		$this->_statistics[$key] = intval($this->_statistics[$key]);
+		@$this->_statistics[$key] = intval($this->_statistics[$key]);
 		$this->_io_writes++;
 //		echo "Memory usage: ",memory_get_usage($true),"<BR>";
 		self::$_zend_cache->save($data, $key);
@@ -542,7 +542,7 @@ class _DevblocksCacheManager {
 			if(false === ($this->_registry[$key] = self::$_zend_cache->load($key)))
 				return NULL;
 			
-			$this->_statistics[$key] = intval($this->_statistics[$key]) + 1;
+			@$this->_statistics[$key] = intval($this->_statistics[$key]) + 1;
 			$this->_io_reads_long++;
 			return $this->_registry[$key];
 		}
@@ -550,7 +550,7 @@ class _DevblocksCacheManager {
 		// Retrieving the short-term cache
 		if(isset($this->_registry[$key])) {
 //			echo "Hit short-term cache for $key<br>";
-			$this->_statistics[$key] = intval($this->_statistics[$key]) + 1;
+			@$this->_statistics[$key] = intval($this->_statistics[$key]) + 1;
 			$this->_io_reads_short++;
 			return $this->_registry[$key];
 		}
