@@ -303,8 +303,18 @@ abstract class DevblocksEngine {
 	            	case 'css':
 	            		header('Content-type: text/css;');
 	            		break;
+	            	case 'gif':
+	            		header('Content-type: image/gif;');
+	            		break;
+	            	case 'jpeg':
+	            	case 'jpg':
+	            		header('Content-type: image/jpeg;');
+	            		break;
 	            	case 'js':
 	            		header('Content-type: text/javascript;');
+	            		break;
+	            	case 'png':
+	            		header('Content-type: image/png;');
 	            		break;
 	            	case 'xml':
 	            		header('Content-type: text/xml;');
@@ -526,13 +536,13 @@ class _DevblocksCacheManager {
 		return self::$instance;
     }
     
-	public function save($data, $key) {
+	public function save($data, $key, $tags=array(), $lifetime=false) {
 		$this->_registry[$key] = $data;
 		// Monitor short-term cache memory usage
 		@$this->_statistics[$key] = intval($this->_statistics[$key]);
 		$this->_io_writes++;
 //		echo "Memory usage: ",memory_get_usage($true),"<BR>";
-		self::$_zend_cache->save($data, $key);
+		self::$_zend_cache->save($data, $key, $tags, $lifetime);
 	}
 	
 	public function load($key, $nocache=false) {
