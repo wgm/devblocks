@@ -1,13 +1,13 @@
 <?php
 @ini_set('session.gc_maxlifetime','86400');
 @ini_set('session.save_path',DEVBLOCKS_PATH . 'tmp/');
-// [TODO]: We need a way to get around this requirement for libs
 @set_include_path(
 	DEVBLOCKS_PATH . 'libs' . PATH_SEPARATOR .
-	DEVBLOCKS_PATH . 'libs/ZendFramework' . PATH_SEPARATOR .  
+	DEVBLOCKS_PATH . 'libs/zend_framework' . PATH_SEPARATOR .  
 	get_include_path());
 @ini_set('magic_quotes_gpc',0);
 @set_magic_quotes_runtime(0);
+@ignore_user_abort(true);
 
 if(!defined('APP_DB_DRIVER'))
 define('APP_DB_DRIVER','mysql');
@@ -30,20 +30,14 @@ define('APP_DB_PREFIX','');
 if(!defined('DEVBLOCKS_LANGUAGE'))
 define('DEVBLOCKS_LANGUAGE','en');
 
-if(!defined('DEVBLOCKS_THEME'))
-define('DEVBLOCKS_THEME','default');
-
 if(!defined('DEVBLOCKS_REWRITE'))
 define('DEVBLOCKS_REWRITE',false);
 
 if(!defined('DEVBLOCKS_DEBUG'))
 define('DEVBLOCKS_DEBUG',false);
 
-if(!defined('DEVBLOCKS_MEMCACHE_HOST'))
-define('DEVBLOCKS_MEMCACHE_HOST','');
-
-if(!defined('DEVBLOCKS_MEMCACHE_PORT'))
-define('DEVBLOCKS_MEMCACHE_PORT','11211');
+if(!defined('DEVBLOCKS_CACHE_PREFIX'))
+define('DEVBLOCKS_CACHE_PREFIX','');
 
 if(!defined('APP_DEFAULT_CONTROLLER'))
 define('APP_DEFAULT_CONTROLLER',''); // 404?

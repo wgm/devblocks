@@ -1,5 +1,5 @@
 <?php
-$path = APP_PATH . '/libs/devblocks/libs/ZendFramework/Zend/';
+$path = APP_PATH . '/libs/devblocks/libs/zend_framework/Zend/';
 require_once($path.'Cache.php');
 
 function __autoload($className) {
@@ -504,30 +504,42 @@ class _DevblocksCacheManager {
 			self::$instance = new _DevblocksCacheManager();
 			
 	        $frontendOptions = array(
-			   'lifetime' => null, // forever 
-			   'automaticSerialization' => true
+	           'cache_id_prefix' => (defined('DEVBLOCKS_CACHE_PREFIX') && DEVBLOCKS_CACHE_PREFIX) ? DEVBLOCKS_CACHE_PREFIX : null,
+			   'lifetime' => 21600, // 6 hours 
+	           'write_control' => false,
+			   'automatic_serialization' => true,
 			);
 
 			// Shared-memory cache
-			// [TODO] Later this should support multiple servers from config file
-		    if(extension_loaded('memcache') && DEVBLOCKS_MEMCACHE_HOST && DEVBLOCKS_MEMCACHE_PORT) {
+		    if(extension_loaded('memcache') && defined('DEVBLOCKS_MEMCACHED_SERVERS') && DEVBLOCKS_MEMCACHED_SERVERS) {
+		    	$pairs = DevblocksPlatform::parseCsvString(DEVBLOCKS_MEMCACHED_SERVERS);
+		    	$servers = array();
+		    	
+		    	if(is_array($pairs) && !empty($pairs))
+		    	foreach($pairs as $server) {
+		    		list($host,$port) = explode(':',$server);
+		    		
+		    		if(empty($host) || empty($port))
+		    			continue;
+		    			
+		    		$servers[] = array(
+		    			'host'=>$host,
+		    			'port'=>$port,
+		    			'persistent'=>true
+		    		);
+		    	}
+		    	
 				$backendOptions = array(
-					'servers' => array(
-						array(
-					    	'host' => DEVBLOCKS_MEMCACHE_HOST,
-					    	'port' => DEVBLOCKS_MEMCACHE_PORT, 
-					    	'persistent' => true
-						),
-					)
+					'servers' => $servers
 				);
-				
+						
 				self::$_zend_cache = Zend_Cache::factory('Core', 'Memcached', $frontendOptions, $backendOptions);
 		    }
 
 		    // Disk-based cache (default)
 		    if(null == self::$_zend_cache) {
 				$backendOptions = array(
-				    'cacheDir' => DEVBLOCKS_PATH . 'tmp/'
+				    'cache_dir' => DEVBLOCKS_PATH . 'tmp/'
 				);
 				
 				self::$_zend_cache = Zend_Cache::factory('Core', 'File', $frontendOptions, $backendOptions);
@@ -537,12 +549,12 @@ class _DevblocksCacheManager {
     }
     
 	public function save($data, $key, $tags=array(), $lifetime=false) {
-		$this->_registry[$key] = $data;
 		// Monitor short-term cache memory usage
 		@$this->_statistics[$key] = intval($this->_statistics[$key]);
 		$this->_io_writes++;
 //		echo "Memory usage: ",memory_get_usage($true),"<BR>";
 		self::$_zend_cache->save($data, $key, $tags, $lifetime);
+		$this->_registry[$key] = $data;
 	}
 	
 	public function load($key, $nocache=false) {
@@ -966,11 +978,7 @@ class _DevblocksClassLoadManager {
 	}
 	
 	private function _initZend() {
-		$path = APP_PATH . '/libs/devblocks/libs/ZendFramework/Zend/';
-		
-		$this->registerClasses(APP_PATH . '/libs/devblocks/libs/ZendFramework/Zend.php', array(
-			'Zend',
-		));
+		$path = APP_PATH . '/libs/devblocks/libs/zend_framework/Zend/';
 		
 		$this->registerClasses($path . 'Cache.php', array(
 			'Zend_Cache',
@@ -1022,22 +1030,6 @@ class _DevblocksClassLoadManager {
 		
 		$this->registerClasses($path . 'Translate/Adapter/Tmx.php', array(
 			'Zend_Translate_Adapter_Tmx',
-		));
-		
-		$this->registerClasses($path . 'Search/Lucene.php', array(
-			'Zend_Search_Lucene',
-			'Zend_Search_Lucene_Document',
-			'Zend_Search_Lucene_Field',
-			'Zend_Search_Lucene_Search_QueryHit',
-		));
-		
-		$this->registerClasses($path . 'Search/Lucene/Analysis/Analyzer.php', array(
-			'Zend_Search_Lucene_Analysis_Analyzer',
-			'Zend_Search_Lucene_Analysis_Analyzer_Common',
-			));
-		
-		$this->registerClasses($path . 'Search/Lucene/Analysis/Analyzer/Common/TextNum.php', array(
-			'Zend_Search_Lucene_Analysis_Analyzer_Common_TextNum_CaseInsensitive',
 		));
 		
 		$this->registerClasses($path . 'Mail.php', array(

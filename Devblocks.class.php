@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',215);
+define('PLATFORM_BUILD',220);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -213,19 +213,20 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return boolean
 	 */
 	static function versionConsistencyCheck() {
-		$cache = self::getCacheService(); /* @var Zend_Cache_Core $cache */ 
+		$cache = DevblocksPlatform::getCacheService(); /* @var Zend_Cache_Core $cache */ 
 		
 		if(null === ($build_cache = $cache->load("devblocks_app_build"))
 			|| $build_cache != APP_BUILD) {
 			
 			// If build changed, clear cache regardless of patch status
+			// [TODO] We need to find a nicer way to not clear a shared memcached cluster when only one desk needs to
 			$cache = DevblocksPlatform::getCacheService(); /* @var $cache Zend_Cache_Core */
 			$cache->clean('all');
 				
 			if(self::_needsToPatch()) {
 				return false;
 			} else {
-				$cache->save(APP_BUILD, "devblocks_app_build");
+				$cache->save(APP_BUILD, "devblocks_app_build", array(), 0);
 				return true;
 			}
 		}
