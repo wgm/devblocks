@@ -14,7 +14,7 @@
 /**
 	\mainpage 	
 	
-	 @version V5.00 05 Feb 2007   (c) 2000-2007 John Lim (jlim#natsoft.com.my). All rights reserved.
+	 @version V5.04a 25 Mar 2008   (c) 2000-2008 John Lim (jlim#natsoft.com.my). All rights reserved.
 
 	Released under both BSD license and Lesser GPL library license. You can choose which license
 	you prefer.
@@ -169,7 +169,7 @@
 		/**
 		 * ADODB version as a string.
 		 */
-		$ADODB_vers = 'V5.00 05 Feb 2007  (c) 2000-2007 John Lim (jlim#natsoft.com.my). All rights reserved. Released BSD & LGPL.';
+		$ADODB_vers = 'V5.04a 25 Mar 2008  (c) 2000-2008 John Lim (jlim#natsoft.com.my). All rights reserved. Released BSD & LGPL.';
 	
 		/**
 		 * Determines whether recordset->RecordCount() is used. 
@@ -333,7 +333,7 @@
 		die('Virtual Class -- cannot instantiate');
 	}
 	
-	function Version()
+	static function Version()
 	{
 	global $ADODB_vers;
 	
@@ -499,6 +499,15 @@
 		return $ret;
 	}
 
+	function outp_throw($msg,$src='WARN',$sql='')
+	{
+		if (defined('ADODB_ERROR_HANDLER') &&  ADODB_ERROR_HANDLER == 'adodb_throw') {
+			adodb_throw($this->databaseType,$src,-9999,$msg,$sql,false,$this);
+			return;
+		} 
+		ADOConnection::outp($msg);
+	}
+	
 	// Format date column in sql string given an input format that understands Y M D
 	function SQLDate($fmt, $col=false)
 	{	
@@ -525,7 +534,7 @@
 	{
 		return $sql;
 	}
-	
+
 	/**
 	 * Some databases, eg. mssql require a different function for preparing
 	 * stored procedures. So we cannot use Prepare().
@@ -544,7 +553,7 @@
 	{
 		return $this->Prepare($sql,$param);
 	}
-	
+
 	/**
 	* PEAR DB Compat
 	*/
@@ -858,9 +867,9 @@
 					}
 					if (isset($sqlarr[$i])) {
 						$sql .= $sqlarr[$i];
-						if ($i+1 != sizeof($sqlarr)) ADOConnection::outp( "Input Array does not match ?: ".htmlspecialchars($sql));
+						if ($i+1 != sizeof($sqlarr)) $this->outp_throw( "Input Array does not match ?: ".htmlspecialchars($sql),'Execute');
 					} else if ($i != sizeof($sqlarr))	
-						ADOConnection::outp( "Input array does not match ?: ".htmlspecialchars($sql));
+						$this->outp_throw( "Input array does not match ?: ".htmlspecialchars($sql),'Execute');
 		
 					$ret = $this->_Execute($sql);
 					if (!$ret) return $ret;
@@ -913,7 +922,9 @@
 		} 
 		
 		if ($this->_queryID === true) { // return simplified recordset for inserts/updates/deletes with lower overhead
-			$rs = new ADORecordSet_empty();
+			$rsclass = $this->rsPrefix.'empty';
+			$rs = (class_exists($rsclass)) ? new $rsclass():  new ADORecordSet_empty();
+			
 			return $rs;
 		}
 		
@@ -1209,7 +1220,7 @@
 	* @param [offset] 	offset by number of rows (optional)
 	* @return 			the new recordset
 	*/
-	function _rs2rs(&$rs,$nrows=-1,$offset=-1,$close=true)
+	function &_rs2rs(&$rs,$nrows=-1,$offset=-1,$close=true)
 	{
 		if (! $rs) {
 			$false = false;
@@ -1296,7 +1307,9 @@
 		$ret = false;
 		$rs = $this->Execute($sql,$inputarr);
 		if ($rs) {	
-			if (!$rs->EOF) $ret = reset($rs->fields);
+			if ($rs->EOF) $ret = null;
+			else $ret = reset($rs->fields);
+			
 			$rs->Close();
 		}
 		$ADODB_COUNTRECS = $crecs;
@@ -1307,8 +1320,9 @@
 	{
 		$ret = false;
 		$rs = $this->CacheExecute($secs2cache,$sql,$inputarr);
-		if ($rs) {		
-			if (!$rs->EOF) $ret = reset($rs->fields);
+		if ($rs) {
+			if ($rs->EOF) $ret = null;
+			else $ret = reset($rs->fields);
 			$rs->Close();
 		} 
 		
@@ -1317,7 +1331,7 @@
 	
 	function GetCol($sql, $inputarr = false, $trim = false)
 	{
-	  	$rv = false;
+	  	
 	  	$rs = $this->Execute($sql, $inputarr);
 	  	if ($rs) {
 			$rv = array();
@@ -1333,15 +1347,16 @@
 		   		}
 			}
 	   		$rs->Close();
-	  	}
+	  	} else
+			$rv = false;
 	  	return $rv;
 	}
 	
 	function CacheGetCol($secs, $sql = false, $inputarr = false,$trim=false)
 	{
-	  	$rv = false;
 	  	$rs = $this->CacheExecute($secs, $sql, $inputarr);
 	  	if ($rs) {
+			$rv = array();
 			if ($trim) {
 				while (!$rs->EOF) {
 					$rv[] = trim(reset($rs->fields));
@@ -1354,7 +1369,9 @@
 		   		}
 			}
 	   		$rs->Close();
-	  	}
+	  	} else
+			$rv = false;
+			
 	  	return $rv;
 	}
 	
@@ -1436,7 +1453,12 @@
 		return $arr;
 	}
 	
-	
+	function GetRandRow($sql, $arr= false)
+	{
+		$rezarr = $this->GetAll($sql, $arr);
+		$sz = sizeof($rez);
+		return $rezarr[abs(rand()) % $sz];
+	}
 	
 	/**
 	* Return one row of sql statement. Recordset is disposed for you.
@@ -1468,8 +1490,9 @@
 	{
 		$rs = $this->CacheExecute($secs2cache,$sql,$inputarr);
 		if ($rs) {
-			$arr = false;
 			if (!$rs->EOF) $arr = $rs->fields;
+			else $arr = array();
+			
 			$rs->Close();
 			return $arr;
 		}
@@ -1532,7 +1555,7 @@
 									  // sql,	nrows, offset,inputarr
 			$rs = $this->SelectLimit($secs2cache,$sql,$nrows,$offset,$this->cacheSecs);
 		} else {
-			if ($sql === false) ADOConnection::outp( "Warning: \$sql missing from CacheSelectLimit()");
+			if ($sql === false) $this->outp_throw("Warning: \$sql missing from CacheSelectLimit()",'CacheSelectLimit');
 			$rs = $this->SelectLimit($sql,$nrows,$offset,$inputarr,$secs2cache);
 		}
 		return $rs;
@@ -1569,7 +1592,7 @@
             $dir = $ADODB_CACHE_DIR;
             
          if ($this->debug) {
-            ADOConnection::outp( "CacheFlush: $dir<br><pre>\n", $this->_dirFlush($dir),"</pre>");
+            ADOConnection::outp( "CacheFlush: $dir<br><pre>\n". $this->_dirFlush($dir)."</pre>");
          } else {
             $this->_dirFlush($dir);
          }
@@ -1591,23 +1614,24 @@
    *
    * Just specify the directory, and tell it if you want to delete the directory or just clear it out.
    * Note: $kill_top_level is used internally in the function to flush subdirectories.
+   *
    */
-   function _dirFlush($dir, $kill_top_level = false) {
+   function _dirFlush($dir, $kill_top_level = false) 
+   {
       if(!$dh = @opendir($dir)) return;
       
       while (($obj = readdir($dh))) {
-         if($obj=='.' || $obj=='..')
-            continue;
-			
-         if (!@unlink($dir.'/'.$obj))
-			  $this->_dirFlush($dir.'/'.$obj, true);
+         if($obj=='.' || $obj=='..') continue;
+		$f = $dir.'/'.$obj;
+		
+		if (strpos($obj,'.cache')) @unlink($f);
+		if (is_dir($f)) $this->_dirFlush($f, true);
       }
-      if ($kill_top_level === true)
-         @rmdir($dir);
+      if ($kill_top_level === true) @rmdir($dir);
       return true;
    }
    
-   
+    // this only deletes .cache files
 	function xCacheFlush($sql=false,$inputarr=false)
 	{
 	global $ADODB_CACHE_DIR;
@@ -1680,8 +1704,8 @@
 			
 		if ($createdir && $notSafeMode && !file_exists($dir)) {
 			$oldu = umask(0);
-			if (!mkdir($dir,0771)) 
-				if ($this->debug) ADOConnection::outp( "Unable to mkdir $dir for $sql");
+			if (!@mkdir($dir,0771)) 
+				 if(!is_dir($dir) && $this->debug) ADOConnection::outp( "Unable to mkdir $dir for $sql");
 			umask($oldu);
 		}
 		return $dir.'/adodb_'.$m.'.cache';
@@ -1699,8 +1723,6 @@
 	 */
 	function CacheExecute($secs2cache,$sql=false,$inputarr=false)
 	{
-
-			
 		if (!is_numeric($secs2cache)) {
 			$inputarr = $sql;
 			$sql = $secs2cache;
@@ -1736,6 +1758,7 @@
 			$rs = false;
 			$this->numCacheMisses += 1;
 		}
+	
 		if (!$rs) {
 		// no cached rs found
 			if ($this->debug) {
@@ -1754,17 +1777,27 @@
 						$fn($this->databaseType,'CacheExecute',-32000,"Cache write error",$md5file,$sql,$this);
 					if ($this->debug) ADOConnection::outp( " Cache write error");
 				}
-			} else
-			if ($rs) {
+			} else if ($rs) {
 				$eof = $rs->EOF;
 				$rs = $this->_rs2rs($rs); // read entire recordset into memory immediately
 				$txt = _rs2serialize($rs,false,$sql); // serialize
-		
-				if (!adodb_write_file($md5file,$txt,$this->debug)) {
-					if ($fn = $this->raiseErrorFn) {
-						$fn($this->databaseType,'CacheExecute',-32000,"Cache write error",$md5file,$sql,$this);
+	
+				$ok = adodb_write_file($md5file,$txt,$this->debug);
+				if (!$ok) {
+					if ($ok === false) {
+						$em = 'Cache write error';
+						$en = -32000;
+						
+						if ($fn = $this->raiseErrorFn) {
+							$fn($this->databaseType,'CacheExecute', $en, $em, $md5file,$sql,$this);
+						}
+					} else {
+						$em = 'Cache file locked warning';
+						$en = -32001;
+						// do not call error handling for just a warning
 					}
-					if ($this->debug) ADOConnection::outp( " Cache write error");
+					
+					if ($this->debug) ADOConnection::outp( " ".$em);
 				}
 				if ($rs->EOF && !$eof) {
 					$rs->MoveFirst();
@@ -1785,8 +1818,8 @@
 			}
 		// ok, set cached object found
 			$rs->connection = $this; // Pablo suggestion
-			if ($this->debug){ 
-					
+			if ($this->debug){ 			
+				if ($this->debug == 99) adodb_backtrace();
 				$inBrowser = isset($_SERVER['HTTP_USER_AGENT']);
 				$ttl = $rs->timeCreated + $secs2cache - time();
 				$s = is_array($sql) ? $sql[0] : $sql;
@@ -1812,7 +1845,7 @@
 		$sql = 'SELECT * FROM '.$table;  
 		if ($where!==FALSE) $sql .= ' WHERE '.$where;
 		else if ($mode == 'UPDATE' || $mode == 2 /* DB_AUTOQUERY_UPDATE */) {
-			ADOConnection::outp('AutoExecute: Illegal mode=UPDATE with empty WHERE clause');
+			$this->outp_throw('AutoExecute: Illegal mode=UPDATE with empty WHERE clause','AutoExecute');
 			return $false;
 		}
 
@@ -1830,7 +1863,7 @@
 			$sql = $this->GetInsertSQL($rs, $fields_values, $magicq);
 			break;
 		default:
-			ADOConnection::outp("AutoExecute: Unknown mode=$mode");
+			$this->outp_throw("AutoExecute: Unknown mode=$mode",'AutoExecute');
 			return $false;
 		}
 		$ret = false;
@@ -2055,7 +2088,7 @@
 			include(ADODB_DIR.'/adodb-active-record.inc.php');
 		}	
 		if (!class_exists($class)) {
-			ADOConnection::outp("Unknown class $class in GetActiveRcordsClass()");
+			$this->outp_throw("Unknown class $class in GetActiveRecordsClass()",'GetActiveRecordsClass');
 			return $false;
 		}
 		$arr = array();
@@ -2667,10 +2700,54 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 	// CLASS ADORecordSet_empty
 	//==============================================================================================	
 	
+	class ADODB_Iterator_empty implements Iterator {
+	
+	    private $rs;
+	
+	    function __construct($rs) 
+		{
+	        $this->rs = $rs;
+	    }
+	    function rewind() 
+		{
+	    }
+	
+		function valid() 
+		{
+	        return !$this->rs->EOF;
+	    }
+		
+	    function key() 
+		{
+	        return $false;
+	    }
+		
+	    function current() 
+		{
+	        return $false;
+	    }
+		
+	    function next() 
+		{
+	    }
+		
+		function __call($func, $params)
+		{
+			return call_user_func_array(array($this->rs, $func), $params);
+		}
+		
+		function hasMore()
+		{
+			return false;
+		}
+	
+	}
+
+	
 	/**
 	* Lightweight recordset when there are no records to be returned
 	*/
-	class ADORecordSet_empty
+	class ADORecordSet_empty implements IteratorAggregate
 	{
 		var $dataProvider = 'empty';
 		var $databaseType = false;
@@ -2685,6 +2762,7 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 		function FetchRow() {return false;}
 		function FieldCount(){ return 0;}
 		function Init() {}
+		function getIterator() {return new ADODB_Iterator_empty($this);}
 	}
 	
 	//==============================================================================================	
@@ -2696,14 +2774,61 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 	// CLASS ADORecordSet
 	//==============================================================================================	
 
-	include_once(ADODB_DIR.'/adodb-iterator.inc.php');
+	class ADODB_Iterator implements Iterator {
+	
+	    private $rs;
+	
+	    function __construct($rs) 
+		{
+	        $this->rs = $rs;
+	    }
+	    function rewind() 
+		{
+	        $this->rs->MoveFirst();
+	    }
+	
+		function valid() 
+		{
+	        return !$this->rs->EOF;
+	    }
+		
+	    function key() 
+		{
+	        return $this->rs->_currentRow;
+	    }
+		
+	    function current() 
+		{
+	        return $this->rs->fields;
+	    }
+		
+	    function next() 
+		{
+	        $this->rs->MoveNext();
+	    }
+		
+		function __call($func, $params)
+		{
+			return call_user_func_array(array($this->rs, $func), $params);
+		}
+	
+		
+		function hasMore()
+		{
+			return !$this->rs->EOF;
+		}
+	
+	}
+
+
+
    /**
 	 * RecordSet class that represents the dataset returned by the database.
 	 * To keep memory overhead low, this class holds only the current row in memory.
 	 * No prefetching of data is done, so the RecordCount() can return -1 ( which
 	 * means recordcount not known).
 	 */
-	class ADORecordSet extends ADODB_BASE_RS {
+	class ADORecordSet implements IteratorAggregate {
 	/*
 	 * public variables	
 	 */
@@ -2753,6 +2878,17 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 		$this->_queryID = $queryID;
 	}
 	
+	function getIterator() 
+	{
+        return new ADODB_Iterator($this);
+    }
+	
+	/* this is experimental - i don't really know what to return... */
+	function __toString()
+	{
+		include_once(ADODB_DIR.'/toexport.inc.php');
+		return _adodb_export($this,',',',',false,true);
+	}
 	
 	
 	function Init()
@@ -3835,7 +3971,7 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 			$mode = isset($this->adodbFetchMode) ? $this->adodbFetchMode : $this->fetchMode;
 			
 			if ($mode & ADODB_FETCH_ASSOC) {
-				if (!isset($this->fields[$colname])) $colname = strtolower($colname);
+				if (!isset($this->fields[$colname]) && !is_null($this->fields[$colname])) $colname = strtolower($colname);
 				return $this->fields[$colname];
 			}
 			if (!$this->bind) {
@@ -3984,31 +4120,31 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 		if (!defined('ADODB_ASSOC_CASE')) define('ADODB_ASSOC_CASE',2);
 		$errorfn = (defined('ADODB_ERROR_HANDLER')) ? ADODB_ERROR_HANDLER : false;
 		$false = false;
-		if ($at = strpos($db,'://')) {
+		if (($at = strpos($db,'://')) !== FALSE) {
 			$origdsn = $db;
-			if (PHP_VERSION < 5) $dsna = @parse_url($db);
-			else {
-				$fakedsn = 'fake'.substr($db,$at);
+			$fakedsn = 'fake'.substr($origdsn,$at);
+			if (($at2 = strpos($origdsn,'@/')) !== FALSE) {
+				// special handling of oracle, which might not have host
+				$fakedsn = str_replace('@/','@adodb-fakehost/',$fakedsn);
+			}
 				$dsna = @parse_url($fakedsn);
-				$dsna['scheme'] = substr($db,0,$at);
+			if (!$dsna) {
+				return $false;
+			}
+				$dsna['scheme'] = substr($origdsn,0,$at);
+			if ($at2 !== FALSE) {
+				$dsna['host'] = '';
+			}
 			
-				if (strncmp($db,'pdo',3) == 0) {
-					$sch = explode('_',$dsna['scheme']);
-					if (sizeof($sch)>1) {
-						$dsna['host'] = isset($dsna['host']) ? rawurldecode($dsna['host']) : '';
-						$dsna['host'] = rawurlencode($sch[1].':host='.rawurldecode($dsna['host']));
-						$dsna['scheme'] = 'pdo';
-					}
+			if (strncmp($origdsn,'pdo',3) == 0) {
+				$sch = explode('_',$dsna['scheme']);
+				if (sizeof($sch)>1) {
+					$dsna['host'] = isset($dsna['host']) ? rawurldecode($dsna['host']) : '';
+					$dsna['host'] = rawurlencode($sch[1].':host='.rawurldecode($dsna['host']));
+					$dsna['scheme'] = 'pdo';
 				}
 			}
 			
-			if (!$dsna) {
-				// special handling of oracle, which might not have host
-				$db = str_replace('@/','@adodb-fakehost/',$db);
-				$dsna = parse_url($db);
-				if (!$dsna) return $false;
-				$dsna['host'] = '';
-			}
 			$db = @$dsna['scheme'];
 			if (!$db) return $false;
 			$dsna['host'] = isset($dsna['host']) ? rawurldecode($dsna['host']) : '';

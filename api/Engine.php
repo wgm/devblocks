@@ -657,10 +657,14 @@ class _DevblocksEventManager {
 class _DevblocksEmailManager {
     private static $instance = null;
     
+    private $mailers = array();
+    
 	/**
 	 * @private
 	 */
-	private function __construct() {}
+	private function __construct() {
+		
+	}
 	
 	/**
 	 * Enter description here...
@@ -687,26 +691,46 @@ class _DevblocksEmailManager {
 	 * @return Swift
 	 */
 	function getMailer($smtp_host=null, $smtp_user=null, $smtp_pass=null, $smtp_port=null, $smtp_enc=null) {
-		$settings = CerberusSettings::getInstance();
-
-		// [TODO] This shouldn't have Cerberus-specific settings in it.
-		if (!isset($smtp_host)) $smtp_host = $settings->get(CerberusSettings::SMTP_HOST,'localhost');
-		if (!isset($smtp_user)) $smtp_user = $settings->get(CerberusSettings::SMTP_AUTH_USER,null);
-		if (!isset($smtp_pass)) $smtp_pass = $settings->get(CerberusSettings::SMTP_AUTH_PASS,null);
-		if (!isset($smtp_port)) $smtp_port = $settings->get(CerberusSettings::SMTP_PORT,'25');
-		if (!isset($smtp_enc)) $smtp_enc = $settings->get(CerberusSettings::SMTP_ENCRYPTION_TYPE,'None');
+		/*
+		 * [JAS]: We'll cache connection info hashed by params and hold a persistent 
+		 * connection for the request cycle.  If we ask for the same params again 
+		 * we'll get the existing connection if it exists.
+		 */
+		$hash = md5($smtp_host.$smtp_user.$smtp_pass.$smtp_port.$smtp_enc);
 		
-		if ($smtp_enc == 'TLS')			$smtp_enc = Swift_Connection_SMTP::ENC_TLS;
-		else if ($smtp_enc == 'SSL')	$smtp_enc = Swift_Connection_SMTP::ENC_SSL;
-		else							$smtp_enc = Swift_Connection_SMTP::ENC_OFF;
-		
-		$smtp = new Swift_Connection_SMTP($smtp_host, $smtp_port, $smtp_enc);
-		if(!empty($smtp_user) && !empty($smtp_pass)) {
-			$smtp->setUsername($smtp_user);
-			$smtp->setPassword($smtp_pass);
+		if(!isset($this->mailers[$hash])) {
+			$settings = CerberusSettings::getInstance();
+	
+			// [TODO] This shouldn't have Cerberus-specific settings in it.
+			if (!isset($smtp_host)) $smtp_host = $settings->get(CerberusSettings::SMTP_HOST,'localhost');
+			if (!isset($smtp_user)) $smtp_user = $settings->get(CerberusSettings::SMTP_AUTH_USER,null);
+			if (!isset($smtp_pass)) $smtp_pass = $settings->get(CerberusSettings::SMTP_AUTH_PASS,null);
+			if (!isset($smtp_port)) $smtp_port = $settings->get(CerberusSettings::SMTP_PORT,'25');
+			if (!isset($smtp_enc)) $smtp_enc = $settings->get(CerberusSettings::SMTP_ENCRYPTION_TYPE,'None');
+			if (!isset($smtp_max_sends)) $smtp_max_sends = $settings->get(CerberusSettings::SMTP_MAX_SENDS,20);
+			
+			if ($smtp_enc == 'TLS') {
+				$smtp_enc = Swift_Connection_SMTP::ENC_TLS;
+				
+			} else if ($smtp_enc == 'SSL') {
+				$smtp_enc = Swift_Connection_SMTP::ENC_SSL;
+				
+			} else {
+				$smtp_enc = Swift_Connection_SMTP::ENC_OFF;
+			}
+			
+			$smtp = new Swift_Connection_SMTP($smtp_host, $smtp_port, $smtp_enc);
+			if(!empty($smtp_user) && !empty($smtp_pass)) {
+				$smtp->setUsername($smtp_user);
+				$smtp->setPassword($smtp_pass);
+			}
+			$swift =& new Swift($smtp);
+			$swift->attachPlugin(new Swift_Plugin_AntiFlood($smtp_max_sends,1), "anti-flood");
+			
+			$this->mailers[$hash] =& $swift;
 		}
-		$swift =& new Swift($smtp);
-		return $swift;
+
+		return $this->mailers[$hash];
 	}
 	
 	function testImap($server, $port, $service, $username, $password) {
@@ -961,6 +985,14 @@ class _DevblocksClassLoadManager {
 			'Swift_Address'
 		));
 			
+		$this->registerClasses($path . 'Swift/LogContainer.php',array(
+			'Swift_LogContainer',
+		));
+		
+		$this->registerClasses($path . 'Swift/Log/DefaultLog.php',array(
+			'Swift_Log_DefaultLog',
+		));
+		
 		$this->registerClasses($path . 'Swift/RecipientList.php',array(
 			'Swift_RecipientList',
 		));
@@ -971,6 +1003,10 @@ class _DevblocksClassLoadManager {
 		
 		$this->registerClasses($path . 'Swift/AddressContainer.php',array(
 			'Swift_AddressContainer',
+		));
+		
+		$this->registerClasses($path . 'Swift/Plugin/AntiFlood.php',array(
+			'Swift_Plugin_AntiFlood',
 		));
 	}
 	

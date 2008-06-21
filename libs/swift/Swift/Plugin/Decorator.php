@@ -11,7 +11,6 @@
 
 require_once dirname(__FILE__) . "/../ClassLoader.php";
 Swift_ClassLoader::load("Swift_Events_BeforeSendListener");
-Swift_ClassLoader::load("Swift_Events_SendListener");
 Swift_ClassLoader::load("Swift_Plugin_Decorator_Replacements");
 
 /**
@@ -21,7 +20,7 @@ Swift_ClassLoader::load("Swift_Plugin_Decorator_Replacements");
  * @subpackage Decorator
  * @author Chris Corbyn <chris@w3style.co.uk>
  */
-class Swift_Plugin_Decorator implements Swift_Events_BeforeSendListener, Swift_Events_SendListener
+class Swift_Plugin_Decorator implements Swift_Events_BeforeSendListener
 {
   /**
    * The replacements object.
@@ -110,6 +109,8 @@ class Swift_Plugin_Decorator implements Swift_Events_BeforeSendListener, Swift_E
   public function beforeSendPerformed(Swift_Events_SendEvent $e)
   {
     $message = $e->getMessage();
+    $this->recursiveRestore($message, $this->store); //3.3.3 bugfix
+    
     $recipients = $e->getRecipients();
     $to = array_keys($recipients->getTo());
     if (count($to) > 0) $to = $to[0];
@@ -190,23 +191,17 @@ class Swift_Plugin_Decorator implements Swift_Events_BeforeSendListener, Swift_E
     return str_replace(array_keys($replacements), array_values($replacements), $value);
   }
   /**
-   * Called just after Swift sends a message.
-   * We restore the message here.
-   * @param Swift_Events_SendEvent The event object for sending a message
-   */
-  public function sendPerformed(Swift_Events_SendEvent $e)
-  {
-    $message = $e->getMessage();
-    $this->recursiveRestore($message, $this->store);
-    $this->store = null;
-  }
-  /**
    * Put the original values back in the message after it was modified before sending.
    * @param Swift_Message_Mime The message (or part)
    * @param array The location of the stored values
    */
   protected function recursiveRestore(Swift_Message_Mime $mime, &$store)
   {
+    if (empty($store)) //3.3.3 bugfix
+    {
+      return;
+    }
+    
     //Restore headers
     foreach ($store["headers"] as $name => $array)
     {
