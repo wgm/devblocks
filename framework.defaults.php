@@ -37,9 +37,6 @@ define('DEVBLOCKS_LANGUAGE','en');
 if(!defined('DEVBLOCKS_REWRITE'))
 define('DEVBLOCKS_REWRITE',false);
 
-if(!defined('DEVBLOCKS_DEBUG'))
-define('DEVBLOCKS_DEBUG',false);
-
 if(!defined('DEVBLOCKS_CACHE_PREFIX'))
 define('DEVBLOCKS_CACHE_PREFIX','');
 
