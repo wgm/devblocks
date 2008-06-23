@@ -351,15 +351,21 @@ abstract class DevblocksEngine {
 
 			// [JAS]: Plugin-supplied URIs
 			default:
-	            $controllers = DevblocksPlatform::getExtensions('devblocks.controller', true);
+	            $controllers = DevblocksPlatform::getExtensions('devblocks.controller', false);
 	            $router = DevblocksPlatform::getRoutingService();
 				/*
 				 * [JAS]: Try to find our command in the URI lookup first, and if we
 				 * fail then fall back to raw extension ids.
 				 */
+	            /* @var $controller_manifest DevblocksExtensionManifest */
 				if(null == ($controller_id = $router->getRoute($controller_uri))
-						|| null == ($controller = $controllers[$controller_id]) ) {
-						$controller = $controllers[APP_DEFAULT_CONTROLLER];
+						|| null == ($controller_manifest = $controllers[$controller_id]) ) {
+						$controller_manifest = $controllers[APP_DEFAULT_CONTROLLER];
+				} 
+				
+				// Instance our manifest
+				if(!empty($controller_manifest)) {
+					$controller = $controller_manifest->createInstance();
 				}
 				
 				if($controller instanceof DevblocksHttpRequestHandler) {
@@ -476,6 +482,7 @@ class _DevblocksSessionManager {
 	function clear() {
 		$this->visit = null;
 		unset($_SESSION['db_visit']);
+		session_destroy();
 	}
 }
 
@@ -855,9 +862,16 @@ class _DevblocksDatabaseManager {
 			    return null;
 			
 			@$instance =& ADONewConnection(APP_DB_DRIVER); /* @var $instance ADOConnection */
-			@$instance->Connect(APP_DB_HOST,APP_DB_USER,APP_DB_PASS,APP_DB_DATABASE);
+			
+			// Make the connection (or persist it)
+			if(defined('APP_DB_PCONNECT') && APP_DB_PCONNECT) {
+				@$instance->PConnect(APP_DB_HOST,APP_DB_USER,APP_DB_PASS,APP_DB_DATABASE);
+			} else { 
+				@$instance->Connect(APP_DB_HOST,APP_DB_USER,APP_DB_PASS,APP_DB_DATABASE);
+			}
+			
 			@$instance->SetFetchMode(ADODB_FETCH_ASSOC);
-			@$instance->LogSQL(false);
+			$instance->LogSQL(false);
 		}
 		return $instance;
 	}

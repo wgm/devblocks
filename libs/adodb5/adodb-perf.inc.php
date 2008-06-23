@@ -23,7 +23,7 @@ define( 'ADODB_OPT_HIGH', 2);
 define( 'ADODB_OPT_LOW', 1);
 
 global $ADODB_PERF_MIN;
-$ADODB_PERF_MIN = 0.05; // log only if >= minimum number of secs to run
+$ADODB_PERF_MIN = 0.00; // log only if >= minimum number of secs to run
 
 
 // returns in K the memory of current process, or 0 if not known
@@ -173,8 +173,9 @@ function adodb_log_sql(&$connx,$sql,$inputarr)
 		global $ADODB_PERF_MIN;
 		if ($errN != 0 || $time >= $ADODB_PERF_MIN) {
 			$ok = $conn->Execute($isql,$arr);
-		} else
+		} else {
 			$ok = true;
+		}
 		
 		$conn->debug = $saved;
 		

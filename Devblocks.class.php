@@ -217,7 +217,7 @@ class DevblocksPlatform extends DevblocksEngine {
 		
 		if(null === ($build_cache = $cache->load("devblocks_app_build"))
 			|| $build_cache != APP_BUILD) {
-			
+				
 			// If build changed, clear cache regardless of patch status
 			// [TODO] We need to find a nicer way to not clear a shared memcached cluster when only one desk needs to
 			$cache = DevblocksPlatform::getCacheService(); /* @var $cache Zend_Cache_Core */
@@ -226,7 +226,7 @@ class DevblocksPlatform extends DevblocksEngine {
 			if(self::_needsToPatch()) {
 				return false;
 			} else {
-				$cache->save(APP_BUILD, "devblocks_app_build", array(), 0);
+				$cache->save(APP_BUILD, "devblocks_app_build");
 				return true;
 			}
 		}

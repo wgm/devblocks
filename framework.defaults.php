@@ -1,6 +1,7 @@
 <?php
 @ini_set('session.gc_maxlifetime','86400');
 @ini_set('session.save_path',DEVBLOCKS_PATH . 'tmp/');
+@date_default_timezone_set(date_default_timezone_get());
 @set_include_path(
 	DEVBLOCKS_PATH . 'libs' . PATH_SEPARATOR .
 	DEVBLOCKS_PATH . 'libs/zend_framework' . PATH_SEPARATOR .  
@@ -23,6 +24,9 @@ define('APP_DB_USER','');
 
 if(!defined('APP_DB_PASS'))
 define('APP_DB_PASS','');
+
+if(!defined('APP_DB_PCONNECT'))
+define('APP_DB_PCONNECT',false);
 
 if(!defined('APP_DB_PREFIX'))
 define('APP_DB_PREFIX','');
