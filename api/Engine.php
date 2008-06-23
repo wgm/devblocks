@@ -351,22 +351,23 @@ abstract class DevblocksEngine {
 
 			// [JAS]: Plugin-supplied URIs
 			default:
-	            $controllers = DevblocksPlatform::getExtensions('devblocks.controller', false);
+	            $controllers = DevblocksPlatform::getExtensions('devblocks.controller', true);
 	            $router = DevblocksPlatform::getRoutingService();
+	            
 				/*
 				 * [JAS]: Try to find our command in the URI lookup first, and if we
 				 * fail then fall back to raw extension ids.
 				 */
 	            /* @var $controller_manifest DevblocksExtensionManifest */
 				if(null == ($controller_id = $router->getRoute($controller_uri))
-						|| null == ($controller_manifest = $controllers[$controller_id]) ) {
-						$controller_manifest = $controllers[APP_DEFAULT_CONTROLLER];
+						|| null == ($controller = $controllers[$controller_id]) ) {
+						$controller = $controllers[APP_DEFAULT_CONTROLLER];
 				} 
-				
-				// Instance our manifest
-				if(!empty($controller_manifest)) {
-					$controller = $controller_manifest->createInstance();
-				}
+
+//				// Instance our manifest
+//				if(!empty($controller_manifest)) {
+//					$controller = $controller_manifest->createInstance();
+//				}
 				
 				if($controller instanceof DevblocksHttpRequestHandler) {
 					$controller->handleRequest($request);
