@@ -436,10 +436,9 @@ class DevblocksPatch {
 	}
 	
 	public function run() {
-	    // [TODO] Consider
-//	    if($this->hasRun())
-//	        return TRUE;
-	    
+	    if($this->hasRun())
+	        return TRUE;
+
 		if(empty($this->filename)) { //  || empty($this->class)
 			return FALSE;
 		}
