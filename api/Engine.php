@@ -706,20 +706,22 @@ class _DevblocksEmailManager {
 		$smtp_user = isset($options['auth_user']) ? $options['auth_user'] : null; 
 		$smtp_pass = isset($options['auth_pass']) ? $options['auth_pass'] : null; 
 		$smtp_enc = isset($options['enc']) ? $options['enc'] : 'None'; 
-		$smtp_max_sends = isset($options['max_sends']) ? $options['max_sends'] : 20; 
+		$smtp_max_sends = isset($options['max_sends']) ? intval($options['max_sends']) : 20; 
+		$smtp_timeout = isset($options['timeout']) ? intval($options['timeout']) : 30; 
 		
 		/*
 		 * [JAS]: We'll cache connection info hashed by params and hold a persistent 
 		 * connection for the request cycle.  If we ask for the same params again 
 		 * we'll get the existing connection if it exists.
 		 */
-		$hash = md5(sprintf("%s %s %s %s %s %s",
+		$hash = md5(sprintf("%s %s %s %s %s %d %d",
 			$smtp_host,
 			$smtp_user,
 			$smtp_pass,
 			$smtp_port,
 			$smtp_enc,
-			$smtp_max_sends
+			$smtp_max_sends,
+			$smtp_timeout
 		));
 		
 		if(!isset($this->mailers[$hash])) {
@@ -739,6 +741,7 @@ class _DevblocksEmailManager {
 			}
 			
 			$smtp = new Swift_Connection_SMTP($smtp_host, $smtp_port, $smtp_enc);
+			$smtp->setTimeout($smtp_timeout);
 			
 			if(!empty($smtp_user) && !empty($smtp_pass)) {
 				$smtp->setUsername($smtp_user);
