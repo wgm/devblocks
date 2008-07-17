@@ -214,6 +214,10 @@ class DAO_Platform {
 	 * @return boolean
 	 */
 	static function hasPatchRun($plugin_id,$revision) {
+		$tables = DevblocksPlatform::getDatabaseTables();
+		if(empty($tables))
+			return false;
+		
 		$db = DevblocksPlatform::getDatabaseService();
 		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 		
