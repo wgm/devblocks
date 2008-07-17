@@ -18,6 +18,7 @@ interface IDevblocksSearchFields {
 }
 class DevblocksSearchCriteria {
     const OPER_EQ = '=';
+    const OPER_EQ_OR_NULL = 'equals or null';
     const OPER_NEQ = '!=';
     const OPER_IN = 'in';
     const OPER_IS_NULL = 'is null';
@@ -69,6 +70,14 @@ class DevblocksSearchCriteria {
 				$where = sprintf("%s = %s",
 					$db_field_name,
 					self::_escapeSearchParam($this, $fields)
+				);
+				break;
+				
+			case DevblocksSearchCriteria::OPER_EQ_OR_NULL:
+				$where = sprintf("(%s = %s OR %s IS NULL)",
+					$db_field_name,
+					self::_escapeSearchParam($this, $fields),
+					$db_field_name
 				);
 				break;
 				
