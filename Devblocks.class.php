@@ -340,9 +340,10 @@ class DevblocksPlatform extends DevblocksEngine {
 	 *
 	 * @static
 	 * @param string $extension_id
+	 * @param boolean $as_instance
 	 * @return DevblocksExtensionManifest
 	 */
-	static function getExtension($extension_id) {
+	static function getExtension($extension_id, $as_instance=false) {
 	    $result = null;
 	    $extensions = DevblocksPlatform::getExtensionRegistry();
 
@@ -350,9 +351,14 @@ class DevblocksPlatform extends DevblocksEngine {
 	    foreach($extensions as $extension) { /* @var $extension DevblocksExtensionManifest */
 	        if(0 == strcasecmp($extension->id,$extension_id)) {
 	            $result = $extension;
+	            break;
 	        }
 	    }
 
+	    if($as_instance) {
+	    	return $result->createInstance();
+	    }
+	    
 	    return $result;
 	}
 
