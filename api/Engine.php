@@ -1091,6 +1091,14 @@ class _DevblocksClassLoadManager {
 			'Zend_Locale',
 		));
 		
+		$this->registerClasses($path . 'Log.php', array(
+			'Zend_Log',
+		));
+		
+		$this->registerClasses($path . 'Log/Writer/Stream.php', array(
+			'Zend_Log_Writer_Stream',
+		));
+		
 		$this->registerClasses($path . 'Translate.php', array(
 			'Zend_Translate',
 		));
@@ -1122,6 +1130,24 @@ class _DevblocksClassLoadManager {
 		$this->registerClasses($path . 'Mail/Transport/Sendmail.php', array(
 			'Zend_Mail_Transport_Sendmail',
 		));
+	}
+};
+
+class _DevblocksLogManager {
+	static $consoleLogger = null;
+	
+	static function getConsoleLog() {
+		if(null == self::$consoleLogger) {
+			$writer = new Zend_Log_Writer_Stream('php://output');
+			$writer->setFormatter(new Zend_Log_Formatter_Simple('[%priorityName%]: %message%<BR>' . PHP_EOL));
+			self::$consoleLogger = new Zend_Log($writer);
+			
+			// Allow query string overloading Devblocks-wide
+			@$log_level = DevblocksPlatform::importGPC($_REQUEST['loglevel'],'integer',0);
+			self::$consoleLogger->addFilter(new Zend_Log_Filter_Priority($log_level));
+		}
+		
+		return self::$consoleLogger;
 	}
 };
 

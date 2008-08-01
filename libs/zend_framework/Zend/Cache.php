@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Zend Framework
  *
@@ -17,6 +16,7 @@
  * @package    Zend_Cache
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
+ * @version    $Id: Cache.php 9198 2008-04-11 15:41:15Z darby $
  */
 
 
@@ -34,28 +34,30 @@ abstract class Zend_Cache
      * @var array
      */
     public static $standardFrontends = array('Core', 'Output', 'Class', 'File', 'Function', 'Page');
-    
+
     /**
      * Standard backends
      *
      * @var array
      */
     public static $standardBackends = array('File', 'Sqlite', 'Memcached', 'Apc', 'ZendPlatform');
-    
+
     /**
-     * Only for backward compatibily (will be removed in 1.2.0)
+     * Only for backward compatibily (may be removed in next major release)
      *
      * @var array
+     * @deprecated
      */
     public static $availableFrontends = array('Core', 'Output', 'Class', 'File', 'Function', 'Page');
-    
+
     /**
-     * Only for backward compatibily (will be removed in 1.2.0)
+     * Only for backward compatibily (may be removed in next major release)
      *
      * @var array
+     * @deprecated
      */
     public static $availableBackends = array('File', 'Sqlite', 'Memcached', 'Apc', 'ZendPlatform');
-     
+
     /**
      * Consts for clean() method
      */
@@ -67,10 +69,12 @@ abstract class Zend_Cache
     /**
      * Factory
      *
-     * @param string $frontend frontend name
-     * @param string $backend backend name
-     * @param array $frontendOptions associative array of options for the corresponding frontend constructor
-     * @param array $backendOptions associative array of options for the corresponding backend constructor
+     * @param string $frontend        frontend name
+     * @param string $backend         backend name
+     * @param array  $frontendOptions associative array of options for the corresponding frontend constructor
+     * @param array  $backendOptions  associative array of options for the corresponding backend constructor
+     * @throws Zend_Cache_Exception
+     * @return Zend_Cache_Frontend
      */
     public static function factory($frontend, $backend, $frontendOptions = array(), $backendOptions = array())
     {
@@ -98,7 +102,7 @@ abstract class Zend_Cache
             }
             Zend_Loader::loadClass($frontendClass);
         }
-        
+
         // working on the backend
         if (in_array($backend, Zend_Cache::$availableBackends)) {
             // we use a standard backend
@@ -117,7 +121,7 @@ abstract class Zend_Cache
             }
             Zend_Loader::loadClass($backendClass);
         }
-        
+
         // Making objects
         $frontendObject = new $frontendClass($frontendOptions);
         $backendObject = new $backendClass($backendOptions);
@@ -130,6 +134,8 @@ abstract class Zend_Cache
      * Throw an exception
      *
      * Note : for perf reasons, the "load" of Zend/Cache/Exception is dynamic
+     * @param  string $msg  Message for the exception
+     * @throws Zend_Cache_Exception
      */
     public static function throwException($msg)
     {
@@ -141,7 +147,7 @@ abstract class Zend_Cache
     /**
      * Normalize frontend and backend names to allow multiple words TitleCased
      *
-     * @param  string $name
+     * @param  string $name  Name to normalize
      * @return string
      */
     protected static function _normalizeName($name)

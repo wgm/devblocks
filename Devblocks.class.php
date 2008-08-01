@@ -625,6 +625,13 @@ class DevblocksPlatform extends DevblocksEngine {
 	}
 
 	/**
+	 * @return Zend_Log
+	 */
+	static function getConsoleLog() {
+		return _DevblocksLogManager::getConsoleLog();
+	}
+	
+	/**
 	 * @return _DevblocksCacheManager
 	 */
 	static function getCacheService() {

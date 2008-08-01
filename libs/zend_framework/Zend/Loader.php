@@ -16,7 +16,7 @@
  * @package    Zend_Loader
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Loader.php 8064 2008-02-16 10:58:39Z thomas $
+ * @version    $Id: Loader.php 10455 2008-07-26 06:27:34Z ralph $
  */
 
 /**
@@ -85,7 +85,7 @@ class Zend_Loader
 
         if (!class_exists($class, false) && !interface_exists($class, false)) {
             require_once 'Zend/Exception.php';
-            throw new Zend_Exception("File \"$file\" was loaded but class \"$class\" was not found in the file");
+            throw new Zend_Exception("File \"$file\" does not exist or class \"$class\" was not found in the file");
         }
     }
 
@@ -160,7 +160,7 @@ class Zend_Loader
         if (!$fh = @fopen($filename, 'r', true)) {
             return false;
         }
-
+        @fclose($fh);
         return true;
     }
 
