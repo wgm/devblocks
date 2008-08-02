@@ -871,6 +871,7 @@ class _DevblocksDatabaseManager {
 	 */
 	static function getInstance() {
 		static $instance = null;
+		
 		if(null == $instance) {
 			include_once(DEVBLOCKS_PATH . "libs/adodb5/adodb.inc.php");
 			$ADODB_CACHE_DIR = APP_PATH . "/tmp/cache";
@@ -886,6 +887,9 @@ class _DevblocksDatabaseManager {
 			} else { 
 				@$instance->Connect(APP_DB_HOST,APP_DB_USER,APP_DB_PASS,APP_DB_DATABASE);
 			}
+
+			if(null == $instance || !$instance->IsConnected())
+				die("[Error]: There is no connection to the database.  Check your connection details.");
 			
 			@$instance->SetFetchMode(ADODB_FETCH_ASSOC);
 			$instance->LogSQL(false);

@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',232);
+define('PLATFORM_BUILD',241);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -199,8 +199,12 @@ class DevblocksPlatform extends DevblocksEngine {
 	    $tables = array();
 	    
 	    if(null === ($tables = $cache->load(self::CACHE_TABLES))) {
-	        $db = self::getDatabaseService();
-	        if(is_null($db)) return null;
+	        $db = self::getDatabaseService(); /* @var $db ADODB_Connection */
+	        
+	        // [TODO] Make sure the database connection is valid or error out.
+	        if(is_null($db) || !$db->IsConnected())
+	        	die("[Error]: There is no connection to the database.  Check your connection details.");
+	        
 	        $tables = $db->MetaTables('TABLE',false);
 	        $cache->save($tables, self::CACHE_TABLES);
 	    }
