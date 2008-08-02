@@ -1119,7 +1119,7 @@ class _DevblocksClassLoadManager {
 			'Zend_Mime',
 		));
 		
-		$this->registerClasses($path . 'Validate/EmailAddress.php.php', array(
+		$this->registerClasses($path . 'Validate/EmailAddress.php', array(
 			'Zend_Validate_EmailAddress',
 		));
 		

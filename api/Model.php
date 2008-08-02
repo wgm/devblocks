@@ -142,10 +142,30 @@ class DevblocksSearchCriteria {
 				if(!is_array($this->value) && 2 != count($this->value))
 					break;
 					
+				$from_date = $this->value[0];
+				if(!is_numeric($from_date)) {
+					// Translate periods into dashes on string dates
+					if(false !== strpos($from_date,'.'))
+						$from_date = str_replace(".", "-", $from_date);
+						
+					if(false === ($from_date = strtotime($from_date)))
+						$from_date = 0;
+				}
+				
+				$to_date = $this->value[1];
+				if(!is_numeric($to_date)) {
+					// Translate periods into dashes on string dates
+					if(false !== strpos($to_date,'.'))
+						$to_date = str_replace(".", "-", $to_date);
+						
+					if(false === ($to_date = strtotime($to_date)))
+						$to_date = strtotime("now");
+				}
+				
 				$where = sprintf("%s BETWEEN %s and %s",
 					$db_field_name,
-					(!is_numeric($this->value[0]) ? strtotime($this->value[0]) : $this->value[0]),
-					(!is_numeric($this->value[1]) ? strtotime($this->value[1]) : $this->value[1])
+					$from_date,
+					$to_date
 				);
 				break;
 			
