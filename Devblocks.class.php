@@ -201,9 +201,9 @@ class DevblocksPlatform extends DevblocksEngine {
 	    if(null === ($tables = $cache->load(self::CACHE_TABLES))) {
 	        $db = self::getDatabaseService(); /* @var $db ADODB_Connection */
 	        
-	        // [TODO] Make sure the database connection is valid or error out.
+	        // Make sure the database connection is valid or error out.
 	        if(is_null($db) || !$db->IsConnected())
-	        	die("[Error]: There is no connection to the database.  Check your connection details.");
+	        	return array();
 	        
 	        $tables = $db->MetaTables('TABLE',false);
 	        $cache->save($tables, self::CACHE_TABLES);
