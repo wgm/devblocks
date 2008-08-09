@@ -147,6 +147,7 @@ abstract class DevblocksEngine {
 		}
 
 		// [JAS]: Extension caching
+		$new_extensions = array();
 		if(is_array($manifest->extensions))
 		foreach($manifest->extensions as $pos => $extension) { /* @var $extension DevblocksExtensionManifest */
 		    // [JAS]: [TODO] Move to platform DAO
@@ -165,6 +166,24 @@ abstract class DevblocksEngine {
 				array('id'),
 				false
 			);
+			$new_extensions[$extension->id] = true;
+		}
+		
+		/*
+		 * Compare our loaded XML manifest to the DB manifest cache and invalidate 
+		 * the cache for extensions that are no longer in the XML.
+		 */
+		$sql = sprintf("SELECT id FROM %sextension WHERE plugin_id = %s",
+			$prefix,
+			$db->qstr($plugin->id)
+		);
+		$rs_plugin_extensions = $db->Execute($sql);
+
+		while(!$rs_plugin_extensions->EOF) {
+			$plugin_ext_id = $rs_plugin_extensions->fields['id'];
+			if(!isset($new_extensions[$plugin_ext_id]))
+				DAO_Platform::deleteExtension($plugin_ext_id);
+			$rs_plugin_extensions->MoveNext(); 
 		}
 		
         // [JAS]: [TODO] Extension point caching

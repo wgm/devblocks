@@ -359,7 +359,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	        }
 	    }
 
-	    if($as_instance) {
+	    if($as_instance && !is_null($result)) {
 	    	return $result->createInstance();
 	    }
 	    
@@ -573,7 +573,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	    $plugins = DevblocksPlatform::getPluginRegistry();
 
 	    if(isset($plugins[$id]))
-	    return $plugins[$id];
+	    	return $plugins[$id];
 		
 	    return null;
 	}

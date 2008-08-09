@@ -183,6 +183,7 @@ class DAO_Platform {
 		    }
 		    $rs->MoveNext();
 		}
+		
     }
     
 	static function updatePlugin($id, $fields) {
@@ -206,6 +207,25 @@ class DAO_Platform {
 			$db->qstr($id)
 		);
 		$db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+	}
+	
+	static function deleteExtension($extension_id) {
+		$db = DevblocksPlatform::getDatabaseService();
+		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
+		
+		// Nuke cached extension manifest
+		$sql = sprintf("DELETE FROM %sextension WHERE id = %s",
+			$prefix,
+			$db->qstr($extension_id)
+		);
+		$db->Execute($sql);
+		
+		// Nuke cached extension properties
+		$sql = sprintf("DELETE FROM %sproperty_store WHERE extension_id = %s",
+			$prefix,
+			$db->qstr($extension_id)
+		);
+		$db->Execute($sql);
 	}
 
 	/**
