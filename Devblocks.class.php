@@ -226,6 +226,9 @@ class DevblocksPlatform extends DevblocksEngine {
 			// [TODO] We need to find a nicer way to not clear a shared memcached cluster when only one desk needs to
 			$cache = DevblocksPlatform::getCacheService(); /* @var $cache Zend_Cache_Core */
 			$cache->clean('all');
+			
+			// Re-read manifests
+			DevblocksPlatform::readPlugins();
 				
 			if(self::_needsToPatch()) {
 				return false;
