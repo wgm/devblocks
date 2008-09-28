@@ -322,6 +322,8 @@ function genericAjaxGet(divName,args,cb) {
 	);
 }
 
+var genericAjaxPostAfterSubmitEvent = new YAHOO.util.CustomEvent("genericAjaxPostAfterSubmitEvent", window);
+
 function genericAjaxPost(formName,divName,args,cb) {
 	var frm = document.getElementById(formName);
 //	var div = document.getElementById(divName);
@@ -350,6 +352,10 @@ function genericAjaxPost(formName,divName,args,cb) {
 	
 	if(null == cb) {
 		var cb = function(o) {
+			// Events
+			genericAjaxPostAfterSubmitEvent.fire();
+			genericAjaxPostAfterSubmitEvent.unsubscribeAll();
+
 			var div = document.getElementById(divName);
 			if(null == div) return;
 	
