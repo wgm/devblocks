@@ -1009,9 +1009,9 @@ class _DevblocksClassLoadManager {
 		} else {
 	       	// [TODO]: Exception, log
 	       	// [TODO] It's probably not a good idea to send this much info to the browser
-	       	echo sprintf("<b>ERROR: ClassLoader could not find '%s':</b><br>",
-	       	    $className
-	       	);
+//	       	echo sprintf("<b>ERROR: ClassLoader could not find '%s':</b><br>",
+//	       	    $className
+//	       	);
 //	       	echo "<pre>";
 //	       	print_r(debug_backtrace());
 //	       	echo "</pre>";
