@@ -20,7 +20,23 @@ this.rewrite = {if $smarty.const.DEVBLOCKS_REWRITE}true{else}false{/if};
 		var url = this.base_url + this.vars.join('/');
 		return url;
 	}
-}
+};
+
+var DevblocksClass = function() {
+	/* Source: http://bytes.com/forum/thread90068.html */
+	this.getSelectedText = function() {
+		if (window.getSelection) { // recent Mozilla
+			var selectedString = window.getSelection();
+		} else if (document.all) { // MSIE 4+
+			var selectedString = document.selection.createRange().text;
+		} else if (document.getSelection) { //older Mozilla
+			var selectedString = document.getSelection();
+		};
+		
+		return selectedString;
+	}
+};
+var Devblocks = new DevblocksClass();
 
 function selectValue(e) {
 	return e.options[e.selectedIndex].value;
@@ -148,7 +164,6 @@ function insertAtCursor(field, value) {
 	else{
 		field.value += value;
 	} 
-
 }
 
 // [JAS]: [TODO] Make this a little more generic?
