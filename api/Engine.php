@@ -912,6 +912,9 @@ class _DevblocksDatabaseManager {
 			
 			@$instance->SetFetchMode(ADODB_FETCH_ASSOC);
 			$instance->LogSQL(false);
+			
+			// Encoding
+			$instance->Execute('SET NAMES ' . DB_CHARSET_CODE);
 		}
 		return $instance;
 	}
