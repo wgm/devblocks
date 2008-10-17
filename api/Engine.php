@@ -1065,6 +1065,10 @@ class _DevblocksClassLoadManager {
 		$this->registerClasses($path . 'Swift/Plugin/AntiFlood.php',array(
 			'Swift_Plugin_AntiFlood',
 		));
+		
+		$this->registerClasses($path . 'Swift/Message/Headers.php',array(
+			'Swift_Message_Headers',
+		));		
 	}
 	
 	private function _initPEAR() {
