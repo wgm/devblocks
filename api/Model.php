@@ -514,3 +514,11 @@ class Model_DevblocksEvent {
       $this->params = $params;
   }
 };
+
+class Model_Translation {
+	public $id;
+	public $string_id;
+	public $lang_code;
+	public $string_default;
+	public $string_override;
+};

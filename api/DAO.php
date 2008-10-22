@@ -275,3 +275,372 @@ class DAO_Platform {
 	
 };
 
+class DAO_Translation extends DevblocksORMHelper {
+	const ID = 'id';
+	const STRING_ID = 'string_id';
+	const LANG_CODE = 'lang_code';
+	const STRING_DEFAULT = 'string_default';
+	const STRING_OVERRIDE = 'string_override';
+
+	static function create($fields) {
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		$id = $db->GenID('generic_seq');
+		
+		$sql = sprintf("INSERT INTO translation (id) ".
+			"VALUES (%d)",
+			$id
+		);
+		$db->Execute($sql);
+		
+		self::update($id, $fields);
+		
+		return $id;
+	}
+	
+	static function update($ids, $fields) {
+		parent::_update($ids, 'translation', $fields);
+	}
+	
+	/**
+	 * @param string $where
+	 * @return Model_TranslationDefault[]
+	 */
+	static function getWhere($where=null) {
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		$sql = "SELECT id, string_id, lang_code, string_default, string_override ".
+			"FROM translation ".
+			(!empty($where) ? sprintf("WHERE %s ",$where) : "").
+			"ORDER BY string_id ASC, lang_code ASC";
+		$rs = $db->Execute($sql);
+		
+		return self::_getObjectsFromResult($rs);
+	}
+
+	/**
+	 * @param integer $id
+	 * @return Model_TranslationDefault	 */
+	static function get($id) {
+		$objects = self::getWhere(sprintf("%s = %d",
+			self::ID,
+			$id
+		));
+		
+		if(isset($objects[$id]))
+			return $objects[$id];
+		
+		return null;
+	}
+	
+	static function importTmxFile($filename) {
+		$db = DevblocksPlatform::getDatabaseService();
+		$locale = DevblocksPlatform::getLocaleService();
+		
+		if(!file_exists($filename))
+			return;
+		
+		/*
+		 * [JAS] [TODO] This could be inefficient when reading a lot 
+		 * of TMX sources, but it could also be inefficient always
+		 * keeping it in memory after using it once.  I'm going to err
+		 * on the side of a little extra DB work for the few times it's 
+		 * called.
+		 */
+		
+		$hash = array();
+		foreach(DAO_Translation::getWhere() as $s) { /* @var $s Model_TranslationDefault */
+			$hash[$s->lang_code.'_'.$s->string_id] = $s;
+		}
+		
+		if(false == (@$xml = simplexml_load_file($filename))) /* @var $xml SimpleXMLElement */
+			return;
+			
+		$namespaces = $xml->getNamespaces(true);
+		
+		foreach($xml->body->tu as $tu) { /* @var $tu SimpleXMLElement */
+			$msgid = strtolower((string) $tu['tuid']);
+			foreach($tu->tuv as $tuv) { /* @var $tuv SimpleXMLElement */
+				$attribs = $tuv->attributes($namespaces['xml']); 
+				$lang = (string) $attribs['lang'];
+				$string = (string) $tuv->seg[0]; // [TODO] Handle multiple segs?
+				
+				@$hash_obj = $hash[$lang.'_'.$msgid]; /* @var $hash_obj Model_Translation */
+				
+				// If not found in the DB
+				if(empty($hash_obj)) {
+					$fields = array(
+						DAO_Translation::STRING_ID => $msgid,
+						DAO_Translation::LANG_CODE => $lang,
+						DAO_Translation::STRING_DEFAULT => $string,
+					);
+					$id = DAO_Translation::create($fields);
+
+					// Add to our hash to prevent dupes
+					$new = new Model_Translation();
+						$new->id = $id;
+						$new->string_id = $msgid;
+						$new->lang_code = $lang;
+						$new->string_default = $string;
+						$new->string_override = '';
+					$hash[$lang.'_'.$msgid] = $new;
+					
+				// If exists in DB and the string has changed
+				} elseif (!empty($hash_obj) && 0 != strcasecmp($string, $hash_obj->string_default)) {
+					$fields = array(
+						DAO_Translation::STRING_DEFAULT => $string,
+					);
+					DAO_Translation::update($hash_obj->id, $fields);
+				}
+			}
+		}
+	
+		unset($xml);
+	}
+	
+	static function reloadPluginStrings() {
+		$translations = DevblocksPlatform::getExtensions("devblocks.i18n.strings");
+
+		if(is_array($translations))
+		foreach($translations as $translationManifest) { /* @var $translationManifest DevblocksExtensionManifest */
+			if(null != ($translation = $translationManifest->createInstance())) { /* @var $translation DevblocksTranslationsExtension */
+				$filename = $translation->getTmxFile();
+				self::importTmxFile($filename);
+			}
+		}
+	}
+	
+	static function getLocaleList() {
+		$locale = DevblocksPlatform::getLocaleService();
+		
+		$map = array();
+		
+		$locs = $locale->getLocaleList();
+		$langs = $locale->getLanguageTranslationList(); // [TODO] cache
+		$terrs = $locale->getCountryTranslationList(); // [TODO] cache
+		
+		// Clear placeholders
+		unset($langs['und']);
+		unset($terrs['ZZ']);
+		
+		if(is_array($locs))
+		foreach(array_keys($locs) as $loc) {
+			$data = explode('_', $loc);
+			@$lang = $langs[$data[0]];
+			@$terr = $terrs[$data[1]];
+			if(empty($lang) || empty($terr))
+				continue;
+				
+			$map[$loc] = $lang . ' ('.$terr.')';
+		}
+		
+		unset($locs);
+		unset($langs);
+		unset($terrs);
+
+		asort($map);
+		
+		return $map;
+	}
+	
+	static function getDefinedLangCodes() {
+		$db = DevblocksPlatform::getDatabaseService();
+		$lang_codes = array();
+		
+		// Look up distinct land codes from existing translations
+		$sql = sprintf("SELECT DISTINCT lang_code FROM translation ORDER BY lang_code ASC");
+		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
+		
+		$locale = DevblocksPlatform::getLocaleService();
+		$langs = $locale->getLanguageTranslationList(); // [TODO] cache
+		$terrs = $locale->getCountryTranslationList(); // [TODO] cache
+		
+		while(!$rs->EOF) {
+			$code = $rs->fields['lang_code'];
+			$data = explode('_', $code);
+			@$lang = $langs[$data[0]];
+			@$terr = $terrs[$data[1]];
+			
+			if(!empty($lang) && !empty($terr))
+				$lang_codes[$code] = $lang . ' ('.$terr.')';
+			
+			$rs->MoveNext();
+		}
+		
+		return $lang_codes;
+	}
+	
+	static function getByLang($lang='en_US') {
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		return self::getWhere(sprintf("%s = %s",
+			self::LANG_CODE,
+			$db->qstr($lang)
+		));
+	}
+	
+	static function getMapByLang($lang='en_US') {
+		$strings = self::getByLang($lang);
+		$map = array();
+		
+		if(is_array($strings))
+		foreach($strings as $string) { /* @var $string Model_Translation */
+			if(is_a($string, 'Model_Translation'))
+				$map[$string->string_id] = $string;
+		}
+		
+		return $map;
+	}
+	
+	// [TODO] Allow null 2nd arg for all instances of a given string?
+	static function getString($string_id, $lang='en_US') {
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		$objects = self::getWhere(sprintf("%s = %s AND %s = %s",
+			self::STRING_ID,
+			$db->qstr($string_id),
+			self::LANG_CODE,
+			$db->qstr($lang)
+		));
+
+		if(!empty($objects) && is_array($objects))
+			return array_shift($objects);
+		
+		return null;
+	}
+	
+	/**
+	 * @param ADORecordSet $rs
+	 * @return Model_TranslationDefault[]
+	 */
+	static private function _getObjectsFromResult($rs) {
+		$objects = array();
+		
+		while(!$rs->EOF) {
+			$object = new Model_Translation();
+			$object->id = $rs->fields['id'];
+			$object->string_id = $rs->fields['string_id'];
+			$object->lang_code = $rs->fields['lang_code'];
+			$object->string_default = $rs->fields['string_default'];
+			$object->string_override = $rs->fields['string_override'];
+			$objects[$object->id] = $object;
+			$rs->MoveNext();
+		}
+		
+		return $objects;
+	}
+	
+	static function delete($ids) {
+		if(!is_array($ids)) $ids = array($ids);
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		$ids_list = implode(',', $ids);
+		
+		$db->Execute(sprintf("DELETE FROM translation WHERE id IN (%s)", $ids_list));
+		
+		return true;
+	}
+	
+	static function deleteByLangCodes($codes) {
+		if(!is_array($codes)) $codes = array($codes);
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		$codes_list = implode("','", $codes);
+		
+		$db->Execute(sprintf("DELETE FROM translation WHERE lang_code IN ('%s') AND lang_code != 'en_US'", $codes_list));
+		
+		return true;
+	}
+	
+    /**
+     * Enter description here...
+     *
+     * @param DevblocksSearchCriteria[] $params
+     * @param integer $limit
+     * @param integer $page
+     * @param string $sortBy
+     * @param boolean $sortAsc
+     * @param boolean $withCounts
+     * @return array
+     */
+    static function search($params, $limit=10, $page=0, $sortBy=null, $sortAsc=null, $withCounts=true) {
+		$db = DevblocksPlatform::getDatabaseService();
+
+        list($tables,$wheres) = parent::_parseSearchParams($params, array(),SearchFields_Translation::getFields());
+		$start = ($page * $limit); // [JAS]: 1-based [TODO] clean up + document
+		
+		$select_sql = sprintf("SELECT ".
+			"tl.id as %s, ".
+			"tl.string_id as %s, ".
+			"tl.lang_code as %s, ".
+			"tl.string_default as %s, ".
+			"tl.string_override as %s ",
+//			"o.name as %s ".
+			    SearchFields_Translation::ID,
+			    SearchFields_Translation::STRING_ID,
+			    SearchFields_Translation::LANG_CODE,
+			    SearchFields_Translation::STRING_DEFAULT,
+			    SearchFields_Translation::STRING_OVERRIDE
+			 );
+		
+		$join_sql = 
+			"FROM translation tl ";
+//			"LEFT JOIN contact_org o ON (o.id=a.contact_org_id) "
+
+			// [JAS]: Dynamic table joins
+//			(isset($tables['o']) ? "LEFT JOIN contact_org o ON (o.id=a.contact_org_id)" : " ").
+//			(isset($tables['mc']) ? "INNER JOIN message_content mc ON (mc.message_id=m.id)" : " ").
+
+		$where_sql = "".
+			(!empty($wheres) ? sprintf("WHERE %s ",implode(' AND ',$wheres)) : "");
+			
+		$sql = $select_sql . $join_sql . $where_sql .  
+			(!empty($sortBy) ? sprintf("ORDER BY %s %s",$sortBy,($sortAsc || is_null($sortAsc))?"ASC":"DESC") : "");
+		
+		$rs = $db->SelectLimit($sql,$limit,$start) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		
+		$results = array();
+		while(!$rs->EOF) {
+			$result = array();
+			foreach($rs->fields as $f => $v) {
+				$result[$f] = $v;
+			}
+			$id = intval($rs->fields[SearchFields_Translation::ID]);
+			$results[$id] = $result;
+			$rs->MoveNext();
+		}
+
+		// [JAS]: Count all
+		$total = -1;
+		if($withCounts) {
+			$count_sql = "SELECT count(*) " . $join_sql . $where_sql;
+			$total = $db->GetOne($count_sql);
+		}
+		
+		return array($results,$total);
+    }	
+
+};
+
+class SearchFields_Translation implements IDevblocksSearchFields {
+	// Translate
+	const ID = 'tl_id';
+	const STRING_ID = 'tl_string_id';
+	const LANG_CODE = 'tl_lang_code';
+	const STRING_DEFAULT = 'tl_string_default';
+	const STRING_OVERRIDE = 'tl_string_override';
+	
+	/**
+	 * @return DevblocksSearchField[]
+	 */
+	static function getFields() {
+		$translate = DevblocksPlatform::getTranslationService();
+		return array(
+			self::ID => new DevblocksSearchField(self::ID, 'tl', 'id', null, $translate->_('translate.id')),
+			self::STRING_ID => new DevblocksSearchField(self::STRING_ID, 'tl', 'string_id', null, $translate->_('translate.string_id')),
+			self::LANG_CODE => new DevblocksSearchField(self::LANG_CODE, 'tl', 'lang_code', null, $translate->_('translate.lang_code')),
+			self::STRING_DEFAULT => new DevblocksSearchField(self::STRING_DEFAULT, 'tl', 'string_default', null, $translate->_('translate.string_default')),
+			self::STRING_OVERRIDE => new DevblocksSearchField(self::STRING_OVERRIDE, 'tl', 'string_override', null, $translate->_('translate.string_override')),
+		);
+	}
+};

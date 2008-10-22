@@ -859,6 +859,7 @@ class _DevblocksTemplateManager {
 			$instance->template_dir = APP_PATH . '/templates'; // [TODO] Themes
 			$instance->compile_dir = DEVBLOCKS_PATH . 'tmp/templates_c';
 			$instance->cache_dir = DEVBLOCKS_PATH . 'tmp/cache';
+			$instance->plugins_dir = DEVBLOCKS_PATH . 'libs/smarty_plugins';
 			
 			//$smarty->config_dir = DEVBLOCKS_PATH. 'configs';
 			$instance->caching = 0;

@@ -1,7 +1,7 @@
 <?php
 include_once(DEVBLOCKS_PATH . "api/Engine.php");
-include_once(DEVBLOCKS_PATH . "api/DAO.php");
 include_once(DEVBLOCKS_PATH . "api/Model.php");
+include_once(DEVBLOCKS_PATH . "api/DAO.php");
 include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
@@ -34,13 +34,15 @@ class DevblocksPlatform extends DevblocksEngine {
     const CACHE_PLUGINS = 'devblocks_plugins';
     const CACHE_EXTENSIONS = 'devblocks_extensions';
     const CACHE_TABLES = 'devblocks_tables';
-    const CACHE_TRANSLATIONS = 'devblocks_translations';
+    const CACHE_TAG_TRANSLATIONS = 'devblocks_translations';
     const CACHE_EVENT_POINTS = 'devblocks_event_points';
     const CACHE_EVENTS = 'devblocks_events';
     
     static private $start_time = 0;
     static private $start_memory = 0;
     static private $start_peak_memory = 0;
+    
+    static private $locale = 'en_US';
     
     private function __construct() {}
 
@@ -154,7 +156,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	    $cache->remove(self::CACHE_EVENT_POINTS);
 	    $cache->remove(self::CACHE_EVENTS);
 	    $cache->remove(self::CACHE_TABLES);
-	    $cache->remove(self::CACHE_TRANSLATIONS);
+	    $cache->clean('matchingTag', self::CACHE_TAG_TRANSLATIONS);
 	    $cache->remove(_DevblocksClassLoadManager::CACHE_CLASS_MAP);
 	    
 	    // Recache plugins
@@ -736,53 +738,87 @@ class DevblocksPlatform extends DevblocksEngine {
 	    return $date;
 	}
 
+	static function setLocale($locale) {
+		$i18n = self::getLocaleService(); /* @var $i18n Zend_Locale */
+		if($i18n->isLocale($locale)) {
+			self::$locale = $locale;
+			$i18n->setLocale(self::$locale);
+		}
+	}
+	
 	/**
 	 * @return Zend_Locale
 	 */
 	static function getLocaleService() {
-		$locale = null;
+		$i18n = null;
 		if(Zend_Registry::isRegistered('locale')) {
-			$locale = Zend_Registry::get('locale');
+			$i18n = Zend_Registry::get('locale');
 		}
 		
-	    if(empty($locale)) {
-	        $locale = new Zend_Locale('en'); // en_US
-	        Zend_Registry::set('locale', $locale);
+	    if(empty($i18n)) {
+	    	// [TODO] Determine platform or user language
+	    	$code = !empty(self::$locale) ? self::$locale : 'en_US';
+	        $i18n = new Zend_Locale($code);
+	        Zend_Registry::set('locale', $i18n);
 	    }
 
-	    return $locale;
+	    return $i18n;
 	}
 
 	/**
 	 * @return Zend_Translate
 	 */
+	// [TODO] Relocate DAO_Translate from Cerb
 	static function getTranslationService() {
 	    $cache = self::getCacheService();
 		$locale = DevblocksPlatform::getLocaleService();
+		
+		// Determine platform or user language
+		$lang = $locale->toString();
 	    
-	    if(null === ($translate = $cache->load(self::CACHE_TRANSLATIONS))) {
-	        $translate = new Zend_Translate('tmx', DEVBLOCKS_PATH . 'resources/strings.xml', $locale);
-		
-	        // [JAS]: Read in translations from the extension point
-	        if(!self::isDatabaseEmpty()) {
-	            $translations = DevblocksPlatform::getExtensions("devblocks.i18n.strings");
-	            
-		        if(is_array($translations))
-		        foreach($translations as $translationManifest) { /* @var $translationManifest DevblocksExtensionManifest */
-		            if(null != ($translation = $translationManifest->createInstance())) { /* @var $translation DevblocksTranslationsExtension */
-			            $file = $translation->getTmxFile();
-		
-			            if(@is_readable($file))
-			            $translate->addTranslation($file, $locale);
-		            }
-		        }
-		        
-       	        $cache->save($translate,self::CACHE_TRANSLATIONS);
-	        }
+	    if(null === ($map = $cache->load(self::CACHE_TAG_TRANSLATIONS.'_'.$lang))) { /* @var $cache Zend_Cache_Core */
+			$map = array();
+			$map_en = DAO_Translation::getMapByLang('en_US');
+			if(0 != strcasecmp('en_US', $lang))
+				$map_loc = DAO_Translation::getMapByLang($lang);
+			
+			// Loop through the English string objects
+			if(is_array($map_en))
+			foreach($map_en as $string_id => $obj_string_en) {
+				$string = '';
+				
+				// If we have a locale to check
+				if(isset($map_loc) && is_array($map_loc)) {
+					@$obj_string_loc = $map_loc[$string_id];
+					@$string =
+						(!empty($obj_string_loc->string_override))
+						? $obj_string_loc->string_override
+						: $obj_string_loc->string_default;
+				}
+				
+				// If we didn't hit, load the English default
+				if(empty($string))
+				@$string = 
+					(!empty($obj_string_en->string_override))
+					? $obj_string_en->string_override
+					: $obj_string_en->string_default;
+					
+				// If we found any match
+				if(!empty($string))
+					$map[$string_id] = $string;
+			}
+			unset($obj_string_en);
+			unset($obj_string_loc);
+			unset($map_en);
+			unset($map_loc);
+			
+			// Cache with tag (tag allows easy clean for multiple langs at once)
+			$cache->save($map,self::CACHE_TAG_TRANSLATIONS.'_'.$lang,array(self::CACHE_TAG_TRANSLATIONS));
 	    }
 	    
-	    // [TODO] Change for other locales later
-	    $translate->getAdapter()->setOptions(array('locale'=>'en'));
+	    $translate = new Zend_Translate('array', $map, $lang);
+	    
+	    $translate->getAdapter()->setOptions(array('locale'=>$lang));
 
 	    return $translate;
 	}
@@ -878,6 +914,6 @@ class PlatformPatchContainer extends DevblocksPatchContainerExtension {
 		$file_prefix = dirname(__FILE__) . '/patches/';
 
 		$this->registerPatch(new DevblocksPatch('devblocks.core',1,$file_prefix.'1.0.0.php',''));
-		$this->registerPatch(new DevblocksPatch('devblocks.core',201,$file_prefix.'1.0.0_beta.php',''));
+		$this->registerPatch(new DevblocksPatch('devblocks.core',252,$file_prefix.'1.0.0_beta.php',''));
 	}
 };

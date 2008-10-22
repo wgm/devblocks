@@ -109,5 +109,32 @@ if(255 == @$columns['VALUE']->max_length) {
 		$datadict->ExecuteSQLArray($datadict->DropColumnSQL($prefix.'property_store', 'value_old'));
 }
 
+// `translation` ========================
+if(!isset($tables['translation'])) {
+	$flds ="
+		id I4 DEFAULT 0 NOTNULL PRIMARY,
+		string_id C(255) DEFAULT '' NOTNULL,
+		lang_code C(16) DEFAULT '' NOTNULL,
+		string_default XL,
+		string_override XL
+	";
+	
+	$sql = $datadict->CreateTableSQL('translation', $flds);
+	$datadict->ExecuteSQLArray($sql);
+}
+
+$columns = $datadict->MetaColumns('translation');
+$indexes = $datadict->MetaIndexes('translation',false);
+
+if(!isset($indexes['string_id'])) {
+	$sql = $datadict->CreateIndexSQL('string_id','translation','string_id');
+	$datadict->ExecuteSQLArray($sql);
+}
+
+if(!isset($indexes['lang_code'])) {
+	$sql = $datadict->CreateIndexSQL('lang_code','translation','lang_code');
+	$datadict->ExecuteSQLArray($sql);
+}
+
 return TRUE;
 ?>
