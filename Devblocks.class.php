@@ -743,6 +743,7 @@ class DevblocksPlatform extends DevblocksEngine {
 		if($i18n->isLocale($locale)) {
 			self::$locale = $locale;
 			$i18n->setLocale(self::$locale);
+			Zend_Registry::set('locale', $i18n);
 		}
 	}
 	
@@ -756,7 +757,7 @@ class DevblocksPlatform extends DevblocksEngine {
 		}
 		
 	    if(empty($i18n)) {
-	    	// [TODO] Determine platform or user language
+	    	// Determine platform or user language
 	    	$code = !empty(self::$locale) ? self::$locale : 'en_US';
 	        $i18n = new Zend_Locale($code);
 	        Zend_Registry::set('locale', $i18n);
@@ -768,7 +769,6 @@ class DevblocksPlatform extends DevblocksEngine {
 	/**
 	 * @return Zend_Translate
 	 */
-	// [TODO] Relocate DAO_Translate from Cerb
 	static function getTranslationService() {
 	    $cache = self::getCacheService();
 		$locale = DevblocksPlatform::getLocaleService();

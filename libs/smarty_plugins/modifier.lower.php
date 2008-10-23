@@ -20,7 +20,7 @@
  */
 function smarty_modifier_lower($string)
 {
-	if(extension_loaded('mbstring'))
+	if(extension_loaded('mbstring') && function_exists('mb_convert_case'))
     	return mb_convert_case($string, MB_CASE_LOWER, LANG_CHARSET_CODE);
     else
     	return strtolower($string);

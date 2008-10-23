@@ -416,8 +416,16 @@ class DAO_Translation extends DevblocksORMHelper {
 		$map = array();
 		
 		$locs = $locale->getLocaleList();
-		$langs = $locale->getLanguageTranslationList(); // [TODO] cache
-		$terrs = $locale->getCountryTranslationList(); // [TODO] cache
+		
+		// [TODO] cache
+		$langs = $locale->getLanguageTranslationList();
+		if(empty($langs))
+			$langs = $locale->getLanguageTranslationList('en_US');
+			
+		// [TODO] cache
+		$terrs = $locale->getCountryTranslationList();
+		if(empty($terrs))
+			$terrs = $locale->getCountryTranslationList('en_US');
 		
 		// Clear placeholders
 		unset($langs['und']);
@@ -452,8 +460,16 @@ class DAO_Translation extends DevblocksORMHelper {
 		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
 		
 		$locale = DevblocksPlatform::getLocaleService();
-		$langs = $locale->getLanguageTranslationList(); // [TODO] cache
-		$terrs = $locale->getCountryTranslationList(); // [TODO] cache
+		
+		// [TODO] cache
+		$langs = $locale->getLanguageTranslationList();
+		if(empty($langs))
+			$langs = $locale->getLanguageTranslationList('en_US');
+			
+		// [TODO] cache
+		$terrs = $locale->getCountryTranslationList();
+		if(empty($terrs))
+			$terrs = $locale->getCountryTranslationList('en_US');
 		
 		while(!$rs->EOF) {
 			$code = $rs->fields['lang_code'];
