@@ -532,7 +532,7 @@ class DAO_Translation extends DevblocksORMHelper {
 	static private function _getObjectsFromResult($rs) {
 		$objects = array();
 		
-		while(!$rs->EOF && is_a($rs,'ADORecordSet')) {
+		while(is_a($rs,'ADORecordSet') && !$rs->EOF) {
 			$object = new Model_Translation();
 			$object->id = $rs->fields['id'];
 			$object->string_id = $rs->fields['string_id'];
