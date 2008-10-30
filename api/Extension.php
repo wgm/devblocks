@@ -97,6 +97,7 @@ class DevblocksExtension {
 		);
 		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		
+		if(is_a($rs,'ADORecordSet'))
 		while(!$rs->EOF) {
 			$params[$rs->fields['property']] = $rs->fields['value'];
 			$rs->MoveNext();

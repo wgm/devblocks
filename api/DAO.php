@@ -165,6 +165,7 @@ class DAO_Platform {
 		$plugins = DevblocksPlatform::getPluginRegistry();
 		
 		// [JAS]: Remove any plugins that are no longer in the filesystem
+		if(is_a($rs,'ADORecordSet'))
 		while(!$rs->EOF) {
 		    $plugin_id = $rs->fields['id'];
 		    if(!isset($plugins[$plugin_id])) {
@@ -471,6 +472,7 @@ class DAO_Translation extends DevblocksORMHelper {
 		if(empty($terrs))
 			$terrs = $locale->getCountryTranslationList('en_US');
 		
+		if(is_a($rs,'ADORecordSet'))
 		while(!$rs->EOF) {
 			$code = $rs->fields['lang_code'];
 			$data = explode('_', $code);
@@ -616,6 +618,8 @@ class DAO_Translation extends DevblocksORMHelper {
 		$rs = $db->SelectLimit($sql,$limit,$start) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		
 		$results = array();
+		
+		if(is_a($rs,'ADORecordSet'))
 		while(!$rs->EOF) {
 			$result = array();
 			foreach($rs->fields as $f => $v) {

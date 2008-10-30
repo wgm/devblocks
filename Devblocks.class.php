@@ -4,9 +4,9 @@ include_once(DEVBLOCKS_PATH . "api/Model.php");
 include_once(DEVBLOCKS_PATH . "api/DAO.php");
 include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
-include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
+//include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',256);
+define('PLATFORM_BUILD',260);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -156,8 +156,14 @@ class DevblocksPlatform extends DevblocksEngine {
 	    $cache->remove(self::CACHE_EVENT_POINTS);
 	    $cache->remove(self::CACHE_EVENTS);
 	    $cache->remove(self::CACHE_TABLES);
-	    $cache->clean('matchingTag', self::CACHE_TAG_TRANSLATIONS);
 	    $cache->remove(_DevblocksClassLoadManager::CACHE_CLASS_MAP);
+
+	    // Clear all locale caches
+	    $langs = DAO_Translation::getDefinedLangCodes();
+	    if(is_array($langs) && !empty($langs))
+	    foreach($langs as $lang_code => $lang_name) {
+	    	$cache->remove(self::CACHE_TAG_TRANSLATIONS . '_' . $lang_code);
+	    }
 	    
 	    // Recache plugins
 		$plugins = self::getPluginRegistry();
@@ -419,6 +425,8 @@ class DevblocksPlatform extends DevblocksEngine {
 			$prefix
 			);
 			$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+			
+			if(is_a($rs,'ADORecordSet'))
 			while(!$rs->EOF) {
 			    $extension = new DevblocksExtensionManifest();
 			    $extension->id = $rs->fields['id'];
@@ -515,6 +523,8 @@ class DevblocksPlatform extends DevblocksEngine {
 			$prefix
 		);
 		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		
+		if(is_a($rs,'ADORecordSet'))
 		while(!$rs->EOF) {
 		    $plugin = new DevblocksPluginManifest();
 		    @$plugin->id = $rs->fields['id'];
@@ -541,6 +551,7 @@ class DevblocksPlatform extends DevblocksEngine {
 		);
 		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg() . var_dump(debug_backtrace())); /* @var $rs ADORecordSet */
 
+		if(is_a($rs,'ADORecordSet'))
 		while(!$rs->EOF) {
 		    $point = new DevblocksEventPoint();
 		    $point->id = $rs->fields['id'];
@@ -669,9 +680,9 @@ class DevblocksPlatform extends DevblocksEngine {
 	 *
 	 * @return CloudGlue
 	 */
-	static function getCloudGlueService() {
-	    return CloudGlue::getInstance();
-	}
+//	static function getCloudGlueService() {
+//	    return CloudGlue::getInstance();
+//	}
 
 	/**
 	 * @return _DevblocksRoutingManager

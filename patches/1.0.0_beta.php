@@ -90,7 +90,7 @@ if(255 == @$columns['VALUE']->max_length) {
 	$sql = "SELECT extension_id, instance_id, property, value_old FROM ${prefix}property_store ";
 	$rs = $db->Execute($sql);
 	
-	if($rs)
+	if(is_a($rs,'ADORecordSet'))
 	while(!$rs->EOF) {
 		@$db->UpdateBlob(
 			$prefix.'property_store',

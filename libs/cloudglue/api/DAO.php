@@ -85,6 +85,7 @@ class DAO_CloudGlue {
 //		echo $sql;
 		$rs = $db->SelectLimit($sql,30,0) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		
+		if(is_a($rs,'ADORecordSet'))
 		while(!$rs->EOF) {
 			$id = intval($rs->fields['tag_id']);
 			$hits[$id] = intval($rs->fields['hits']);
@@ -154,6 +155,7 @@ class DAO_CloudGlue {
 //		echo $sql;
 		$rs = $db->SelectLimit($sql,30,0) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		
+		if(is_a($rs,'ADORecordSet'))
 		while(!$rs->EOF) {
 			$id = intval($rs->fields['content_id']);
 			$hits[$id] = intval($rs->fields['hits']);
@@ -204,6 +206,7 @@ class DAO_CloudGlue {
 		);
 		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		
+		if(is_a($rs,'ADORecordSet'))
 		while(!$rs->EOF) {
 			$content_id = intval($rs->fields['content_id']);
 			$tag_id = intval($rs->fields['tag_id']);
@@ -258,6 +261,7 @@ class DAO_CloudGlue {
 	private static function _getObjectsFromResultSet(ADORecordSet $rs) {
 		$objects = array();
 		
+		if(is_a($rs,'ADORecordSet'))
 		while(!$rs->EOF) {
 			$tag = new CloudGlueTag();
 			$tag->id = intval($rs->fields['id']);
