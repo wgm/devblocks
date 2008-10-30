@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',251);
+define('PLATFORM_BUILD',256);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -819,7 +819,10 @@ class DevblocksPlatform extends DevblocksEngine {
 	    
 	    $translate = new Zend_Translate('array', $map, $lang);
 	    
-	    $translate->getAdapter()->setOptions(array('locale'=>$lang));
+	    try {
+	    	if($translate->getAdapter()->isAvailable($lang))
+	    		$translate->getAdapter()->setOptions(array('locale'=>$lang));
+	    } catch(Exception $e) { /* Locale isn't valid */ }
 
 	    return $translate;
 	}
