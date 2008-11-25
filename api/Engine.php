@@ -246,7 +246,7 @@ abstract class DevblocksEngine {
 	 * @return string
 	 */
 	static function strAlphaNum($arg) {
-		return preg_replace("/[^A-Z0-9]/i","", $arg);
+		return preg_replace("/[^A-Z0-9\.]/i","", $arg);
 	}
 	
 	/**
@@ -256,7 +256,7 @@ abstract class DevblocksEngine {
 	 * @return string
 	 */
 	static function strAlphaNumDash($arg) {
-		return preg_replace("/[^A-Z0-9_\-]/i","", $arg);
+		return preg_replace("/[^A-Z0-9_\-\.]/i","", $arg);
 	}
 	
 	/**
