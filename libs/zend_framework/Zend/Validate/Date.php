@@ -17,7 +17,7 @@
  * @package    Zend_Validate
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Date.php 9707 2008-06-16 20:24:46Z thomas $
+ * @version    $Id: Date.php 12062 2008-10-21 17:28:12Z thomas $
  */
 
 
@@ -106,14 +106,22 @@ class Zend_Validate_Date extends Zend_Validate_Abstract
      */
     public function setLocale($locale = null)
     {
-        if ($locale !== null) {
-            require_once 'Zend/Locale.php';
-            if (!Zend_Locale::isLocale($locale)) {
+        if ($locale === null) {
+            $this->_locale = null;
+            return $this;
+        }
+
+        require_once 'Zend/Locale.php';
+        if (!Zend_Locale::isLocale($locale, true, false)) {
+            if (!Zend_Locale::isLocale($locale, false, false)) {
                 require_once 'Zend/Validate/Exception.php';
                 throw new Zend_Validate_Exception("The locale '$locale' is no known locale");
             }
+
+            $locale = new Zend_Locale($locale);
         }
-        $this->_locale = $locale;
+
+        $this->_locale = (string) $locale;
         return $this;
     }
 
@@ -197,7 +205,7 @@ class Zend_Validate_Date extends Zend_Validate_Abstract
                                                   'fix_date' => false));
             if (isset($parsed['year']) and ((strpos(strtoupper($this->_format), 'YY') !== false) and
                 (strpos(strtoupper($this->_format), 'YYYY') === false))) {
-                $parsed['year'] = self::_century($parsed['year']);
+                $parsed['year'] = Zend_Date::getFullYear($parsed['year']);
             }
         } catch (Exception $e) {
             // Date can not be parsed

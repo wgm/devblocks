@@ -40,7 +40,6 @@ class Zend_Translate_Adapter_Tbx extends Zend_Translate_Adapter {
     private $_langset     = null;
     private $_termentry   = null;
     private $_content     = null;
-    private $_defined     = false;
     private $_term        = null;
 
     /**
@@ -73,10 +72,6 @@ class Zend_Translate_Adapter_Tbx extends Zend_Translate_Adapter {
 
         if ($options['clear']) {
             $this->_translate = array();
-        }
-
-        if ((in_array('defined_language', $options)) and !empty($options['defined_language'])) {
-            $this->_defined = true;
         }
 
         if (!is_readable($filename)) {
@@ -167,8 +162,8 @@ class Zend_Translate_Adapter_Tbx extends Zend_Translate_Adapter {
     {
         $file = file_get_contents($filename, null, null, 0, 100);
         if (strpos($file, "encoding") !== false) {
-            $encoding = substr($file, strpos($file, "encoding") + 10);
-            $encoding = substr($encoding, 0, strpos($encoding, '"'));
+            $encoding = substr($file, strpos($file, "encoding") + 9);
+            $encoding = substr($encoding, 1, strpos($encoding, $encoding[0], 1) - 1);
             return $encoding;
         }
         return 'UTF-8';

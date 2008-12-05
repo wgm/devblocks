@@ -16,7 +16,7 @@
  * @package    Zend_Loader
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Loader.php 10455 2008-07-26 06:27:34Z ralph $
+ * @version    $Id: Loader.php 12507 2008-11-10 16:29:09Z matthew $
  */
 
 /**
@@ -151,6 +151,11 @@ class Zend_Loader
      * Returns TRUE if the $filename is readable, or FALSE otherwise.
      * This function uses the PHP include_path, where PHP's is_readable()
      * does not.
+     *
+     * Note from ZF-2900:
+     * If you use custom error handler, please check whether return value
+     *  from error_reporting() is zero or not.
+     * At mark of fopen() can not suppress warning if the handler is used.
      *
      * @param string   $filename
      * @return boolean

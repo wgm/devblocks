@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Zend Framework
  *
@@ -17,15 +16,13 @@
  * @package    Zend_Validate
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Ip.php 8064 2008-02-16 10:58:39Z thomas $
+ * @version    $Id: Ip.php 12340 2008-11-06 19:49:42Z thomas $
  */
-
 
 /**
  * @see Zend_Validate_Abstract
  */
 require_once 'Zend/Validate/Abstract.php';
-
 
 /**
  * @category   Zend
@@ -35,7 +32,6 @@ require_once 'Zend/Validate/Abstract.php';
  */
 class Zend_Validate_Ip extends Zend_Validate_Abstract
 {
-
     const NOT_IP_ADDRESS = 'notIpAddress';
 
     /**
@@ -59,7 +55,7 @@ class Zend_Validate_Ip extends Zend_Validate_Abstract
 
         $this->_setValue($valueString);
 
-        if (ip2long($valueString) === false) {
+        if ((ip2long($valueString) === false) || (long2ip(ip2long($valueString)) !== $valueString)) {
             $this->_error();
             return false;
         }

@@ -17,11 +17,14 @@
  * @subpackage Formatter
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Simple.php 10148 2008-07-16 22:46:07Z doctorrock83 $
+ * @version    $Id: Simple.php 10725 2008-08-06 16:01:05Z cadorn $
  */
 
 /** Zend_Log_Formatter_Interface */
 require_once 'Zend/Log/Formatter/Interface.php';
+
+/** Zend_Log_Exception */
+require_once 'Zend/Log/Exception.php';
 
 /**
  * @category   Zend
@@ -29,7 +32,7 @@ require_once 'Zend/Log/Formatter/Interface.php';
  * @subpackage Formatter
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Simple.php 10148 2008-07-16 22:46:07Z doctorrock83 $
+ * @version    $Id: Simple.php 10725 2008-08-06 16:01:05Z cadorn $
  */
 class Zend_Log_Formatter_Simple implements Zend_Log_Formatter_Interface
 {
@@ -69,6 +72,13 @@ class Zend_Log_Formatter_Simple implements Zend_Log_Formatter_Interface
     {
         $output = $this->_format;
         foreach ($event as $name => $value) {
+
+            if ((is_object($value) && !method_exists($value,'__toString'))
+                || is_array($value)) {
+
+                $value = gettype($value);  
+            }
+
             $output = str_replace("%$name%", $value, $output);
         }
         return $output;

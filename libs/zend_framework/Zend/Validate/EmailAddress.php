@@ -17,7 +17,7 @@
  * @package    Zend_Validate
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: EmailAddress.php 8986 2008-03-21 21:38:32Z matthew $
+ * @version    $Id: EmailAddress.php 8985 2008-03-21 21:37:24Z matthew $
  */
 
 

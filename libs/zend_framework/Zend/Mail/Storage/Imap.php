@@ -17,7 +17,7 @@
  * @subpackage Storage
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Imap.php 9131 2008-04-04 11:42:43Z thomas $
+ * @version    $Id: Imap.php 12519 2008-11-10 18:41:24Z alexander $
  */
 
 
@@ -93,13 +93,24 @@ class Zend_Mail_Storage_Imap extends Zend_Mail_Storage_Abstract
                                           '\Flagged'  => Zend_Mail_Storage::FLAG_FLAGGED);
 
     /**
+     * map flags to search criterias
+     * @var array
+     */
+    protected static $_searchFlags = array('\Recent'   => 'RECENT',
+                                           '\Answered' => 'ANSWERED',
+                                           '\Seen'     => 'SEEN',
+                                           '\Deleted'  => 'DELETED',
+                                           '\Draft'    => 'DRAFT',
+                                           '\Flagged'  => 'FLAGGED');
+
+    /**
      * Count messages all messages in current box
      *
      * @return int number of messages
      * @throws Zend_Mail_Storage_Exception
      * @throws Zend_Mail_Protocol_Exception
      */
-    public function countMessages()
+    public function countMessages($flags = null)
     {
         if (!$this->_currentFolder) {
             /**
@@ -109,9 +120,20 @@ class Zend_Mail_Storage_Imap extends Zend_Mail_Storage_Abstract
             throw new Zend_Mail_Storage_Exception('No selected folder to count');
         }
 
-        // we're reselecting the current mailbox, because STATUS is slow and shouldn't be used on the current mailbox
-        $result = $this->_protocol->select($this->_currentFolder);
-        return $result['exists'];
+        if ($flags === null) {
+            return count($this->_protocol->search(array('ALL')));
+        }
+    
+        $params = array();
+        foreach ((array)$flags as $flag) {
+            if (isset(self::$_searchFlags[$flag])) {
+                $params[] = self::$_searchFlags[$flag];
+            } else {
+                $params[] = 'KEYWORD';
+                $params[] = $this->_protocol->escapeString($flag);
+            }
+        }
+        return count($this->_protocol->search($params));
     }
 
     /**
@@ -584,6 +606,20 @@ class Zend_Mail_Storage_Imap extends Zend_Mail_Storage_Abstract
         }
     }
 
+    /**
+     * move an existing message
+     *
+     * NOTE: imap has no native move command, thus it's emulated with copy and delete
+     *
+     * @param  int                             $id     number of message
+     * @param  string|Zend_Mail_Storage_Folder $folder name or instance of targer folder
+     * @return null
+     * @throws Zend_Mail_Storage_Exception
+     */
+    public function moveMessage($id, $folder) {
+        $this->copyMessage($id, $folder);
+        $this->removeMessage($id);
+    }
 
     /**
      * set flags for message

@@ -16,7 +16,7 @@
  * @package    Zend_Mail
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Part.php 9131 2008-04-04 11:42:43Z thomas $
+ * @version    $Id: Part.php 12519 2008-11-10 18:41:24Z alexander $
  */
 
 
@@ -25,6 +25,11 @@
  */
 require_once 'Zend/Mime/Decode.php';
 
+/**
+ * @see Zend_Mail_Part_Interface
+ */
+require_once 'Zend/Mail/Part/Interface.php';
+
 
 /**
  * @category   Zend
@@ -32,7 +37,7 @@ require_once 'Zend/Mime/Decode.php';
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
  */
-class Zend_Mail_Part implements RecursiveIterator
+class Zend_Mail_Part implements RecursiveIterator, Zend_Mail_Part_Interface
 {
     /**
      * headers of part as array
@@ -177,6 +182,18 @@ class Zend_Mail_Part implements RecursiveIterator
     }
 
     /**
+     * Return size of part
+     *
+     * Quite simple implemented currently (not decoding). Handle with care.
+     *
+     * @return int size
+     */
+    public function getSize() {
+        return strlen($this->getContent());
+    }
+
+
+    /**
      * Cache content and split in parts if multipart
      *
      * @return null
@@ -203,6 +220,9 @@ class Zend_Mail_Part implements RecursiveIterator
             throw new Zend_Mail_Exception('no boundary found in content type to split message');
         }
         $parts = Zend_Mime_Decode::splitMessageStruct($this->_content, $boundary);
+        if ($parts === null) {
+            return;
+        }
         $counter = 1;
         foreach ($parts as $part) {
             $this->_parts[$counter++] = new self(array('headers' => $part['header'], 'content' => $part['body']));
@@ -362,7 +382,7 @@ class Zend_Mail_Part implements RecursiveIterator
      * @throws Zend_Exception, Zend_Mail_Exception
      */
     public function getHeaderField($name, $wantedPart = 0, $firstName = 0) {
-    	return Zend_Mime_Decode::splitHeaderField(current($this->getHeader($name, 'array')), $wantedPart, $firstName);
+        return Zend_Mime_Decode::splitHeaderField(current($this->getHeader($name, 'array')), $wantedPart, $firstName);
     }
 
 

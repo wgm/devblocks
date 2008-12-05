@@ -17,7 +17,7 @@
  * @subpackage Storage
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Maildir.php 9130 2008-04-04 08:30:24Z thomas $
+ * @version    $Id: Maildir.php 9098 2008-03-30 19:29:10Z thomas $
  */
 
 

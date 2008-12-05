@@ -16,7 +16,7 @@
  * @package    Zend_Mail
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Mail.php 8064 2008-02-16 10:58:39Z thomas $
+ * @version    $Id: Mail.php 12507 2008-11-10 16:29:09Z matthew $
  */
 
 
@@ -29,11 +29,6 @@ require_once 'Zend/Mail/Transport/Abstract.php';
  * @see Zend_Mime
  */
 require_once 'Zend/Mime.php';
-
-/**
- * @see Zend_Mail_Transport_Abstract
- */
-require_once 'Zend/Mail/Transport/Abstract.php';
 
 /**
  * @see Zend_Mime_Message
@@ -165,7 +160,7 @@ class Zend_Mail extends Zend_Mime_Message
      *
      * @param string $charset
      */
-    public function __construct($charset='iso-8859-1')
+    public function __construct($charset = 'iso-8859-1')
     {
         $this->_charset = $charset;
     }
@@ -396,7 +391,7 @@ class Zend_Mail extends Zend_Mime_Message
           return $value;
       } else {
           $quotedValue = Zend_Mime::encodeQuotedPrintable($value);
-          $quotedValue = str_replace(array('?', ' '), array('=3F', '=20'), $quotedValue);
+          $quotedValue = str_replace(array('?', ' ', '_'), array('=3F', '=20', '=5F'), $quotedValue);
           return '=?' . $this->_charset . '?Q?' . $quotedValue . '?=';
       }
     }
@@ -409,9 +404,9 @@ class Zend_Mail extends Zend_Mime_Message
      *
      * @param string  $headerName
      * @param string  $value
-     * @param boolean $append
+     * @param bool $append
      */
-    protected function _storeHeader($headerName, $value, $append=false)
+    protected function _storeHeader($headerName, $value, $append = false)
     {
 // ??        $value = strtr($value,"\r\n\t",'???');
         if (isset($this->_headers[$headerName])) {
@@ -430,6 +425,7 @@ class Zend_Mail extends Zend_Mime_Message
      * Add a recipient
      *
      * @param string $email
+     * @param boolean $to
      */
     protected function _addRecipient($email, $to = false)
     {
@@ -452,18 +448,25 @@ class Zend_Mail extends Zend_Mime_Message
     {
         $email = strtr($email,"\r\n\t",'???');
         $this->_addRecipient($email, ('To' == $headerName) ? true : false);
-        if ($name != '') {
-            $name = '"' . $this->_encodeHeader($name) . '" ';
+        if ($name !== '' && $name !== null && $name !== $email) {
+            $encodedName = $this->_encodeHeader($name);
+            if ($encodedName === $name && strpos($name, ',') !== false) {
+                $format = '"%s" <%s>';
+            } else {
+                $format = '%s <%s>';
+            }
+            $destination = sprintf($format, $encodedName, $email);
+        } else {
+            $destination = $email;
         }
-
-        $this->_storeHeader($headerName, $name .'<'. $email . '>', true);
+        $this->_storeHeader($headerName, $destination, true);
     }
 
     /**
      * Adds To-header and recipient
      *
-     * @param  string $name
      * @param  string $email
+     * @param  string $name
      * @return Zend_Mail Provides fluent interface
      */
     public function addTo($email, $name='')
@@ -475,8 +478,8 @@ class Zend_Mail extends Zend_Mime_Message
     /**
      * Adds Cc-header and recipient
      *
-     * @param  string    $name
      * @param  string    $email
+     * @param  string    $name
      * @return Zend_Mail Provides fluent interface
      */
     public function addCc($email, $name='')
@@ -515,12 +518,23 @@ class Zend_Mail extends Zend_Mime_Message
      * @return Zend_Mail Provides fluent interface
      * @throws Zend_Mail_Exception if called subsequent times
      */
-    public function setFrom($email, $name = '')
+    public function setFrom($email, $name = null)
     {
         if ($this->_from === null) {
             $email = strtr($email,"\r\n\t",'???');
             $this->_from = $email;
-            $this->_storeHeader('From', $this->_encodeHeader('"'.$name.'"').' <'.$email.'>', true);
+            if ($name !== null && $name !== $email) {
+                $encodedName = $this->_encodeHeader($name);
+                if ($encodedName === $name && strpos($name, ',') !== false) {
+                    $format = '"%s" <%s>';
+                } else {
+                    $format = '%s <%s>';
+                }
+                $from = sprintf($format, $encodedName, $email);
+            } else {
+                $from = $email;
+            }
+            $this->_storeHeader('From', $from, true);
         } else {
             /**
              * @see Zend_Mail_Exception
@@ -628,7 +642,7 @@ class Zend_Mail extends Zend_Mime_Message
             } else if (is_int($date)) {
                 $date = date('r', $date);
             } else if (is_string($date)) {
-            	$date = strtotime($date);
+                $date = strtotime($date);
                 if ($date === false || $date < 0) {
                     throw new Zend_Mail_Exception('String representations of Date Header must be ' .
                                                   'strtotime()-compatible');

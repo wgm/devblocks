@@ -82,8 +82,9 @@ class Zend_Translate_Adapter_Xliff extends Zend_Translate_Adapter {
             throw new Zend_Translate_Exception('Translation file \'' . $filename . '\' is not readable.');
         }
 
-        $encoding = $this->_findEncoding($filename);
-        $this->_file = xml_parser_create($encoding);
+        $encoding      = $this->_findEncoding($filename);
+        $this->_target = $locale;
+        $this->_file   = xml_parser_create($encoding);
         xml_set_object($this->_file, $this);
         xml_parser_set_option($this->_file, XML_OPTION_CASE_FOLDING, 0);
         xml_set_element_handler($this->_file, "_startElement", "_endElement");
@@ -117,7 +118,10 @@ class Zend_Translate_Adapter_Xliff extends Zend_Translate_Adapter {
             switch(strtolower($name)) {
                 case 'file':
                     $this->_source = $attrib['source-language'];
-                    $this->_target = $attrib['target-language'];
+                    if (isset($attrib['target-language'])) {
+                        $this->_target = $attrib['target-language'];
+                    }
+
                     $this->_translate[$this->_source] = array();
                     $this->_translate[$this->_target] = array();
                     break;
@@ -192,8 +196,8 @@ class Zend_Translate_Adapter_Xliff extends Zend_Translate_Adapter {
     {
         $file = file_get_contents($filename, null, null, 0, 100);
         if (strpos($file, "encoding") !== false) {
-            $encoding = substr($file, strpos($file, "encoding") + 10);
-            $encoding = substr($encoding, 0, strpos($encoding, '"'));
+            $encoding = substr($file, strpos($file, "encoding") + 9);
+            $encoding = substr($encoding, 1, strpos($encoding, $encoding[0], 1) - 1);
             return $encoding;
         }
         return 'UTF-8';

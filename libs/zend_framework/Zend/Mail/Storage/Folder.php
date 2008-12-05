@@ -17,7 +17,7 @@
  * @subpackage Storage
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Folder.php 9131 2008-04-04 11:42:43Z thomas $
+ * @version    $Id: Folder.php 9099 2008-03-30 19:35:47Z thomas $
  */
 
 

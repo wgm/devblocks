@@ -17,7 +17,7 @@
  * @subpackage Data
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Data.php 9811 2008-06-27 20:33:14Z thomas $
+ * @version    $Id: Data.php 12057 2008-10-21 17:19:43Z thomas $
  */
 
 /**
@@ -271,15 +271,12 @@ class Zend_Locale_Data
             $locale = new Zend_Locale();
         }
 
-        if ($locale instanceof Zend_Locale) {
-            $locale = $locale->toString();
+        if (!(Zend_Locale::isLocale((string) $locale, null, false))) {
+            require_once 'Zend/Locale/Exception.php';
+            throw new Zend_Locale_Exception("Locale (" . (string) $locale . ") is a unknown locale");
         }
 
-        if (!($locale = Zend_Locale::isLocale($locale))) {
-            require_once 'Zend/Locale/Exception.php';
-            throw new Zend_Locale_Exception("Locale ($locale) is a unknown locale");
-        }
-        return $locale;
+        return (string) $locale;
     }
 
     /**
@@ -294,12 +291,12 @@ class Zend_Locale_Data
     public static function getList($locale, $path, $value = false)
     {
         $locale = self::_checkLocale($locale);
-
         if (isset(self::$_cache)) {
             $val = $value;
             if (is_array($value)) {
                 $val = implode('_' , $value);
             }
+
             $val = urlencode($val);
             $id = strtr('Zend_LocaleL_' . $locale . '_' . $path . '_' . $val, array('-' => '_', '%' => '_', '+' => '_'));
             if ($result = self::$_cache->load($id)) {
@@ -1156,6 +1153,16 @@ class Zend_Locale_Data
     }
 
     /**
+     * Returns the set cache
+     * 
+     * @return Zend_Cache_Core The set cache
+     */
+    public static function getCache()
+    {
+        return self::$_cache;
+    }
+
+    /**
      * Set a cache for Zend_Locale_Data
      * 
      * @param Zend_Cache_Core $cache A cache frontend
@@ -1166,12 +1173,36 @@ class Zend_Locale_Data
     }
 
     /**
-     * Returns the set cache
-     * 
-     * @return Zend_Cache_Core The set cache
+     * Returns true when a cache is set
+     *
+     * @return boolean
      */
-    public static function getCache()
+    public static function hasCache()
     {
-        return self::$_cache;
+        if (self::$_cache !== null) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Removes any set cache
+     *
+     * @return void
+     */
+    public static function removeCache()
+    {
+        self::$_cache = null;
+    }
+
+    /**
+     * Clears all set cache data
+     *
+     * @return void
+     */
+    public static function clearCache()
+    {
+        self::$_cache->clean();
     }
 }

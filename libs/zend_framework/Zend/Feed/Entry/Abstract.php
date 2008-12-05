@@ -17,7 +17,7 @@
  * @package    Zend_Feed
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Abstract.php 10386 2008-07-24 20:14:17Z matthew $
+ * @version    $Id: Abstract.php 10383 2008-07-24 19:46:15Z matthew $
  */
 
 

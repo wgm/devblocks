@@ -16,7 +16,7 @@
  * @category   Zend
  * @package    Zend_Http
  * @subpackage Response
- * @version    $Id: Response.php 8064 2008-02-16 10:58:39Z thomas $
+ * @version    $Id: Response.php 12519 2008-11-10 18:41:24Z alexander $
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
  */
@@ -162,7 +162,7 @@ class Zend_Http_Response
         if (! is_array($headers)) {
             require_once 'Zend/Http/Exception.php';
             throw new Zend_Http_Exception('No valid headers were passed');
-	}
+    }
 
         foreach ($headers as $name => $value) {
             if (is_int($name))
@@ -394,7 +394,7 @@ class Zend_Http_Response
      */
     public function asString($br = "\n")
     {
-        return $this->getHeadersAsString(true, $br) . $br . $this->getBody();
+        return $this->getHeadersAsString(true, $br) . $br . $this->getRawBody();
     }
 
     /**
@@ -536,10 +536,9 @@ class Zend_Http_Response
     {
         $parts = preg_split('|(?:\r?\n){2}|m', $response_str, 2);
         if (isset($parts[1])) { 
-        	return $parts[1];
-        } else {
-        	return '';
+            return $parts[1];
         }
+        return '';
     }
 
     /**
@@ -603,7 +602,7 @@ class Zend_Http_Response
                 'body: perhaps the zlib extension is not loaded?'); 
         }
 
-    	return gzuncompress($body);
+        return gzuncompress($body);
     }
 
     /**

@@ -17,7 +17,7 @@
  * @subpackage Protocol
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Imap.php 9283 2008-04-22 18:24:54Z nico $
+ * @version    $Id: Imap.php 12539 2008-11-11 02:47:17Z yoshida@zend.co.jp $
  */
 
 
@@ -31,6 +31,11 @@
 class Zend_Mail_Protocol_Imap
 {
     /**
+     * Default timeout in seconds for initiating session
+     */
+    const TIMEOUT_CONNECTION = 30;
+    
+    /**
      * socket to imap server
      * @var resource|null
      */
@@ -41,7 +46,6 @@ class Zend_Mail_Protocol_Imap
      * @var int
      */
     protected $_tagCount = 0;
-
 
     /**
      * Public constructor
@@ -85,13 +89,15 @@ class Zend_Mail_Protocol_Imap
             $port = $ssl === 'SSL' ? 993 : 143;
         }
 
-        $this->_socket = @fsockopen($host, $port);
+        $errno  =  0;
+        $errstr = '';
+        $this->_socket = @fsockopen($host, $port, $errno, $errstr, self::TIMEOUT_CONNECTION);
         if (!$this->_socket) {
             /**
              * @see Zend_Mail_Protocol_Exception
              */
             require_once 'Zend/Mail/Protocol/Exception.php';
-            throw new Zend_Mail_Protocol_Exception('cannot connect to host');
+            throw new Zend_Mail_Protocol_Exception('cannot connect to host : ' . $errno . ' : ' . $errstr);
         }
 
         if (!$this->_assumedNextLine('* OK')) {
@@ -802,4 +808,30 @@ class Zend_Mail_Protocol_Imap
         // TODO: parse response
         return $this->requestAndResponse('NOOP');
     }
+
+    /**
+     * do a search request
+     *
+     * This method is currently marked as internal as the API might change and is not
+     * safe if you don't take precautions.
+     *
+     * @internal
+     * @return array message ids
+     */
+    public function search(array $params)
+    {
+        $response = $this->requestAndResponse('SEARCH', $params);
+        if (!$response) {
+            return $response;
+        }
+        
+        foreach ($response as $ids) {
+            if ($ids[0] == 'SEARCH') {
+                array_shift($ids);
+                return $ids;
+            }
+        }
+        return array();
+    }
+
 }
