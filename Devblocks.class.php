@@ -752,7 +752,7 @@ class DevblocksPlatform extends DevblocksEngine {
 
 	static function setLocale($locale) {
 		$i18n = self::getLocaleService(); /* @var $i18n Zend_Locale */
-		if($i18n->isLocale($locale)) {
+		if($i18n->isLocale($locale, true, false)) {
 			self::$locale = $locale;
 			$i18n->setLocale(self::$locale);
 			Zend_Registry::set('locale', $i18n);
