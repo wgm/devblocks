@@ -1,6 +1,6 @@
 <?php
 /* 
-V5.04a 25 Mar 2008   (c) 2000-2008 John Lim (jlim#natsoft.com.my). All rights reserved.
+V5.06 16 Oct 2008   (c) 2000-2008 John Lim (jlim#natsoft.com). All rights reserved.
   Released under both BSD license and Lesser GPL library license. 
   Whenever there is any discrepancy between the two licenses, 
   the BSD license will take precedence. See License.txt. 
@@ -23,7 +23,7 @@ define( 'ADODB_OPT_HIGH', 2);
 define( 'ADODB_OPT_LOW', 1);
 
 global $ADODB_PERF_MIN;
-$ADODB_PERF_MIN = 0.00; // log only if >= minimum number of secs to run
+$ADODB_PERF_MIN = 0.05; // log only if >= minimum number of secs to run
 
 
 // returns in K the memory of current process, or 0 if not known
@@ -117,9 +117,9 @@ function adodb_log_sql(&$connx,$sql,$inputarr)
 		}
 		if (isset($_SERVER['HTTP_HOST'])) {
 			$tracer .= '<br>'.$_SERVER['HTTP_HOST'];
-			if (isset($_SERVER['PHP_SELF'])) $tracer .= $_SERVER['PHP_SELF'];
+			if (isset($_SERVER['PHP_SELF'])) $tracer .= htmlspecialchars($_SERVER['PHP_SELF']);
 		} else 
-			if (isset($_SERVER['PHP_SELF'])) $tracer .= '<br>'.$_SERVER['PHP_SELF'];
+			if (isset($_SERVER['PHP_SELF'])) $tracer .= '<br>'.htmlspecialchars($_SERVER['PHP_SELF']);
 		//$tracer .= (string) adodb_backtrace(false);
 		
 		$tracer = (string) substr($tracer,0,500);
@@ -173,9 +173,8 @@ function adodb_log_sql(&$connx,$sql,$inputarr)
 		global $ADODB_PERF_MIN;
 		if ($errN != 0 || $time >= $ADODB_PERF_MIN) {
 			$ok = $conn->Execute($isql,$arr);
-		} else {
+		} else
 			$ok = true;
-		}
 		
 		$conn->debug = $saved;
 		
@@ -728,8 +727,9 @@ Committed_AS:   348732 kB
 			echo $this->CheckMemory();		
 			break;
 		case 'poll':
+			$self = htmlspecialchars($_SERVER['PHP_SELF']);
 			echo "<iframe width=720 height=80% 
-				src=\"{$_SERVER['PHP_SELF']}?do=poll2&hidem=1\"></iframe>";
+				src=\"{$self}?do=poll2&hidem=1\"></iframe>";
 			break;
 		case 'poll2':
 			echo "<pre>";
@@ -906,7 +906,7 @@ Committed_AS:   348732 kB
 	{
 	
 		
-		$PHP_SELF = $_SERVER['PHP_SELF'];
+		$PHP_SELF = htmlspecialchars($_SERVER['PHP_SELF']);
 		$sql = isset($_REQUEST['sql']) ? $_REQUEST['sql'] : '';
 
 		if (isset($_SESSION['phplens_sqlrows'])) $rows = $_SESSION['phplens_sqlrows'];

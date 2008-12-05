@@ -2,7 +2,7 @@
 
 
 /*
-V5.02 24 Sept 2007   (c) 2000-2008 John Lim (jlim#natsoft.com.my). All rights reserved.
+V5.02 24 Sept 2007   (c) 2000-2008 John Lim (jlim#natsoft.com). All rights reserved.
          Contributed by Ross Smith (adodb@netebb.com). 
   Released under both BSD license and Lesser GPL library license.
   Whenever there is any discrepancy between the two licenses,
@@ -896,7 +896,7 @@ class ADODB_Session {
 				$arr = $conn->GetAll($sql);
 				foreach ($arr as $row) {
 					$sql2 = "DELETE FROM $table WHERE sesskey=".$conn->Param('0');
-					$conn->Execute($sql2,array($row[0]));
+					$conn->Execute($sql2,array(reset($row)));
 				}
 			} else {
 				$sql = "DELETE FROM $table WHERE expiry < $time";
