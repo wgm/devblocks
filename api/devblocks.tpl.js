@@ -35,6 +35,34 @@ var DevblocksClass = function() {
 		
 		return selectedString;
 	}
+	
+	this.getFormEnabledCheckboxValues = function(form_id,element_name) {
+		// Make sure the view form exists
+		var viewForm = document.getElementById(form_id);
+		if(null == viewForm) return;
+
+		// Make sure the element is present in the form
+
+		var elements = viewForm.elements[element_name];
+		if(null == elements) return;
+
+		var len = elements.length;
+		var ids = new Array();
+
+		if(null == len && null != elements.value) {
+			ids[0] = elements.value;
+
+		} else {
+			for(var x=len-1;x>=0;x--) {
+				if(elements[x].checked) {
+					ids[ids.length] = elements[x].value;
+				}
+			}
+		}
+
+		return ids.join(',');
+	}
+	
 };
 var Devblocks = new DevblocksClass();
 
@@ -307,10 +335,6 @@ function saveGenericAjaxPanel(div,close,cb) {
 }
 
 function genericAjaxGet(divName,args,cb) {
-	//var frm = document.getElementById(divName);
-	//if(null == frm) return;
-
-	// [JAS]: Default response action
 	if(null == cb) {
 		var frm = document.getElementById(divName);
 
@@ -341,30 +365,6 @@ var genericAjaxPostAfterSubmitEvent = new YAHOO.util.CustomEvent("genericAjaxPos
 
 function genericAjaxPost(formName,divName,args,cb) {
 	var frm = document.getElementById(formName);
-//	var div = document.getElementById(divName);
-//	if(null == frm) return;
-
-	// [JAS]: [TODO] This doesn't work in IE -- probably offsetWidth/Height
-	/*
-	if(null != div) {
-		// [JAS]: [TODO] Move to a function
-		var loading = document.createElement('div');
-		loading.setAttribute('style','position:absolute;padding:5px;top:0;left:0;background-color:red;color:white;font-weight:bold;');
-		loading.innerHTML = 'Loading...';
-		
-		var toX = YAHOO.util.Dom.getX(div) + (div.offsetWidth/2) - (loading.offsetWidth/2);
-		var toY = YAHOO.util.Dom.getY(div) + (div.offsetHeight/2) - (loading.offsetHeight/2);		
-		
-		loading.style.top = toY;
-		loading.style.left = toX;
-		
-		document.body.appendChild(loading);
-	}
-	*/
-
-//	var anim = new YAHOO.util.Anim(frm, { opacity: { to: 0.2 } }, 1, YAHOO.util.Easing.easeOut);
-//	anim.animate();
-	
 	if(null == cb) {
 		var cb = function(o) {
 			// Events
@@ -374,16 +374,12 @@ function genericAjaxPost(formName,divName,args,cb) {
 			var div = document.getElementById(divName);
 			if(null == div) return;
 	
-			//document.body.removeChild(loading);
 			div.innerHTML = o.responseText;
-			
-			// var anim = new YAHOO.util.Anim(frm, { opacity: { to: 1.0 } }, 1, YAHOO.util.Easing.easeOut);
-			// anim.animate();
 		};
 	}
 	
 	YAHOO.util.Connect.setForm(frm);
-	var cObj = YAHOO.util.Connect.asyncRequest('POST', DevblocksAppPath+'ajax.php?'+args, {
+	var cObj = YAHOO.util.Connect.asyncRequest('POST', DevblocksAppPath+'ajax.php'+(null==args?('?'+args):''), {
 			success: cb,
 			failure: function(o) {},
 			argument:{caller:this}

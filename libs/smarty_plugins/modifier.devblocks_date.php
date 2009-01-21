@@ -9,6 +9,9 @@
  * Smarty devblocks_date modifier plugin
  */
 function smarty_modifier_devblocks_date($string, $format=null) {
+	if(empty($string))
+		return '';
+	
 	try {
 		$date = new Zend_Date($string);
 	} catch (Zend_Date_Exception $zde) {
