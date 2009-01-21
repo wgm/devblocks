@@ -62,6 +62,29 @@ var DevblocksClass = function() {
 
 		return ids.join(',');
 	}
+
+	this.resetSelectElements = function(form_id,element_name) {
+		// Make sure the view form exists
+		var viewForm = document.getElementById(form_id);
+		if(null == viewForm) return;
+
+		// Make sure the element is present in the form
+
+		var elements = viewForm.elements[element_name];
+		if(null == elements) return;
+
+		var len = elements.length;
+		var ids = new Array();
+		
+		if(null == len && null != elements.selectedIndex) {
+			elements.selectedIndex = 0;
+
+		} else {
+			for(var x=len-1;x>=0;x--) {
+				elements[x].selectedIndex = 0;
+			}
+		}
+	}
 	
 };
 var Devblocks = new DevblocksClass();

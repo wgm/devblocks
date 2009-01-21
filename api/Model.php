@@ -162,11 +162,20 @@ class DevblocksSearchCriteria {
 						$to_date = strtotime("now");
 				}
 				
-				$where = sprintf("%s BETWEEN %s and %s",
-					$db_field_name,
-					$from_date,
-					$to_date
-				);
+				if(0 == $from_date) {
+					$where = sprintf("(%s IS NULL OR %s BETWEEN %s and %s)",
+						$db_field_name,
+						$db_field_name,
+						$from_date,
+						$to_date
+					);
+				} else {
+					$where = sprintf("%s BETWEEN %s and %s",
+						$db_field_name,
+						$from_date,
+						$to_date
+					);
+				}
 				break;
 			
 			case DevblocksSearchCriteria::OPER_GT:
