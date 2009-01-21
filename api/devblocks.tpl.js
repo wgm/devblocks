@@ -402,7 +402,7 @@ function genericAjaxPost(formName,divName,args,cb) {
 	}
 	
 	YAHOO.util.Connect.setForm(frm);
-	var cObj = YAHOO.util.Connect.asyncRequest('POST', DevblocksAppPath+'ajax.php'+(null==args?('?'+args):''), {
+	var cObj = YAHOO.util.Connect.asyncRequest('POST', DevblocksAppPath+'ajax.php'+(null!=args?('?'+args):''), {
 			success: cb,
 			failure: function(o) {},
 			argument:{caller:this}
