@@ -936,18 +936,27 @@ class _DevblocksPatchManager {
 	}
 	
 	public function registerPatchContainer(DevblocksPatchContainerExtension $container) {
-		// [TODO] Ordering?
 		$this->containers[] = $container;
 	}
 	
-	// [TODO] This delegate needs to be smart enough to order our patches by dependency
 	public function run() {
 		$result = TRUE;
-		
-		if(is_array($this->containers))
-		foreach($this->containers as $container) { /* @var $container DevblocksPatchContainerExtension */
-			$result = $container->run();
-			if(!$result) die("FAILED on " . $container->id);
+
+		// If this is the core container, make sure it runs first
+		// [TODO] plugin dependency order (core on top)
+		if(is_array($this->containers)) {
+			// Order by dependency
+			foreach($this->containers as $idx => $container) { /* @var $container DevblocksPatchContainerExtension */
+				if(isset($container->manifest) && 0 == strcasecmp('core.patches', $container->manifest->id)) { // [TODO] Don't hardcode
+					unset($this->containers[$idx]);
+					array_unshift($this->containers, $container);
+				}
+			}
+			
+			foreach($this->containers as $container) { /* @var $container DevblocksPatchContainerExtension */
+				$result = $container->run();
+				if(!$result) die("FAILED on " . $container->id);
+			}
 		}
 		
 		$this->clear();

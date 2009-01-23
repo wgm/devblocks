@@ -389,6 +389,13 @@ var genericAjaxPostAfterSubmitEvent = new YAHOO.util.CustomEvent("genericAjaxPos
 function genericAjaxPost(formName,divName,args,cb) {
 	var frm = document.getElementById(formName);
 	if(null == cb) {
+		var div = document.getElementById(divName);
+		
+		if(null != div) {
+			var anim = new YAHOO.util.Anim(div, { opacity: { to: 0.2 } }, 1, YAHOO.util.Easing.easeOut);
+			anim.animate();
+		}
+	
 		var cb = function(o) {
 			// Events
 			genericAjaxPostAfterSubmitEvent.fire();
@@ -396,8 +403,10 @@ function genericAjaxPost(formName,divName,args,cb) {
 
 			var div = document.getElementById(divName);
 			if(null == div) return;
-	
 			div.innerHTML = o.responseText;
+			
+			var anim = new YAHOO.util.Anim(div, { opacity: { to: 1.0 } }, 1, YAHOO.util.Easing.easeOut);
+			anim.animate();
 		};
 	}
 	
@@ -405,7 +414,7 @@ function genericAjaxPost(formName,divName,args,cb) {
 	var cObj = YAHOO.util.Connect.asyncRequest('POST', DevblocksAppPath+'ajax.php'+(null!=args?('?'+args):''), {
 			success: cb,
 			failure: function(o) {},
-			argument:{caller:this}
+			argument:{caller:this,divName:divName}
 			},
 			null
 	);
