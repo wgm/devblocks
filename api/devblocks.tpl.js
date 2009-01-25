@@ -49,10 +49,11 @@ var DevblocksClass = function() {
 		var len = elements.length;
 		var ids = new Array();
 
-		if(null == len && null != elements.value) {
-			ids[0] = elements.value;
+		if(null == len && null != elements.value) { // single element
+			if(elements.checked)
+				ids[0] = elements.value;
 
-		} else {
+		} else { // array
 			for(var x=len-1;x>=0;x--) {
 				if(elements[x].checked) {
 					ids[ids.length] = elements[x].value;
