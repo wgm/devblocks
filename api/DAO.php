@@ -110,27 +110,7 @@ abstract class DevblocksORMHelper {
 			
 			// Is this a criteria group (OR, AND)?
 			if(is_array($param)) {
-				$group_wheres = array();
-				@$group_oper = strtoupper(array_shift($param));
-				
-				switch($group_oper) {
-					case DevblocksSearchCriteria::GROUP_OR:
-					case DevblocksSearchCriteria::GROUP_AND:
-						foreach($param as $p) { /* @var $$p DevblocksSearchCriteria */
-							// [JAS]: Filter allowed columns (ignore invalid/deprecated)
-							if(!isset($fields[$p->field]))
-								continue;
-							
-							// [JAS]: Indexes for optimization
-							$tables[$fields[$p->field]->db_table] = $fields[$p->field]->db_table;
-							$group_wheres[] = $p->getWhereSQL($fields);
-						}
-						
-						$where = sprintf("(%s)",
-							implode(" $group_oper ", $group_wheres)
-						);
-						break;
-				}
+				$where = self::_parseNestedSearchParams($param, $tables, $fields);
 				
 			// Is this a single parameter?
 			} elseif($param instanceOf DevblocksSearchCriteria) { /* @var $param DevblocksSearchCriteria */
@@ -147,6 +127,48 @@ abstract class DevblocksORMHelper {
 		}
 		
 		return array($tables, $wheres, $selects);
+	}
+	
+	static private function _parseNestedSearchParams($param,&$tables,$fields) {
+		$outer_wheres = array();
+		$group_wheres = array();
+		@$group_oper = strtoupper(array_shift($param));
+		
+		switch($group_oper) {
+			case DevblocksSearchCriteria::GROUP_OR:
+			case DevblocksSearchCriteria::GROUP_AND:
+				foreach($param as $p) { /* @var $$p DevblocksSearchCriteria */
+					if(is_array($p)) {
+						$outer_wheres[] = self::_parseNestedSearchParams($p, $tables, $fields);
+						
+					} else {
+						// [JAS]: Filter allowed columns (ignore invalid/deprecated)
+						if(!isset($fields[$p->field]))
+							continue;
+						
+						// [JAS]: Indexes for optimization
+						$tables[$fields[$p->field]->db_table] = $fields[$p->field]->db_table;
+						$group_wheres[] = $p->getWhereSQL($fields);
+						
+						$where = sprintf("(%s)",
+							implode(" $group_oper ", $group_wheres)
+						);
+					}
+				}
+				
+				break;
+		}
+		
+		if(!empty($outer_wheres)) {
+			return sprintf("(%s)",
+				implode(" $group_oper ", $outer_wheres)
+			);
+			
+		} else {
+			return $where;
+			
+		}
+		
 	}
 };
 
