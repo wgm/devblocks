@@ -175,7 +175,7 @@ function toggleDiv(divName,state) {
 		} else {
 			div.style.display = 'block';
 		}
-	} else if (null != state && (state == 'block' || state == 'inline' || state == 'none')) {
+	} else if (null != state && (state == '' || state == 'block' || state == 'inline' || state == 'none')) {
 		div.style.display = state;
 	}
 }
