@@ -99,7 +99,7 @@ class CloudGlueCloud {
 		
 //		print_r($this->getPath());
 		
-		$tpl->display("file:$path/cloud.tpl.php");
+		$tpl->display("file:$path/cloud.tpl");
 		// draw the cloud from a template
 	}
 	

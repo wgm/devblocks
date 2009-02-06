@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 //include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',273);
+define('PLATFORM_BUILD',279);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -65,7 +65,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	    } elseif (is_null($var) && !is_null($default)) {
 	        $var = $default;
 	    }
-	    	
+	    
 	    if(!is_null($cast))
 	        @settype($var, $cast);
 
