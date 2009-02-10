@@ -80,7 +80,9 @@ class Swift_Address extends Swift_AddressContainer
    */
   public function build($smtp=false)
   {
-    if ($smtp)
+  	$addy_parts = split('@', $this->address); // [WGM]
+  	
+  	if ($smtp)
     {
       return "<" . $this->address . ">";
     }
@@ -88,9 +90,11 @@ class Swift_Address extends Swift_AddressContainer
     {
       if (($this->name !== null))
       {
-        return $this->name . " <" . $this->address . ">";
+		return imap_rfc822_write_address($addy_parts[0],$addy_parts[1], $this->name); // [WGM]
+		//return $this->name . " <" . $this->address . ">"; 
       }
-      else return $this->address;
+      else imap_rfc822_write_address($addy_parts[0],$addy_parts[1],""); // [WGM]
+      //else return $this->address;
     }
   }
   /**
