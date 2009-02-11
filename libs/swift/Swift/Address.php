@@ -93,8 +93,10 @@ class Swift_Address extends Swift_AddressContainer
 		return imap_rfc822_write_address($addy_parts[0],$addy_parts[1], $this->name); // [WGM]
 		//return $this->name . " <" . $this->address . ">"; 
       }
-      else imap_rfc822_write_address($addy_parts[0],$addy_parts[1],""); // [WGM]
-      //else return $this->address;
+      else {
+      	return imap_rfc822_write_address($addy_parts[0],$addy_parts[1],""); // [WGM]
+      	//else return $this->address;
+      }
     }
   }
   /**
