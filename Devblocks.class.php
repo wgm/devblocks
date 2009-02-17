@@ -39,6 +39,9 @@ class DevblocksPlatform extends DevblocksEngine {
     const CACHE_EVENTS = 'devblocks_events';
     const CACHE_ACL = 'devblocks_acl';
     
+//    static private $pluginDelegate = null;
+    static private $extensionDelegate = null;
+    
     static private $start_time = 0;
     static private $start_memory = 0;
     static private $start_peak_memory = 0;
@@ -409,25 +412,23 @@ class DevblocksPlatform extends DevblocksEngine {
 	 */
 	static function getExtensionRegistry() {
 	    $cache = self::getCacheService();
-	    if(null !== ($extensions = $cache->load(self::CACHE_EXTENSIONS)))
-    	    return $extensions;
-
-	    $db = DevblocksPlatform::getDatabaseService();
-	    if(is_null($db)) return;
-
-//	    $plugins = DevblocksPlatform::getPluginRegistry();
-	    $prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
-
-	    $sql = sprintf("SELECT e.id , e.plugin_id, e.point, e.pos, e.name , e.file , e.class, e.params ".
-			"FROM %sextension e ".
-			"INNER JOIN %splugin p ON (e.plugin_id=p.id) ".
-			"WHERE p.enabled = 1 ".
-			"ORDER BY e.plugin_id ASC, e.pos ASC",
-			$prefix,
-			$prefix
-			);
+	    
+	    if(null === ($extensions = $cache->load(self::CACHE_EXTENSIONS))) {
+		    $db = DevblocksPlatform::getDatabaseService();
+		    if(is_null($db)) return;
+	
+		    $prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
+	
+		    $sql = sprintf("SELECT e.id , e.plugin_id, e.point, e.pos, e.name , e.file , e.class, e.params ".
+				"FROM %sextension e ".
+				"INNER JOIN %splugin p ON (e.plugin_id=p.id) ".
+				"WHERE p.enabled = 1 ".
+				"ORDER BY e.plugin_id ASC, e.pos ASC",
+					$prefix,
+					$prefix
+				);
 			$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
-			
+				
 			if(is_a($rs,'ADORecordSet'))
 			while(!$rs->EOF) {
 			    $extension = new DevblocksExtensionManifest();
@@ -440,18 +441,25 @@ class DevblocksPlatform extends DevblocksEngine {
 			    $extension->params = @unserialize($rs->fields['params']);
 		
 			    if(empty($extension->params))
-			    $extension->params = array();
-		
-//			    @$plugin = $plugins[$extension->plugin_id]; /* @var $plugin DevblocksPluginManifest */
-//			    if(!empty($plugin)) {
-			        $extensions[$extension->id] = $extension;
-//			    }
-			    	
+					$extension->params = array();
+				$extensions[$extension->id] = $extension;
 			    $rs->MoveNext();
 			}
 
 			$cache->save($extensions, self::CACHE_EXTENSIONS);
-			return $extensions;
+		}
+		
+		// Check with an extension delegate if we have one
+		if(class_exists(self::$extensionDelegate) && method_exists('DevblocksExtensionDelegate','shouldLoadExtension')) {
+			if(is_array($extensions))
+			foreach($extensions as $id => $extension) {
+				// Ask the delegate if we should load the extension
+				if(!call_user_func(array(self::$extensionDelegate,'shouldLoadExtension'),$extension))
+					unset($extensions[$id]);
+			}
+		}
+		
+		return $extensions;
 	}
 
 	/**
@@ -612,16 +620,8 @@ class DevblocksPlatform extends DevblocksEngine {
 		    $rs->MoveNext();
 		}
 			
-//			$extensions = DevblocksPlatform::getExtensionRegistry();
-//			foreach($extensions as $extension_id => $extension) { /* @var $extension DevblocksExtensionManifest */
-//			    $plugin_id = $extension->plugin_id;
-//			    if(isset($plugin_id)) {
-//			        $plugins[$plugin_id]->extensions[$extension_id] = $extension;
-//			    }
-//			}
-
-			$cache->save($plugins, self::CACHE_PLUGINS);
-			return $plugins;
+		$cache->save($plugins, self::CACHE_PLUGINS);
+		return $plugins;
 	}
 
 	/**
@@ -950,6 +950,16 @@ class DevblocksPlatform extends DevblocksEngine {
 	    }
 	}
 
+//	static function setPluginDelegate($class) {
+//		if(!empty($class) && class_exists($class, true))
+//			self::$pluginDelegate = $class;
+//	}
+	
+	static function setExtensionDelegate($class) {
+		if(!empty($class) && class_exists($class, true))
+			self::$extensionDelegate = $class;
+	}
+	
 	static function redirect(DevblocksHttpIO $httpIO) {
 		$url_service = self::getUrlService();
 		session_write_close();

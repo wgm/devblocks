@@ -1524,3 +1524,6 @@ class DevblocksProxy_Curl extends DevblocksProxy {
     }
 };
 
+interface DevblocksExtensionDelegate {
+	static function shouldLoadExtension(DevblocksExtensionManifest $extension_manifest);
+};
