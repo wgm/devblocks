@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 //include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',279);
+define('PLATFORM_BUILD',282);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -37,6 +37,7 @@ class DevblocksPlatform extends DevblocksEngine {
     const CACHE_TAG_TRANSLATIONS = 'devblocks_translations';
     const CACHE_EVENT_POINTS = 'devblocks_event_points';
     const CACHE_EVENTS = 'devblocks_events';
+    const CACHE_ACL = 'devblocks_acl';
     
     static private $start_time = 0;
     static private $start_memory = 0;
@@ -156,6 +157,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	    $cache->remove(self::CACHE_EVENT_POINTS);
 	    $cache->remove(self::CACHE_EVENTS);
 	    $cache->remove(self::CACHE_TABLES);
+	    $cache->remove(self::CACHE_ACL);
 	    $cache->remove(_DevblocksClassLoadManager::CACHE_CLASS_MAP);
 
 	    // Clear all locale caches
@@ -471,6 +473,48 @@ class DevblocksPlatform extends DevblocksEngine {
     	
 		$cache->save($events, self::CACHE_EVENT_POINTS);
 		return $events;
+	}
+	
+	/**
+	 * @return DevblocksAclPrivilege[]
+	 */
+	static function getAclRegistry() {
+	    $cache = self::getCacheService();
+	    if(null !== ($acl = $cache->load(self::CACHE_ACL)))
+    	    return $acl;
+
+        $acl = array();
+
+	    $db = DevblocksPlatform::getDatabaseService();
+	    if(is_null($db)) return;
+
+        //$plugins = self::getPluginRegistry();
+	    $prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
+
+	    $sql = sprintf("SELECT a.id, a.plugin_id, a.label ".
+			"FROM %sacl a ".
+			"INNER JOIN %splugin p ON (a.plugin_id=p.id) ".
+			"WHERE p.enabled = 1 ".
+			"ORDER BY a.plugin_id, a.id ASC",
+			$prefix,
+			$prefix
+		);
+		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		
+		if(is_a($rs,'ADORecordSet'))
+		while(!$rs->EOF) {
+			$priv = new DevblocksAclPrivilege();
+			$priv->id = $rs->fields['id'];
+			$priv->plugin_id = $rs->fields['plugin_id'];
+			$priv->label = $rs->fields['label'];
+			
+		    $acl[$priv->id] = $priv;
+		    
+		    $rs->MoveNext();
+		}
+        
+		$cache->save($acl, self::CACHE_ACL);
+		return $acl;
 	}
 	
 	static function getEventRegistry() {
@@ -929,6 +973,6 @@ class PlatformPatchContainer extends DevblocksPatchContainerExtension {
 		$file_prefix = dirname(__FILE__) . '/patches/';
 
 		$this->registerPatch(new DevblocksPatch('devblocks.core',1,$file_prefix.'1.0.0.php',''));
-		$this->registerPatch(new DevblocksPatch('devblocks.core',252,$file_prefix.'1.0.0_beta.php',''));
+		$this->registerPatch(new DevblocksPatch('devblocks.core',253,$file_prefix.'1.0.0_beta.php',''));
 	}
 };

@@ -305,6 +305,12 @@ class DevblocksSearchField {
 	}
 };
 
+class DevblocksAclPrivilege {
+	var $id = '';
+	var $plugin_id = '';
+	var $label = '';
+};
+
 class DevblocksEventPoint {
     var $id = '';
     var $plugin_id = '';
@@ -336,6 +342,7 @@ class DevblocksPluginManifest {
 	var $extension_points = array();
 	var $extensions = array();
 	var $event_points = array();
+	var $acl_privs = array();
 	
 	/**
 	 * @return DevblocksPlugin

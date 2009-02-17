@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!ELEMENT plugin (id,name,description,author,revision,link,class,event_points?,extensions?)>
+<!ELEMENT plugin (id,name,description,author,revision,link,class,event_points?,acl?,extensions?)>
 <!ELEMENT id (#PCDATA)>
 <!ELEMENT name (#PCDATA)>
 <!ELEMENT description (#PCDATA)>
 <!ELEMENT author (#PCDATA)>
 <!ELEMENT revision (#PCDATA)>
 <!ELEMENT link (#PCDATA)>
+<!ELEMENT acl (priv*)>
+	<!ATTLIST priv id CDATA #REQUIRED>
+	<!ATTLIST priv label CDATA #REQUIRED>
+	<!ELEMENT priv (#PCDATA)>
 <!ELEMENT event_points (event*)>
 	<!ATTLIST event id CDATA #REQUIRED>
 	<!ELEMENT event (name,param*)>

@@ -133,6 +133,7 @@ abstract class DevblocksORMHelper {
 		$outer_wheres = array();
 		$group_wheres = array();
 		@$group_oper = strtoupper(array_shift($param));
+		$where = '';
 		
 		switch($group_oper) {
 			case DevblocksSearchCriteria::GROUP_OR:

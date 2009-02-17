@@ -136,5 +136,24 @@ if(!isset($indexes['lang_code'])) {
 	$datadict->ExecuteSQLArray($sql);
 }
 
+
+// ============================================================================
+// ACL privileges from plugins
+
+if(!isset($tables[$prefix.'acl'])) {
+	$flds ="
+		id C(255) DEFAULT '' NOTNULL PRIMARY,
+		plugin_id C(255) DEFAULT '' NOTNULL,
+		label C(255) DEFAULT '' NOTNULL
+	";
+	
+	$sql = $datadict->CreateTableSQL($prefix.'acl', $flds);
+	$datadict->ExecuteSQLArray($sql);
+}
+
+$columns = $datadict->MetaColumns($prefix.'acl');
+$indexes = $datadict->MetaIndexes($prefix.'acl',false);
+
+
 return TRUE;
 ?>

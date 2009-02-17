@@ -65,6 +65,25 @@ abstract class DevblocksEngine {
 			false
 		);
 		
+		// ACL
+		if(isset($plugin->acl->priv)) {
+			foreach($plugin->acl->priv as $ePriv) {
+				@$sId = (string) $ePriv['id'];
+				@$sLabel = (string) $ePriv['label'];
+				
+				if(empty($sId) || empty($sLabel))
+					continue;
+					
+				$priv = new DevblocksAclPrivilege();
+				$priv->id = $sId;
+				$priv->plugin_id = $manifest->id;
+				$priv->label = $sLabel;
+				
+				$manifest->acl_privs[$priv->id] = $priv;
+			}
+			asort($manifest->acl_privs);
+		}
+		
 		if(isset($plugin->event_points->event)) {
 		    foreach($plugin->event_points->event as $eEvent) {
 		        $sId = (string) $eEvent['id'];
@@ -188,6 +207,22 @@ abstract class DevblocksEngine {
 		
         // [JAS]: [TODO] Extension point caching
 
+		// ACL caching
+		$db->Execute(sprintf("DELETE FROM %sacl WHERE plugin_id = %s",$prefix,$db->qstr($plugin->id)));
+		if(is_array($manifest->acl_privs))
+		foreach($manifest->acl_privs as $priv) { /* @var $priv DevblocksAclPrivilege */
+			$db->Replace(
+				$prefix.'acl',
+				array(
+					'id' => $db->qstr($priv->id),
+					'plugin_id' => $db->qstr($priv->plugin_id),
+					'label' => $db->qstr($priv->label),
+				),
+				array('id'),
+				false
+			);
+		}
+		
         // [JAS]: Event point caching
 		if(is_array($manifest->event_points))
 		foreach($manifest->event_points as $event) { /* @var $event DevblocksEventPoint */
@@ -1487,42 +1522,5 @@ class DevblocksProxy_Curl extends DevblocksProxy {
         curl_exec($ch);
         curl_close($ch);
     }
-};
-
-// [JAS]: [TODO] Replace with Zend_Acl
-class DevblocksACL {
-	// [JAS]: Unsigned 32 bit number, with room to enable all flags
-	const BITFLAG_1 = 1;
-	const BITFLAG_2 = 2;
-	const BITFLAG_3 = 4;
-	const BITFLAG_4 = 8;
-	const BITFLAG_5 = 16;
-	const BITFLAG_6 = 32;
-	const BITFLAG_7 = 64;
-	const BITFLAG_8 = 128;
-	const BITFLAG_9 = 256;
-	const BITFLAG_10 = 1024;
-	const BITFLAG_11 = 2048;
-	const BITFLAG_12 = 4096;
-	const BITFLAG_13 = 8192;
-	const BITFLAG_14 = 16384;
-	const BITFLAG_15 = 32768;
-	const BITFLAG_16 = 65536;
-	const BITFLAG_17 = 131072;
-	const BITFLAG_18 = 262144;
-	const BITFLAG_19 = 524288;
-	const BITFLAG_20 = 1048576;
-	const BITFLAG_21 = 2097152;
-	const BITFLAG_22 = 4194304;
-	const BITFLAG_23 = 8388608;
-	const BITFLAG_24 = 16777216;
-	const BITFLAG_25 = 33554432;
-	const BITFLAG_26 = 67108864;
-	const BITFLAG_27 = 134217728;
-	const BITFLAG_28 = 268435456;
-	const BITFLAG_29 = 536870912;
-	const BITFLAG_30 = 1073741824;
-
-	private function __construct() {}
 };
 
