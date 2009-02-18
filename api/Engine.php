@@ -1368,7 +1368,7 @@ class _DevblocksUrlManager {
 		} else {
 			if($full) {
 				$prefix = sprintf("%s://%s%s",
-					($this->_isSSL() ? 'https' : 'http'),
+					($this->isSSL() ? 'https' : 'http'),
 					$_SERVER['HTTP_HOST'],
 					DEVBLOCKS_WEBPATH
 				);
@@ -1417,7 +1417,7 @@ class _DevblocksUrlManager {
 	 *
 	 * @return boolean
 	 */
-	private function _isSSL() {
+	public function isSSL() {
 		if(@$_SERVER["HTTPS"] == "on"){
 			return true;
 		} elseif (@$_SERVER["HTTPS"] == 1){

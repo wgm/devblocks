@@ -429,21 +429,24 @@ class Swift_Message_Headers
       
       for ($i = 0, $len = count($lines); $i < $len; $i++)
       {
+      	// [WGM] This was interfering with the proper escaping fixes done
+      	// in Swift_Address according to RFC822 (plus this was pitiful to begin with).
+      	
         //Don't allow commas in address fields without quotes unless they're encoded
-        if (empty($spec) && $is_email && (false !== $p = strpos($lines[$i], ",")))
-        {
-          $s = strpos($lines[$i], " <");
-          $e = strpos($lines[$i], ">");
-          if ($s < $e)
-          {
-            $addr = substr($lines[$i], $s);
-            $lines[$i] = "\"" . substr($lines[$i], 0, $s) . "\"" . $addr;
-          }
-          else
-          {
-            $lines[$i] = "\"" . $lines[$i] . "\"";
-          }
-        }
+//        if (empty($spec) && $is_email && (false !== $p = strpos($lines[$i], ",")))
+//        {
+//          $s = strpos($lines[$i], " <");
+//          $e = strpos($lines[$i], ">");
+//          if ($s < $e)
+//          {
+//            $addr = substr($lines[$i], $s);
+//            $lines[$i] = "\"" . substr($lines[$i], 0, $s) . "\"" . $addr;
+//          }
+//          else
+//          {
+//            $lines[$i] = "\"" . $lines[$i] . "\"";
+//          }
+//        }
         
         if ($this->encoding == "Q") $lines[$i] = rtrim($lines[$i], "=");
         
