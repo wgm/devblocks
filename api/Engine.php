@@ -601,7 +601,7 @@ class _DevblocksCacheManager {
 		    // Disk-based cache (default)
 		    if(null == self::$_zend_cache) {
 				$backendOptions = array(
-				    'cache_dir' => DEVBLOCKS_PATH . 'tmp/'
+				    'cache_dir' => APP_TEMP_PATH
 				);
 				
 				self::$_zend_cache = Zend_Cache::factory('Core', 'File', $frontendOptions, $backendOptions);
@@ -892,8 +892,8 @@ class _DevblocksTemplateManager {
 			require(DEVBLOCKS_PATH . 'libs/smarty/Smarty.class.php');
 			$instance = new Smarty();
 			$instance->template_dir = APP_PATH . '/templates'; // [TODO] Themes
-			$instance->compile_dir = DEVBLOCKS_PATH . 'tmp/templates_c';
-			$instance->cache_dir = DEVBLOCKS_PATH . 'tmp/cache';
+			$instance->compile_dir = APP_TEMP_PATH . '/templates_c';
+			$instance->cache_dir = APP_TEMP_PATH . '/cache';
 			$instance->plugins_dir = DEVBLOCKS_PATH . 'libs/smarty_plugins';
 			
 			//$smarty->config_dir = DEVBLOCKS_PATH. 'configs';
@@ -929,7 +929,7 @@ class _DevblocksDatabaseManager {
 		
 		if(null == $instance) {
 			include_once(DEVBLOCKS_PATH . "libs/adodb5/adodb.inc.php");
-			$ADODB_CACHE_DIR = APP_PATH . "/tmp/cache";
+			$ADODB_CACHE_DIR = APP_TEMP_PATH . "/cache";
 			
 			if('' == APP_DB_DRIVER || '' == APP_DB_HOST)
 			    return null;

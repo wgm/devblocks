@@ -1,15 +1,4 @@
 <?php
-@ini_set('session.gc_maxlifetime','86400');
-@ini_set('session.save_path',DEVBLOCKS_PATH . 'tmp/');
-@date_default_timezone_set(date_default_timezone_get());
-@set_include_path(
-	DEVBLOCKS_PATH . 'libs' . PATH_SEPARATOR .
-	DEVBLOCKS_PATH . 'libs/zend_framework' . PATH_SEPARATOR .  
-	get_include_path());
-@ini_set('magic_quotes_gpc',0);
-@set_magic_quotes_runtime(0);
-@ignore_user_abort(true);
-
 if(!defined('APP_DB_DRIVER'))
 define('APP_DB_DRIVER','mysql');
 
@@ -46,6 +35,12 @@ define('APP_DEFAULT_CONTROLLER',''); // 404?
 if(!defined('APP_PATH'))
 define('APP_PATH',realpath(dirname(__FILE__)));
 
+if(!defined('APP_STORAGE_PATH'))
+define('APP_STORAGE_PATH',APP_PATH . '/storage');
+
+if(!defined('APP_TEMP_PATH'))
+define('APP_TEMP_PATH',APP_STORAGE_PATH . '/tmp');
+
 if(!defined('DEVBLOCKS_PATH'))
 define('DEVBLOCKS_PATH',APP_PATH . '/libs/devblocks/');
 
@@ -68,3 +63,15 @@ define('DB_CHARSET_CODE','latin1'); // latin1, utf8
 if(!defined('APP_SESSION_NAME'))
 define('APP_SESSION_NAME', 'Devblocks');
 
+// ----
+
+@ini_set('session.gc_maxlifetime','86400');
+@ini_set('session.save_path',APP_TEMP_PATH);
+@date_default_timezone_set(date_default_timezone_get());
+@set_include_path(
+	DEVBLOCKS_PATH . 'libs' . PATH_SEPARATOR .
+	DEVBLOCKS_PATH . 'libs/zend_framework' . PATH_SEPARATOR .  
+	get_include_path());
+@ini_set('magic_quotes_gpc',0);
+@set_magic_quotes_runtime(0);
+@ignore_user_abort(true);
