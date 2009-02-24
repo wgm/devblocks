@@ -338,9 +338,9 @@ abstract class DevblocksEngine {
 			    // [TODO] Set the mime-type/filename in response headers
 			    $plugin = array_shift($path);
 			    $file = implode(DIRECTORY_SEPARATOR, $path); // combine path
-		        $dir = realpath(DEVBLOCKS_PLUGIN_PATH . $plugin . DIRECTORY_SEPARATOR . 'resources');
+		        $dir = DEVBLOCKS_PLUGIN_PATH . $plugin . DIRECTORY_SEPARATOR . 'resources';
 		        if(!is_dir($dir)) die(""); // basedir Security
-		        $resource = realpath($dir . DIRECTORY_SEPARATOR . $file);
+		        $resource = $dir . DIRECTORY_SEPARATOR . $file;
 		        if(0 != strstr($dir,$resource)) die("");
 		        $ext = @array_pop(explode('.', $resource));
 		        if(!is_file($resource) || 'php' == $ext) die(""); // extension security
