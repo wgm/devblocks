@@ -171,8 +171,8 @@ class DevblocksPlatform extends DevblocksEngine {
 	    }
 	    
 	    // Recache plugins
-		$plugins = self::getPluginRegistry();
-		$extensions = self::getExtensionRegistry();
+		self::getPluginRegistry();
+		self::getExtensionRegistry();
 	}
 
 	public static function loadClass($className) {
@@ -262,7 +262,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	 */
 	static private function _needsToPatch() {
 		 $plugins = DevblocksPlatform::getPluginRegistry();
-		 $containers = DevblocksPlatform::getExtensions("devblocks.patch.container", true);
+		 $containers = DevblocksPlatform::getExtensions("devblocks.patch.container", true, true);
 
 		 // [JAS]: Devblocks
 		 array_unshift($containers, new PlatformPatchContainer());
@@ -310,7 +310,7 @@ class DevblocksPlatform extends DevblocksEngine {
 //			DevblocksPlatform::clearCache();
 			
 			// Run enabled plugin patches
-			$patches = DevblocksPlatform::getExtensions("devblocks.patch.container");
+			$patches = DevblocksPlatform::getExtensions("devblocks.patch.container",false,true);
 			
 			if(is_array($patches))
 			foreach($patches as $patch_manifest) { /* @var $patch_manifest DevblocksExtensionManifest */ 
@@ -343,9 +343,9 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @param string $point
 	 * @return DevblocksExtensionManifest[]
 	 */
-	static function getExtensions($point,$as_instances=false) {
+	static function getExtensions($point,$as_instances=false, $ignore_acl=false) {
 	    $results = array();
-	    $extensions = DevblocksPlatform::getExtensionRegistry();
+	    $extensions = DevblocksPlatform::getExtensionRegistry($ignore_acl);
 
 	    if(is_array($extensions))
 	    foreach($extensions as $extension) { /* @var $extension DevblocksExtensionManifest */
@@ -364,9 +364,9 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @param boolean $as_instance
 	 * @return DevblocksExtensionManifest
 	 */
-	static function getExtension($extension_id, $as_instance=false) {
+	static function getExtension($extension_id, $as_instance=false, $ignore_acl=false) {
 	    $result = null;
-	    $extensions = DevblocksPlatform::getExtensionRegistry();
+	    $extensions = DevblocksPlatform::getExtensionRegistry($ignore_acl);
 
 	    if(is_array($extensions))
 	    foreach($extensions as $extension) { /* @var $extension DevblocksExtensionManifest */
@@ -383,26 +383,26 @@ class DevblocksPlatform extends DevblocksEngine {
 	    return $result;
 	}
 
-	static function getExtensionPoints() {
-	    $cache = self::getCacheService();
-	    if(null !== ($points = $cache->load(self::CACHE_POINTS)))
-	        return $points;
-
-	    $extensions = DevblocksPlatform::getExtensionRegistry();
-	    foreach($extensions as $extension) { /* @var $extension DevblocksExtensionManifest */
-	        $point = $extension->point;
-	        if(!isset($points[$point])) {
-	            $p = new DevblocksExtensionPoint();
-	            $p->id = $point;
-	            $points[$point] = $p;
-	        }
-	        	
-	        $points[$point]->extensions[$extension->id] = $extension;
-	    }
-
-	    $cache->save($points, self::CACHE_POINTS);
-	    return $points;
-	}
+//	static function getExtensionPoints() {
+//	    $cache = self::getCacheService();
+//	    if(null !== ($points = $cache->load(self::CACHE_POINTS)))
+//	        return $points;
+//
+//	    $extensions = DevblocksPlatform::getExtensionRegistry();
+//	    foreach($extensions as $extension) { /* @var $extension DevblocksExtensionManifest */
+//	        $point = $extension->point;
+//	        if(!isset($points[$point])) {
+//	            $p = new DevblocksExtensionPoint();
+//	            $p->id = $point;
+//	            $points[$point] = $p;
+//	        }
+//	        	
+//	        $points[$point]->extensions[$extension->id] = $extension;
+//	    }
+//
+//	    $cache->save($points, self::CACHE_POINTS);
+//	    return $points;
+//	}
 
 	/**
 	 * Returns an array of all contributed extension manifests.
@@ -410,7 +410,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @static 
 	 * @return DevblocksExtensionManifest[]
 	 */
-	static function getExtensionRegistry() {
+	static function getExtensionRegistry($ignore_acl=false) {
 	    $cache = self::getCacheService();
 	    
 	    if(null === ($extensions = $cache->load(self::CACHE_EXTENSIONS))) {
@@ -450,7 +450,7 @@ class DevblocksPlatform extends DevblocksEngine {
 		}
 		
 		// Check with an extension delegate if we have one
-		if(class_exists(self::$extensionDelegate) && method_exists('DevblocksExtensionDelegate','shouldLoadExtension')) {
+		if(!$ignore_acl && class_exists(self::$extensionDelegate) && method_exists('DevblocksExtensionDelegate','shouldLoadExtension')) {
 			if(is_array($extensions))
 			foreach($extensions as $id => $extension) {
 				// Ask the delegate if we should load the extension
@@ -530,7 +530,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	    if(null !== ($events = $cache->load(self::CACHE_EVENTS)))
     	    return $events;
 	    
-    	$extensions = self::getExtensions('devblocks.listener.event');
+    	$extensions = self::getExtensions('devblocks.listener.event',false,true);
     	$events = array('*');
     	 
 		// [JAS]: Event point hashing/caching

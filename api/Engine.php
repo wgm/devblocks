@@ -699,12 +699,17 @@ class _DevblocksEventManager {
 	    foreach($events['*'] as $evt) {
 	        $listeners[] = $evt;
 	    }
-		    
+		
 		if(is_array($listeners) && !empty($listeners))
 		foreach($listeners as $listener) { /* @var $listener DevblocksExtensionManifest */
-            $manifest = DevblocksPlatform::getExtension($listener);
-		    $inst = $manifest->createInstance(); /* @var $inst DevblocksEventListenerExtension */
-            $inst->handleEvent($event);
+			// Extensions can be invoked on these plugins even by workers who cannot see them
+            if(null != ($manifest = DevblocksPlatform::getExtension($listener,false,true))) {
+            	if(method_exists($manifest, 'createInstance')) {
+		    		$inst = $manifest->createInstance(); /* @var $inst DevblocksEventListenerExtension */
+		    		if($inst instanceof DevblocksEventListenerExtension)
+            			$inst->handleEvent($event);
+            	}
+            }
 		}
 		
 	}

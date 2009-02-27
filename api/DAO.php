@@ -423,7 +423,7 @@ class DAO_Translation extends DevblocksORMHelper {
 	}
 	
 	static function reloadPluginStrings() {
-		$translations = DevblocksPlatform::getExtensions("devblocks.i18n.strings");
+		$translations = DevblocksPlatform::getExtensions("devblocks.i18n.strings", false, true);
 
 		if(is_array($translations))
 		foreach($translations as $translationManifest) { /* @var $translationManifest DevblocksExtensionManifest */
