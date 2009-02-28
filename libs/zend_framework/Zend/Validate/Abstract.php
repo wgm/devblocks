@@ -17,7 +17,7 @@
  * @package    Zend_Validate
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Abstract.php 12359 2008-11-07 09:37:50Z thomas $
+ * @version    $Id: Abstract.php 13351 2008-12-18 15:26:14Z alexander $
  */
 
 
@@ -196,6 +196,16 @@ abstract class Zend_Validate_Abstract implements Zend_Validate_Interface
             } elseif ($translator->isTranslated($messageKey)) {
                 $message = $translator->translate($messageKey);
             }
+        }
+
+        if (is_object($value)) {
+        	if (!in_array('__toString', get_class_methods($value))) {
+        		$value = get_class($value) . ' object';
+        	} else {
+        		$value = $value->__toString();
+        	}
+        } else {
+        	$value = (string)$value;
         }
 
         if ($this->getObscureValue()) {

@@ -15,7 +15,7 @@
  * @category   Zend
  * @package    Zend_Date
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
- * @version    $Id: DateObject.php 11954 2008-10-14 17:27:50Z thomas $
+ * @version    $Id: DateObject.php 13319 2008-12-16 09:27:04Z thomas $
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
  */
 
@@ -144,7 +144,7 @@ abstract class Zend_Date_DateObject {
      */
     protected function mktime($hour, $minute, $second, $month, $day, $year, $gmt = false)
     {
-        
+
         // complete date but in 32bit timestamp - use PHP internal
         if ((1901 < $year) and ($year < 2038)) {
 
@@ -1014,6 +1014,8 @@ abstract class Zend_Date_DateObject {
 
         if (($zone == 'UTC') or ($zone == 'GMT')) {
             $this->_dst = false;
+        } else {
+            $this->_dst = true;
         }
 
         return $this;

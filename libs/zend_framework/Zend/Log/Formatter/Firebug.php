@@ -13,39 +13,37 @@
  * to license@zend.com so we can send you a copy immediately.
  *
  * @category   Zend
- * @package    Zend_Version
+ * @package    Zend_Log
+ * @subpackage Formatter
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Version.php 14080 2009-02-13 13:18:53Z alexander $
  */
+
+/** Zend_Log_Formatter_Interface */
+require_once 'Zend/Log/Formatter/Interface.php';
 
 /**
- * Class to store and retrieve the version of Zend Framework.
- *
  * @category   Zend
- * @package    Zend_Version
+ * @package    Zend_Log
+ * @subpackage Formatter
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
  */
-final class Zend_Version
+class Zend_Log_Formatter_Firebug implements Zend_Log_Formatter_Interface
 {
     /**
-     * Zend Framework version identification - see compareVersion()
-     */
-    const VERSION = '1.7.5';
-
-    /**
-     * Compare the specified Zend Framework version string $version
-     * with the current Zend_Version::VERSION of the Zend Framework.
+     * This method formats the event for the firebug writer.
+     * 
+     * The default is to just send the message parameter, but through 
+     * extension of this class and calling the
+     * {@see Zend_Log_Writer_Firebug::setFormatter()} method you can
+     * pass as much of the event data as you are interested in.
      *
-     * @param  string  $version  A version string (e.g. "0.7.1").
-     * @return boolean           -1 if the $version is older,
-     *                           0 if they are the same,
-     *                           and +1 if $version is newer.
-     *
+     * @param  array    $event    event data
+     * @return mixed              event message
      */
-    public static function compareVersion($version)
+    public function format($event)
     {
-        return version_compare($version, self::VERSION);
+        return $event['message'];
     }
 }
