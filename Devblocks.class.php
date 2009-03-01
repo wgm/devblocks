@@ -6,7 +6,7 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
 //include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
 
-define('PLATFORM_BUILD',282);
+define('PLATFORM_BUILD',292);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -788,18 +788,15 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return Zend_Date
 	 */
 	static function getDateService($date=null) {
-	    $locale = DevblocksPlatform::getLocaleService();
-	    $date = new Zend_Date($date);
-	    $date->setLocale($locale);
+		$locale = DevblocksPlatform::getLocaleService();
+	    $date = new Zend_Date($date, null, $locale);
 	    return $date;
 	}
 
 	static function setLocale($locale) {
-		$i18n = self::getLocaleService(); /* @var $i18n Zend_Locale */
-		if($i18n->isLocale($locale, true, false)) {
+		if(Zend_Locale::isLocale($locale, true, false)) {
 			self::$locale = $locale;
-			$i18n->setLocale(self::$locale);
-			Zend_Registry::set('locale', $i18n);
+			Zend_Locale::setDefault(self::$locale);
 		}
 	}
 	
@@ -807,19 +804,8 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return Zend_Locale
 	 */
 	static function getLocaleService() {
-		$i18n = null;
-		if(Zend_Registry::isRegistered('locale')) {
-			$i18n = Zend_Registry::get('locale');
-		}
-		
-	    if(empty($i18n)) {
-	    	// Determine platform or user language
-	    	$code = !empty(self::$locale) ? self::$locale : 'en_US';
-	        $i18n = new Zend_Locale($code);
-	        Zend_Registry::set('locale', $i18n);
-	    }
-
-	    return $i18n;
+		$locale = (!empty(self::$locale)) ? self::$locale : 'en_US';
+		return new Zend_Locale($locale);
 	}
 
 	/**

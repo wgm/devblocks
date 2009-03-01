@@ -12,10 +12,12 @@ function smarty_modifier_devblocks_date($string, $format=null) {
 	if(empty($string))
 		return '';
 	
+	$date = DevblocksPlatform::getDateService();
+	
 	try {
-		$date = new Zend_Date($string);
+		$date->setTimestamp($string);
 	} catch (Zend_Date_Exception $zde) {
-		$date = new Zend_Date(Zend_Date::now());
+		$date->setTimestamp(Zend_Date::now());
 	}
 	
 	if(empty($format)) {

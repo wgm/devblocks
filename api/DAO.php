@@ -484,14 +484,14 @@ class DAO_Translation extends DevblocksORMHelper {
 		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
 		
 		$locale = DevblocksPlatform::getLocaleService();
-		
+
 		// [TODO] cache
-		$langs = $locale->getLanguageTranslationList();
+		$langs = $locale->getLanguageTranslationList($locale);
 		if(empty($langs))
 			$langs = $locale->getLanguageTranslationList('en_US');
 			
 		// [TODO] cache
-		$terrs = $locale->getCountryTranslationList();
+		$terrs = $locale->getCountryTranslationList($locale);
 		if(empty($terrs))
 			$terrs = $locale->getCountryTranslationList('en_US');
 		
