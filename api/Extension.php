@@ -6,9 +6,6 @@ abstract class DevblocksApplication {
 abstract class DevblocksPlugin {
 	public $id = '';
 	public $manifest = null;
-	
-	public function install(DevblocksPluginManifest $manifest) { return true; }
-	public function load(DevblocksPluginManifest $manifest) { return true; }
 }
 
 /**

@@ -54,6 +54,7 @@ $datadict = NewDataDictionary($db); /* @var $datadict ADODB_DataDict */ // ,'mys
 $prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 
 $tables = $datadict->MetaTables();
+$tables = array_flip($tables);
 
 // `plugin` ========================
 $columns = $datadict->MetaColumns($prefix.'plugin');
@@ -156,4 +157,3 @@ $indexes = $datadict->MetaIndexes($prefix.'acl',false);
 
 
 return TRUE;
-?>

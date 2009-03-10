@@ -11,20 +11,9 @@
 function smarty_modifier_devblocks_date($string, $format=null) {
 	if(empty($string))
 		return '';
-	
+
 	$date = DevblocksPlatform::getDateService();
-	
-	try {
-		$date->setTimestamp($string);
-	} catch (Zend_Date_Exception $zde) {
-		$date->setTimestamp(Zend_Date::now());
-	}
-	
-	if(empty($format)) {
-		return $date->get(Zend_Date::RFC_2822);
-	} else {
-		return $date->toString($format);	
-	}
+	return $date->formatTime($format, $string);
 }
 
 /* vim: set expandtab: */

@@ -297,6 +297,63 @@ class DAO_Platform {
 		);
 	}
 	
+	static function getClassLoaderMap() {
+		$plugins = DevblocksPlatform::getPluginRegistry();
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup		
+		$class_loader_map = array();
+		
+		$sql = sprintf("SELECT class, plugin_id, rel_path FROM %sclass_loader ORDER BY plugin_id", $prefix);
+		$rs = $db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+
+		if(is_a($rs,'ADORecordSet'))
+		while(!$rs->EOF) {
+			@$class = $rs->fields['class'];
+			@$plugin_id = $rs->fields['plugin_id'];
+			@$rel_path = $rs->fields['rel_path'];
+			
+			// Make sure the plugin is valid
+			if(isset($plugins[$plugin_id])) {
+				// Build an absolute path
+				$path = DEVBLOCKS_PLUGIN_PATH . $plugin_id . DIRECTORY_SEPARATOR . $rel_path;
+				
+				// Init the array
+				if(!isset($class_loader_map[$path]))
+					$class_loader_map[$path] = array();
+				
+				$class_loader_map[$path][] = $class;
+			}
+			
+			$rs->MoveNext();
+		}
+		
+		return $class_loader_map;
+	}
+	
+	static function getUriRoutingMap() {
+		$db = DevblocksPlatform::getDatabaseService();
+		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup		
+		
+		$uri_routing_map = array();
+	
+		$sql = sprintf("SELECT uri, plugin_id, controller_id FROM %suri_routing ORDER BY plugin_id", $prefix);
+		$rs = $db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+
+		if(is_a($rs,'ADORecordSet'))
+		while(!$rs->EOF) {
+			@$uri = $rs->fields['uri'];
+			@$plugin_id = $rs->fields['plugin_id'];
+			@$controller_id = $rs->fields['controller_id'];
+			
+			$uri_routing_map[$uri] = $controller_id;
+			
+			$rs->MoveNext();
+		}
+	
+		return $uri_routing_map;
+	}
+	
 };
 
 class DAO_Translation extends DevblocksORMHelper {
@@ -359,7 +416,6 @@ class DAO_Translation extends DevblocksORMHelper {
 	
 	static function importTmxFile($filename) {
 		$db = DevblocksPlatform::getDatabaseService();
-		$locale = DevblocksPlatform::getLocaleService();
 		
 		if(!file_exists($filename))
 			return;
@@ -434,77 +490,33 @@ class DAO_Translation extends DevblocksORMHelper {
 		}
 	}
 	
-	static function getLocaleList() {
-		$locale = DevblocksPlatform::getLocaleService();
-		
-		$map = array();
-		
-		$locs = $locale->getLocaleList();
-		
-		// [TODO] cache
-		$langs = $locale->getLanguageTranslationList();
-		if(empty($langs))
-			$langs = $locale->getLanguageTranslationList('en_US');
-			
-		// [TODO] cache
-		$terrs = $locale->getCountryTranslationList();
-		if(empty($terrs))
-			$terrs = $locale->getCountryTranslationList('en_US');
-		
-		// Clear placeholders
-		unset($langs['und']);
-		unset($terrs['ZZ']);
-		
-		if(is_array($locs))
-		foreach(array_keys($locs) as $loc) {
-			$data = explode('_', $loc);
-			@$lang = $langs[$data[0]];
-			@$terr = $terrs[$data[1]];
-			if(empty($lang) || empty($terr))
-				continue;
-				
-			$map[$loc] = $lang . ' ('.$terr.')';
-		}
-		
-		unset($locs);
-		unset($langs);
-		unset($terrs);
-
-		asort($map);
-		
-		return $map;
-	}
-	
 	static function getDefinedLangCodes() {
 		$db = DevblocksPlatform::getDatabaseService();
+		$translate = DevblocksPlatform::getTranslationService();
+		
 		$lang_codes = array();
 		
 		// Look up distinct land codes from existing translations
 		$sql = sprintf("SELECT DISTINCT lang_code FROM translation ORDER BY lang_code ASC");
 		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
 		
-		$locale = DevblocksPlatform::getLocaleService();
+		// Languages
+		$langs = $translate->getLanguageCodes();
 
-		// [TODO] cache
-		$langs = $locale->getLanguageTranslationList($locale);
-		if(empty($langs))
-			$langs = $locale->getLanguageTranslationList('en_US');
-			
-		// [TODO] cache
-		$terrs = $locale->getCountryTranslationList($locale);
-		if(empty($terrs))
-			$terrs = $locale->getCountryTranslationList('en_US');
+		// Countries
+		$countries = $translate->getCountryCodes();
 		
 		if(is_a($rs,'ADORecordSet'))
 		while(!$rs->EOF) {
 			$code = $rs->fields['lang_code'];
 			$data = explode('_', $code);
-			@$lang = $langs[$data[0]];
-			@$terr = $terrs[$data[1]];
-			
-			if(!empty($lang) && !empty($terr))
-				$lang_codes[$code] = $lang . ' ('.$terr.')';
-			
+			@$lang = $langs[strtolower($data[0])];
+			@$terr = $countries[strtoupper($data[1])];
+
+			$lang_codes[$code] = (!empty($lang) && !empty($terr))
+				? ($lang . ' (' . $terr . ')')
+				: $code;
+
 			$rs->MoveNext();
 		}
 		

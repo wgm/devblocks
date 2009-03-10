@@ -343,6 +343,8 @@ class DevblocksPluginManifest {
 	var $extensions = array();
 	var $event_points = array();
 	var $acl_privs = array();
+	var $class_loader = array();
+	var $uri_routing = array();
 	
 	/**
 	 * @return DevblocksPlugin
@@ -351,16 +353,12 @@ class DevblocksPluginManifest {
 		if(empty($this->id)) 
 			return null;
 
-//		$plugin = DevblocksPlatform::getPlugin($this->plugin_id);  /* @var $plugin DevblocksPluginManifest */
-	    
 		$class_file = DEVBLOCKS_PLUGIN_PATH . $this->dir . '/' . $this->file;
 		$class_name = $this->class;
 
-		DevblocksPlatform::registerClasses($class_file,array(
-		    $class_name
-		));
+		DevblocksPlatform::registerClasses($class_file,array($class_name));
 
-		if(!class_exists($class_name)) {
+		if(!class_exists($class_name, true)) {
 			return null;
 		}
 		
@@ -413,16 +411,15 @@ class DevblocksExtensionManifest {
 		if(empty($this->id) || empty($this->plugin_id)) // empty($instance_id) || 
 			return null;
 
-		$plugin = DevblocksPlatform::getPlugin($this->plugin_id);  /* @var $plugin DevblocksPluginManifest */
-	    
+		if(null == ($plugin = DevblocksPlatform::getPlugin($this->plugin_id)))
+			return;
+
 		$class_file = DEVBLOCKS_PLUGIN_PATH . $plugin->dir . '/' . $this->file;
 		$class_name = $this->class;
 
-		DevblocksPlatform::registerClasses($class_file,array(
-		    $class_name
-		));
-		
-		if(!class_exists($class_name)) {
+		DevblocksPlatform::registerClasses($class_file,array($class_name));
+
+		if(!class_exists($class_name, true)) {
 			return null;
 		}
 		

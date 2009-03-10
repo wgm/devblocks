@@ -47,7 +47,7 @@ abstract class DevblocksEngine {
 		$db = DevblocksPlatform::getDatabaseService();
 		if(is_null($db)) return;
 		
-		// [JAS]: [TODO] Move to platform DAO
+		// Manifest
 		$db->Replace(
 			$prefix.'plugin',
 			array(
@@ -64,6 +64,29 @@ abstract class DevblocksEngine {
 			array('id'),
 			false
 		);
+		
+		// Class Loader
+		if(isset($plugin->class_loader->file)) {
+			foreach($plugin->class_loader->file as $eFile) {
+				@$sFilePath = (string) $eFile['path'];
+				$manifest->class_loader[$sFilePath] = array();
+				
+				if(isset($eFile->class))
+				foreach($eFile->class as $eClass) {
+					@$sClassName = (string) $eClass['name'];
+					$manifest->class_loader[$sFilePath][] = $sClassName;
+				}
+			}
+		}
+		
+		// Routing
+		if(isset($plugin->uri_routing->uri)) {
+			foreach($plugin->uri_routing->uri as $eUri) {
+				@$sUriName = (string) $eUri['name'];
+				@$sController = (string) $eUri['controller'];
+				$manifest->uri_routing[$sUriName] = $sController;
+			}
+		}
 		
 		// ACL
 		if(isset($plugin->acl->priv)) {
@@ -84,6 +107,7 @@ abstract class DevblocksEngine {
 			asort($manifest->acl_privs);
 		}
 		
+		// Event points
 		if(isset($plugin->event_points->event)) {
 		    foreach($plugin->event_points->event as $eEvent) {
 		        $sId = (string) $eEvent['id'];
@@ -110,6 +134,7 @@ abstract class DevblocksEngine {
 		    }
 		}
 		
+		// Extensions
 		if(isset($plugin->extensions->extension)) {
 		    foreach($plugin->extensions->extension as $eExtension) {
 		        $sId = (string) $eExtension->id;
@@ -206,6 +231,40 @@ abstract class DevblocksEngine {
 		}
 		
         // [JAS]: [TODO] Extension point caching
+
+		// Class loader cache
+		$db->Execute(sprintf("DELETE FROM %sclass_loader WHERE plugin_id = %s",$prefix,$db->qstr($plugin->id)));
+		if(is_array($manifest->class_loader))
+		foreach($manifest->class_loader as $file_path => $classes) {
+			if(is_array($classes) && !empty($classes))
+			foreach($classes as $class)
+			$db->Replace(
+				$prefix.'class_loader',
+				array(
+					'class' => $db->qstr($class),
+					'plugin_id' => $db->qstr($manifest->id),
+					'rel_path' => $db->qstr($file_path),
+				),
+				array('class'),
+				false
+			);
+		}
+		
+		// URI routing cache
+		$db->Execute(sprintf("DELETE FROM %suri_routing WHERE plugin_id = %s",$prefix,$db->qstr($plugin->id)));
+		if(is_array($manifest->uri_routing))
+		foreach($manifest->uri_routing as $uri => $controller_id) {
+			$db->Replace(
+				$prefix.'uri_routing',
+				array(
+					'uri' => $db->qstr($uri),
+					'plugin_id' => $db->qstr($manifest->id),
+					'controller_id' => $db->qstr($controller_id),
+				),
+				array('uri'),
+				false
+			);
+		}
 
 		// ACL caching
 		$db->Execute(sprintf("DELETE FROM %sacl WHERE plugin_id = %s",$prefix,$db->qstr($plugin->id)));
@@ -405,23 +464,32 @@ abstract class DevblocksEngine {
 
 			// [JAS]: Plugin-supplied URIs
 			default:
-	            $controllers = DevblocksPlatform::getExtensions('devblocks.controller', true);
-	            $router = DevblocksPlatform::getRoutingService();
-	            
-				/*
-				 * [JAS]: Try to find our command in the URI lookup first, and if we
-				 * fail then fall back to raw extension ids.
-				 */
-	            /* @var $controller_manifest DevblocksExtensionManifest */
-				if(null == ($controller_id = $router->getRoute($controller_uri))
-						|| null == ($controller = $controllers[$controller_id]) ) {
-						$controller = $controllers[APP_DEFAULT_CONTROLLER];
-				} 
+				$routing = array();
+	            $controllers = DevblocksPlatform::getExtensions('devblocks.controller', false);
+				
+				// Add any controllers which have definitive routing
+				if(is_array($controllers))
+				foreach($controllers as $controller_mft) {
+					if(isset($controller_mft->params['uri']))
+						$routing[$controller_mft->params['uri']] = $controller_mft->id;
+				}
 
-//				// Instance our manifest
-//				if(!empty($controller_manifest)) {
-//					$controller = $controller_manifest->createInstance();
-//				}
+				// [TODO] Ask the platform to look at any routing maps (extension manifest) or
+				// controller objects
+//				print_r($routing);
+
+				// [TODO] Pages like 'tickets' currently work because APP_DEFAULT_CONTROLLER
+				// is the ChPageController which looks up those URIs in manifests
+	            
+				// Set our controller based on the results
+				$controller_mft = (isset($routing[$controller_uri]))
+					? $controllers[$routing[$controller_uri]]
+					: $controllers[APP_DEFAULT_CONTROLLER];
+				
+				// Instance our manifest
+				if(!empty($controller_mft)) {
+					$controller = $controller_mft->createInstance();
+				}
 				
 				if($controller instanceof DevblocksHttpRequestHandler) {
 					$controller->handleRequest($request);
@@ -614,12 +682,16 @@ class _DevblocksCacheManager {
 		// Monitor short-term cache memory usage
 		@$this->_statistics[$key] = intval($this->_statistics[$key]);
 		$this->_io_writes++;
-//		echo "Memory usage: ",memory_get_usage($true),"<BR>";
+//		echo "Memory usage: ",memory_get_usage(true),"<BR>";
 		self::$_zend_cache->save($data, $key, $tags, $lifetime);
 		$this->_registry[$key] = $data;
 	}
 	
 	public function load($key, $nocache=false) {
+//		echo "Memory usage: ",memory_get_usage(true),"<BR>";
+//		print_r(array_keys($this->_registry));
+//		echo "<HR>";
+		
 		// Retrieving the long-term cache
 		if($nocache || !isset($this->_registry[$key])) {
 //			echo "Hit long-term cache for $key<br>";
@@ -638,7 +710,7 @@ class _DevblocksCacheManager {
 			$this->_io_reads_short++;
 			return $this->_registry[$key];
 		}
-			
+		
 		return NULL;
 	}
 	
@@ -873,6 +945,948 @@ class _DevblocksEmailManager {
 	
 }
 
+class _DevblocksDateManager {
+	private function __construct() {}
+	
+	/**
+	 * 
+	 * @return _DevblocksDateManager
+	 */
+	static function getInstance() {
+		static $instance = null;
+		
+		if(null == $instance) {
+			$instance = new _DevblocksDateManager();
+		}
+		
+		return $instance;
+	}
+	
+	public function formatTime($format, $timestamp) {
+		try {
+			if(is_numeric($timestamp))
+				$timestamp = intval($timestamp);
+			else
+				$timestamp = strtotime($time);
+		} catch (Exception $e) {
+			$timestamp = time();
+		}
+		
+		if(empty($format)) {
+			return strftime('%a, %d %b %Y %H:%M:%S %z', $timestamp);
+		} else {
+			return strftime($format, $timestamp);
+		}
+	}
+	
+	public function getTimezones() {
+		return array(
+			'Africa/Abidjan',
+			'Africa/Accra',
+			'Africa/Addis_Ababa',
+			'Africa/Algiers',
+			'Africa/Asmera',
+			'Africa/Bamako',
+			'Africa/Bangui',
+			'Africa/Banjul',
+			'Africa/Bissau',
+			'Africa/Blantyre',
+			'Africa/Brazzaville',
+			'Africa/Bujumbura',
+			'Africa/Cairo',
+			'Africa/Casablanca',
+			'Africa/Ceuta',
+			'Africa/Conakry',
+			'Africa/Dakar',
+			'Africa/Dar_es_Salaam',
+			'Africa/Djibouti',
+			'Africa/Douala',
+			'Africa/El_Aaiun',
+			'Africa/Freetown',
+			'Africa/Gaborone',
+			'Africa/Harare',
+			'Africa/Johannesburg',
+			'Africa/Kampala',
+			'Africa/Khartoum',
+			'Africa/Kigali',
+			'Africa/Kinshasa',
+			'Africa/Lagos',
+			'Africa/Libreville',
+			'Africa/Lome',
+			'Africa/Luanda',
+			'Africa/Lubumbashi',
+			'Africa/Lusaka',
+			'Africa/Malabo',
+			'Africa/Maputo',
+			'Africa/Maseru',
+			'Africa/Mbabane',
+			'Africa/Mogadishu',
+			'Africa/Monrovia',
+			'Africa/Nairobi',
+			'Africa/Ndjamena',
+			'Africa/Niamey',
+			'Africa/Nouakchott',
+			'Africa/Ouagadougou',
+			'Africa/Porto-Novo',
+			'Africa/Sao_Tome',
+			'Africa/Timbuktu',
+			'Africa/Tripoli',
+			'Africa/Tunis',
+			'Africa/Windhoek',
+			'America/Adak',
+			'America/Anchorage',
+			'America/Anguilla',
+			'America/Antigua',
+			'America/Araguaina',
+			'America/Aruba',
+			'America/Asuncion',
+			'America/Barbados',
+			'America/Belem',
+			'America/Belize',
+			'America/Bogota',
+			'America/Boise',
+			'America/Buenos_Aires',
+			'America/Cancun',
+			'America/Caracas',
+			'America/Catamarca',
+			'America/Cayenne',
+			'America/Cayman',
+			'America/Chicago',
+			'America/Chihuahua',
+			'America/Cordoba',
+			'America/Costa_Rica',
+			'America/Cuiaba',
+			'America/Curacao',
+			'America/Dawson',
+			'America/Dawson_Creek',
+			'America/Denver',
+			'America/Detroit',
+			'America/Dominica',
+			'America/Edmonton',
+			'America/El_Salvador',
+			'America/Ensenada',
+			'America/Fortaleza',
+			'America/Glace_Bay',
+			'America/Godthab',
+			'America/Goose_Bay',
+			'America/Grand_Turk',
+			'America/Grenada',
+			'America/Guadeloupe',
+			'America/Guatemala',
+			'America/Guayaquil',
+			'America/Guyana',
+			'America/Halifax',
+			'America/Havana',
+			'America/Indiana/Knox',
+			'America/Indiana/Marengo',
+			'America/Indiana/Vevay',
+			'America/Indianapolis',
+			'America/Inuvik',
+			'America/Iqaluit',
+			'America/Jamaica',
+			'America/Jujuy',
+			'America/Juneau',
+			'America/La_Paz',
+			'America/Lima',
+			'America/Los_Angeles',
+			'America/Louisville',
+			'America/Maceio',
+			'America/Managua',
+			'America/Manaus',
+			'America/Martinique',
+			'America/Mazatlan',
+			'America/Mendoza',
+			'America/Menominee',
+			'America/Mexico_City',
+			'America/Miquelon',
+			'America/Montevideo',
+			'America/Montreal',
+			'America/Montserrat',
+			'America/Nassau',
+			'America/New_York',
+			'America/Nipigon',
+			'America/Nome',
+			'America/Noronha',
+			'America/Panama',
+			'America/Pangnirtung',
+			'America/Paramaribo',
+			'America/Phoenix',
+			'America/Port-au-Prince',
+			'America/Port_of_Spain',
+			'America/Porto_Acre',
+			'America/Porto_Velho',
+			'America/Puerto_Rico',
+			'America/Rainy_River',
+			'America/Rankin_Inlet',
+			'America/Regina',
+			'America/Rosario',
+			'America/Santiago',
+			'America/Santo_Domingo',
+			'America/Sao_Paulo',
+			'America/Scoresbysund',
+			'America/Shiprock',
+			'America/St_Johns',
+			'America/St_Kitts',
+			'America/St_Lucia',
+			'America/St_Thomas',
+			'America/St_Vincent',
+			'America/Swift_Current',
+			'America/Tegucigalpa',
+			'America/Thule',
+			'America/Thunder_Bay',
+			'America/Tijuana',
+			'America/Tortola',
+			'America/Vancouver',
+			'America/Whitehorse',
+			'America/Winnipeg',
+			'America/Yakutat',
+			'America/Yellowknife',
+			'Antarctica/Casey',
+			'Antarctica/Davis',
+			'Antarctica/DumontDUrville',
+			'Antarctica/Mawson',
+			'Antarctica/McMurdo',
+			'Antarctica/Palmer',
+			'Antarctica/South_Pole',
+			'Arctic/Longyearbyen',
+			'Asia/Aden',
+			'Asia/Almaty',
+			'Asia/Amman',
+			'Asia/Anadyr',
+			'Asia/Aqtau',
+			'Asia/Aqtobe',
+			'Asia/Ashkhabad',
+			'Asia/Baghdad',
+			'Asia/Bahrain',
+			'Asia/Baku',
+			'Asia/Bangkok',
+			'Asia/Beirut',
+			'Asia/Bishkek',
+			'Asia/Brunei',
+			'Asia/Calcutta',
+			'Asia/Chungking',
+			'Asia/Colombo',
+			'Asia/Dacca',
+			'Asia/Damascus',
+			'Asia/Dubai',
+			'Asia/Dushanbe',
+			'Asia/Gaza',
+			'Asia/Harbin',
+			'Asia/Hong_Kong',
+			'Asia/Irkutsk',
+			'Asia/Jakarta',
+			'Asia/Jayapura',
+			'Asia/Jerusalem',
+			'Asia/Kabul',
+			'Asia/Kamchatka',
+			'Asia/Karachi',
+			'Asia/Kashgar',
+			'Asia/Katmandu',
+			'Asia/Krasnoyarsk',
+			'Asia/Kuala_Lumpur',
+			'Asia/Kuching',
+			'Asia/Kuwait',
+			'Asia/Macao',
+			'Asia/Magadan',
+			'Asia/Manila',
+			'Asia/Muscat',
+			'Asia/Nicosia',
+			'Asia/Novosibirsk',
+			'Asia/Omsk',
+			'Asia/Phnom_Penh',
+			'Asia/Pyongyang',
+			'Asia/Qatar',
+			'Asia/Rangoon',
+			'Asia/Riyadh',
+			'Asia/Saigon',
+			'Asia/Samarkand',
+			'Asia/Seoul',
+			'Asia/Shanghai',
+			'Asia/Singapore',
+			'Asia/Taipei',
+			'Asia/Tashkent',
+			'Asia/Tbilisi',
+			'Asia/Tehran',
+			'Asia/Thimbu',
+			'Asia/Tokyo',
+			'Asia/Ujung_Pandang',
+			'Asia/Ulan_Bator',
+			'Asia/Urumqi',
+			'Asia/Vientiane',
+			'Asia/Vladivostok',
+			'Asia/Yakutsk',
+			'Asia/Yekaterinburg',
+			'Asia/Yerevan',
+			'Atlantic/Azores',
+			'Atlantic/Bermuda',
+			'Atlantic/Canary',
+			'Atlantic/Cape_Verde',
+			'Atlantic/Faeroe',
+			'Atlantic/Jan_Mayen',
+			'Atlantic/Madeira',
+			'Atlantic/Reykjavik',
+			'Atlantic/South_Georgia',
+			'Atlantic/St_Helena',
+			'Atlantic/Stanley',
+			'Australia/Adelaide',
+			'Australia/Brisbane',
+			'Australia/Broken_Hill',
+			'Australia/Darwin',
+			'Australia/Hobart',
+			'Australia/Lindeman',
+			'Australia/Lord_Howe',
+			'Australia/Melbourne',
+			'Australia/Perth',
+			'Australia/Sydney',
+			'Europe/Amsterdam',
+			'Europe/Andorra',
+			'Europe/Athens',
+			'Europe/Belfast',
+			'Europe/Belgrade',
+			'Europe/Berlin',
+			'Europe/Bratislava',
+			'Europe/Brussels',
+			'Europe/Bucharest',
+			'Europe/Budapest',
+			'Europe/Chisinau',
+			'Europe/Copenhagen',
+			'Europe/Dublin',
+			'Europe/Gibraltar',
+			'Europe/Helsinki',
+			'Europe/Istanbul',
+			'Europe/Kaliningrad',
+			'Europe/Kiev',
+			'Europe/Lisbon',
+			'Europe/Ljubljana',
+			'Europe/London',
+			'Europe/Luxembourg',
+			'Europe/Madrid',
+			'Europe/Malta',
+			'Europe/Minsk',
+			'Europe/Monaco',
+			'Europe/Moscow',
+			'Europe/Oslo',
+			'Europe/Paris',
+			'Europe/Prague',
+			'Europe/Riga',
+			'Europe/Rome',
+			'Europe/Samara',
+			'Europe/San_Marino',
+			'Europe/Sarajevo',
+			'Europe/Simferopol',
+			'Europe/Skopje',
+			'Europe/Sofia',
+			'Europe/Stockholm',
+			'Europe/Tallinn',
+			'Europe/Tirane',
+			'Europe/Vaduz',
+			'Europe/Vatican',
+			'Europe/Vienna',
+			'Europe/Vilnius',
+			'Europe/Warsaw',
+			'Europe/Zagreb',
+			'Europe/Zurich',
+			'Indian/Antananarivo',
+			'Indian/Chagos',
+			'Indian/Christmas',
+			'Indian/Cocos',
+			'Indian/Comoro',
+			'Indian/Kerguelen',
+			'Indian/Mahe',
+			'Indian/Maldives',
+			'Indian/Mauritius',
+			'Indian/Mayotte',
+			'Indian/Reunion',
+			'Pacific/Apia',
+			'Pacific/Auckland',
+			'Pacific/Chatham',
+			'Pacific/Easter',
+			'Pacific/Efate',
+			'Pacific/Enderbury',
+			'Pacific/Fakaofo',
+			'Pacific/Fiji',
+			'Pacific/Funafuti',
+			'Pacific/Galapagos',
+			'Pacific/Gambier',
+			'Pacific/Guadalcanal',
+			'Pacific/Guam',
+			'Pacific/Honolulu',
+			'Pacific/Johnston',
+			'Pacific/Kiritimati',
+			'Pacific/Kosrae',
+			'Pacific/Kwajalein',
+			'Pacific/Majuro',
+			'Pacific/Marquesas',
+			'Pacific/Midway',
+			'Pacific/Nauru',
+			'Pacific/Niue',
+			'Pacific/Norfolk',
+			'Pacific/Noumea',
+			'Pacific/Pago_Pago',
+			'Pacific/Palau',
+			'Pacific/Pitcairn',
+			'Pacific/Ponape',
+			'Pacific/Port_Moresby',
+			'Pacific/Rarotonga',
+			'Pacific/Saipan',
+			'Pacific/Tahiti',
+			'Pacific/Tarawa',
+			'Pacific/Tongatapu',
+			'Pacific/Truk',
+			'Pacific/Wake',
+			'Pacific/Wallis',
+			'Pacific/Yap',
+		);
+	}
+}
+
+class _DevblocksTranslationManager {
+	private $_locales = array();
+	private $_locale = 'en_US';
+	
+	private function __construct() {}
+	
+	static function getInstance() {
+		static $instance = null;
+		
+		if(null == $instance) {
+			$instance = new _DevblocksTranslationManager();
+		}
+		
+		return $instance;
+	}
+	
+	public function addLocale($locale, $strings) {
+		$this->_locales[$locale] = $strings;
+	}
+	
+	public function setLocale($locale) {
+		if(isset($this->_locales[$locale]))
+			$this->_locale = $locale;
+	}
+	
+	public function _($token) {
+		if(isset($this->_locales[$this->_locale][$token]))
+			return $this->_locales[$this->_locale][$token];
+		
+		return '$'.$token.'('.$this->_locale.')';
+	}
+	
+	public function getLocaleCodes() {
+		return array(
+			'af_ZA',
+			'am_ET',
+			'be_BY',
+			'bg_BG',
+			'ca_ES',
+			'cs_CZ',
+			'da_DK',
+			'de_AT',
+			'de_CH',
+			'de_DE',
+			'el_GR',
+			'en_AU',
+			'en_CA',
+			'en_GB',
+			'en_IE',
+			'en_NZ',
+			'en_US',
+			'es_ES',
+			'es_MX',
+			'et_EE',
+			'eu_ES',
+			'fi_FI',
+			'fr_BE',
+			'fr_CA',
+			'fr_CH',
+			'fr_FR',
+			'he_IL',
+			'hr_HR',
+			'hu_HU',
+			'hy_AM',
+			'is_IS',
+			'it_CH',
+			'it_IT',
+			'ja_JP',
+			'kk_KZ',
+			'ko_KR',
+			'lt_LT',
+			'nl_BE',
+			'nl_NL',
+			'no_NO',
+			'pl_PL',
+			'pt_BR',
+			'pt_PT',
+			'ro_RO',
+			'ru_RU',
+			'sk_SK',
+			'sl_SI',
+			'sr_RS',
+			'sv_SE',
+			'tr_TR',
+			'uk_UA',
+			'zh_CN',
+			'zh_HK',
+			'zh_TW',
+		);
+	}
+	
+	function getLocaleStrings() {
+		$codes = $this->getLocaleCodes();
+		$langs = $this->getLanguageCodes();
+		$countries = $this->getCountryCodes();
+		
+		$lang_codes = array();
+		
+		if(is_array($codes))
+		foreach($codes as $code) {
+			$data = explode('_', $code);
+			@$lang = $langs[strtolower($data[0])];
+			@$terr = $countries[strtoupper($data[1])];
+
+			$lang_codes[$code] = (!empty($lang) && !empty($terr))
+				? ($lang . ' (' . $terr . ')')
+				: $code;
+		}
+		
+		asort($lang_codes);
+		
+		unset($codes);
+		unset($langs);
+		unset($countries);
+		
+		return $lang_codes;
+	}
+	
+	function getLanguageCodes() {
+		return array(
+			'aa' => "Afar",
+			'ab' => "Abkhazian",
+			'ae' => "Avestan",
+			'af' => "Afrikaans",
+			'am' => "Amharic",
+			'an' => "Aragonese",
+			'ar' => "Arabic",
+			'as' => "Assamese",
+			'ay' => "Aymara",
+			'az' => "Azerbaijani",
+			'ba' => "Bashkir",
+			'be' => "Belarusian",
+			'bg' => "Bulgarian",
+			'bh' => "Bihari",
+			'bi' => "Bislama",
+			'bn' => "Bengali",
+			'bo' => "Tibetan",
+			'br' => "Breton",
+			'bs' => "Bosnian",
+			'ca' => "Catalan",
+			'ce' => "Chechen",
+			'ch' => "Chamorro",
+			'co' => "Corsican",
+			'cs' => "Czech",
+			'cu' => "Church Slavic; Slavonic; Old Bulgarian",
+			'cv' => "Chuvash",
+			'cy' => "Welsh",
+			'da' => "Danish",
+			'de' => "German",
+			'dv' => "Divehi; Dhivehi; Maldivian",
+			'dz' => "Dzongkha",
+			'el' => "Greek, Modern",
+			'en' => "English",
+			'eo' => "Esperanto",
+			'es' => "Spanish; Castilian",
+			'et' => "Estonian",
+			'eu' => "Basque",
+			'fa' => "Persian",
+			'fi' => "Finnish",
+			'fj' => "Fijian",
+			'fo' => "Faroese",
+			'fr' => "French",
+			'fy' => "Western Frisian",
+			'ga' => "Irish",
+			'gd' => "Gaelic; Scottish Gaelic",
+			'gl' => "Galician",
+			'gn' => "Guarani",
+			'gu' => "Gujarati",
+			'gv' => "Manx",
+			'ha' => "Hausa",
+			'he' => "Hebrew",
+			'hi' => "Hindi",
+			'ho' => "Hiri Motu",
+			'hr' => "Croatian",
+			'ht' => "Haitian; Haitian Creole ",
+			'hu' => "Hungarian",
+			'hy' => "Armenian",
+			'hz' => "Herero",
+			'ia' => "Interlingua",
+			'id' => "Indonesian",
+			'ie' => "Interlingue",
+			'ii' => "Sichuan Yi",
+			'ik' => "Inupiaq",
+			'io' => "Ido",
+			'is' => "Icelandic",
+			'it' => "Italian",
+			'iu' => "Inuktitut",
+			'ja' => "Japanese",
+			'jv' => "Javanese",
+			'ka' => "Georgian",
+			'ki' => "Kikuyu; Gikuyu",
+			'kj' => "Kuanyama; Kwanyama",
+			'kk' => "Kazakh",
+			'kl' => "Kalaallisut",
+			'km' => "Khmer",
+			'kn' => "Kannada",
+			'ko' => "Korean",
+			'ks' => "Kashmiri",
+			'ku' => "Kurdish",
+			'kv' => "Komi",
+			'kw' => "Cornish",
+			'ky' => "Kirghiz",
+			'la' => "Latin",
+			'lb' => "Luxembourgish; Letzeburgesch",
+			'li' => "Limburgan; Limburger; Limburgish",
+			'ln' => "Lingala",
+			'lo' => "Lao",
+			'lt' => "Lithuanian",
+			'lv' => "Latvian",
+			'mg' => "Malagasy",
+			'mh' => "Marshallese",
+			'mi' => "Maori",
+			'mk' => "Macedonian",
+			'ml' => "Malayalam",
+			'mn' => "Mongolian",
+			'mo' => "Moldavian",
+			'mr' => "Marathi",
+			'ms' => "Malay",
+			'mt' => "Maltese",
+			'my' => "Burmese",
+			'na' => "Nauru",
+			'nb' => "Norwegian Bokmal",
+			'nd' => "Ndebele, North",
+			'ne' => "Nepali",
+			'ng' => "Ndonga",
+			'nl' => "Dutch",
+			'nn' => "Norwegian Nynorsk",
+			'no' => "Norwegian",
+			'nr' => "Ndebele, South",
+			'nv' => "Navaho, Navajo",
+			'ny' => "Nyanja; Chichewa; Chewa",
+			'oc' => "Occitan; Provencal",
+			'om' => "Oromo",
+			'or' => "Oriya",
+			'os' => "Ossetian; Ossetic",
+			'pa' => "Panjabi",
+			'pi' => "Pali",
+			'pl' => "Polish",
+			'ps' => "Pushto",
+			'pt' => "Portuguese",
+			'qu' => "Quechua",
+			'rm' => "Raeto-Romance",
+			'rn' => "Rundi",
+			'ro' => "Romanian",
+			'ru' => "Russian",
+			'rw' => "Kinyarwanda",
+			'sa' => "Sanskrit",
+			'sc' => "Sardinian",
+			'sd' => "Sindhi",
+			'se' => "Northern Sami",
+			'sg' => "Sango",
+			'si' => "Sinhala; Sinhalese",
+			'sk' => "Slovak",
+			'sl' => "Slovenian",
+			'sm' => "Samoan",
+			'sn' => "Shona",
+			'so' => "Somali",
+			'sq' => "Albanian",
+			'sr' => "Serbian",
+			'ss' => "Swati",
+			'st' => "Sotho, Southern",
+			'su' => "Sundanese",
+			'sv' => "Swedish",
+			'sw' => "Swahili",
+			'ta' => "Tamil",
+			'te' => "Telugu",
+			'tg' => "Tajik",
+			'th' => "Thai",
+			'ti' => "Tigrinya",
+			'tk' => "Turkmen",
+			'tl' => "Tagalog",
+			'tn' => "Tswana",
+			'to' => "Tonga",
+			'tr' => "Turkish",
+			'ts' => "Tsonga",
+			'tt' => "Tatar",
+			'tw' => "Twi",
+			'ty' => "Tahitian",
+			'ug' => "Uighur",
+			'uk' => "Ukrainian",
+			'ur' => "Urdu",
+			'uz' => "Uzbek",
+			'vi' => "Vietnamese",
+			'vo' => "Volapuk",
+			'wa' => "Walloon",
+			'wo' => "Wolof",
+			'xh' => "Xhosa",
+			'yi' => "Yiddish",
+			'yo' => "Yoruba",
+			'za' => "Zhuang; Chuang",
+			'zh' => "Chinese",
+			'zu' => "Zulu",
+		);
+	}
+	
+	function getCountryCodes() {
+		return array(
+			'AD' => "Andorra",
+			'AE' => "United Arab Emirates",
+			'AF' => "Afghanistan",
+			'AG' => "Antigua and Barbuda",
+			'AI' => "Anguilla",
+			'AL' => "Albania",
+			'AM' => "Armenia",
+			'AN' => "Netherlands Antilles",
+			'AO' => "Angola",
+			'AQ' => "Antarctica",
+			'AR' => "Argentina",
+			'AS' => "American Samoa",
+			'AT' => "Austria",
+			'AU' => "Australia",
+			'AW' => "Aruba",
+			'AX' => "Aland Islands",
+			'AZ' => "Azerbaijan",
+			'BA' => "Bosnia and Herzegovina",
+			'BB' => "Barbados",
+			'BD' => "Bangladesh",
+			'BE' => "Belgium",
+			'BF' => "Burkina Faso",
+			'BG' => "Bulgaria",
+			'BH' => "Bahrain",
+			'BI' => "Burundi",
+			'BJ' => "Benin",
+			'BL' => "Saint Barthélemy",
+			'BM' => "Bermuda",
+			'BN' => "Brunei Darussalam",
+			'BO' => "Bolivia",
+			'BR' => "Brazil",
+			'BS' => "Bahamas",
+			'BT' => "Bhutan",
+			'BV' => "Bouvet Island",
+			'BW' => "Botswana",
+			'BY' => "Belarus",
+			'BZ' => "Belize",
+			'CA' => "Canada",
+			'CC' => "Cocos (Keeling) Islands",
+			'CD' => "Congo, the Democratic Republic of the",
+			'CF' => "Central African Republic",
+			'CG' => "Congo",
+			'CH' => "Switzerland",
+			'CI' => "Cote d'Ivoire Côte d'Ivoire",
+			'CK' => "Cook Islands",
+			'CL' => "Chile",
+			'CM' => "Cameroon",
+			'CN' => "China",
+			'CO' => "Colombia",
+			'CR' => "Costa Rica",
+			'CU' => "Cuba",
+			'CV' => "Cape Verde",
+			'CX' => "Christmas Island",
+			'CY' => "Cyprus",
+			'CZ' => "Czech Republic",
+			'DE' => "Germany",
+			'DJ' => "Djibouti",
+			'DK' => "Denmark",
+			'DM' => "Dominica",
+			'DO' => "Dominican Republic",
+			'DZ' => "Algeria",
+			'EC' => "Ecuador",
+			'EE' => "Estonia",
+			'EG' => "Egypt",
+			'EH' => "Western Sahara",
+			'ER' => "Eritrea",
+			'ES' => "Spain",
+			'ET' => "Ethiopia",
+			'FI' => "Finland",
+			'FJ' => "Fiji",
+			'FK' => "Falkland Islands (Malvinas)",
+			'FM' => "Micronesia, Federated States of",
+			'FO' => "Faroe Islands",
+			'FR' => "France",
+			'GA' => "Gabon",
+			'GB' => "United Kingdom",
+			'GD' => "Grenada",
+			'GE' => "Georgia",
+			'GF' => "French Guiana",
+			'GG' => "Guernsey",
+			'GH' => "Ghana",
+			'GI' => "Gibraltar",
+			'GL' => "Greenland",
+			'GM' => "Gambia",
+			'GN' => "Guinea",
+			'GP' => "Guadeloupe",
+			'GQ' => "Equatorial Guinea",
+			'GR' => "Greece",
+			'GS' => "South Georgia and the South Sandwich Islands",
+			'GT' => "Guatemala",
+			'GU' => "Guam",
+			'GW' => "Guinea-Bissau",
+			'GY' => "Guyana",
+			'HK' => "Hong Kong",
+			'HM' => "Heard Island and McDonald Islands",
+			'HN' => "Honduras",
+			'HR' => "Croatia",
+			'HT' => "Haiti",
+			'HU' => "Hungary",
+			'ID' => "Indonesia",
+			'IE' => "Ireland",
+			'IL' => "Israel",
+			'IM' => "Isle of Man",
+			'IN' => "India",
+			'IO' => "British Indian Ocean Territory",
+			'IQ' => "Iraq",
+			'IR' => "Iran, Islamic Republic of",
+			'IS' => "Iceland",
+			'IT' => "Italy",
+			'JE' => "Jersey",
+			'JM' => "Jamaica",
+			'JO' => "Jordan",
+			'JP' => "Japan",
+			'KE' => "Kenya",
+			'KG' => "Kyrgyzstan",
+			'KH' => "Cambodia",
+			'KI' => "Kiribati",
+			'KM' => "Comoros",
+			'KN' => "Saint Kitts and Nevis",
+			'KP' => "Korea, Democratic People's Republic of",
+			'KR' => "Korea, Republic of",
+			'KW' => "Kuwait",
+			'KY' => "Cayman Islands",
+			'KZ' => "Kazakhstan",
+			'LA' => "Lao People's Democratic Republic",
+			'LB' => "Lebanon",
+			'LC' => "Saint Lucia",
+			'LI' => "Liechtenstein",
+			'LK' => "Sri Lanka",
+			'LR' => "Liberia",
+			'LS' => "Lesotho",
+			'LT' => "Lithuania",
+			'LU' => "Luxembourg",
+			'LV' => "Latvia",
+			'LY' => "Libyan Arab Jamahiriya",
+			'MA' => "Morocco",
+			'MC' => "Monaco",
+			'MD' => "Moldova, Republic of",
+			'ME' => "Montenegro",
+			'MF' => "Saint Martin (French part)",
+			'MG' => "Madagascar",
+			'MH' => "Marshall Islands",
+			'MK' => "Macedonia, the former Yugoslav Republic of",
+			'ML' => "Mali",
+			'MM' => "Myanmar",
+			'MN' => "Mongolia",
+			'MO' => "Macao",
+			'MP' => "Northern Mariana Islands",
+			'MQ' => "Martinique",
+			'MR' => "Mauritania",
+			'MS' => "Montserrat",
+			'MT' => "Malta",
+			'MU' => "Mauritius",
+			'MV' => "Maldives",
+			'MW' => "Malawi",
+			'MX' => "Mexico",
+			'MY' => "Malaysia",
+			'MZ' => "Mozambique",
+			'NA' => "Namibia",
+			'NC' => "New Caledonia",
+			'NE' => "Niger",
+			'NF' => "Norfolk Island",
+			'NG' => "Nigeria",
+			'NI' => "Nicaragua",
+			'NL' => "Netherlands",
+			'NO' => "Norway",
+			'NP' => "Nepal",
+			'NR' => "Nauru",
+			'NU' => "Niue",
+			'NZ' => "New Zealand",
+			'OM' => "Oman",
+			'PA' => "Panama",
+			'PE' => "Peru",
+			'PF' => "French Polynesia",
+			'PG' => "Papua New Guinea",
+			'PH' => "Philippines",
+			'PK' => "Pakistan",
+			'PL' => "Poland",
+			'PM' => "Saint Pierre and Miquelon",
+			'PN' => "Pitcairn",
+			'PR' => "Puerto Rico",
+			'PS' => "Palestinian Territory, Occupied",
+			'PT' => "Portugal",
+			'PW' => "Palau",
+			'PY' => "Paraguay",
+			'QA' => "Qatar",
+			'RE' => "Reunion Réunion",
+			'RO' => "Romania",
+			'RS' => "Serbia",
+			'RU' => "Russian Federation",
+			'RW' => "Rwanda",
+			'SA' => "Saudi Arabia",
+			'SB' => "Solomon Islands",
+			'SC' => "Seychelles",
+			'SD' => "Sudan",
+			'SE' => "Sweden",
+			'SG' => "Singapore",
+			'SH' => "Saint Helena",
+			'SI' => "Slovenia",
+			'SJ' => "Svalbard and Jan Mayen",
+			'SK' => "Slovakia",
+			'SL' => "Sierra Leone",
+			'SM' => "San Marino",
+			'SN' => "Senegal",
+			'SO' => "Somalia",
+			'SR' => "Suriname",
+			'ST' => "Sao Tome and Principe",
+			'SV' => "El Salvador",
+			'SY' => "Syrian Arab Republic",
+			'SZ' => "Swaziland",
+			'TC' => "Turks and Caicos Islands",
+			'TD' => "Chad",
+			'TF' => "French Southern Territories",
+			'TG' => "Togo",
+			'TH' => "Thailand",
+			'TJ' => "Tajikistan",
+			'TK' => "Tokelau",
+			'TL' => "Timor-Leste",
+			'TM' => "Turkmenistan",
+			'TN' => "Tunisia",
+			'TO' => "Tonga",
+			'TR' => "Turkey",
+			'TT' => "Trinidad and Tobago",
+			'TV' => "Tuvalu",
+			'TW' => "Taiwan, Province of China",
+			'TZ' => "Tanzania, United Republic of",
+			'UA' => "Ukraine",
+			'UG' => "Uganda",
+			'UM' => "United States Minor Outlying Islands",
+			'US' => "United States",
+			'UY' => "Uruguay",
+			'UZ' => "Uzbekistan",
+			'VA' => "Holy See (Vatican City State)",
+			'VC' => "Saint Vincent and the Grenadines",
+			'VE' => "Venezuela",
+			'VG' => "Virgin Islands, British",
+			'VI' => "Virgin Islands, U.S.",
+			'VN' => "Viet Nam",
+			'VU' => "Vanuatu",
+			'WF' => "Wallis and Futuna",
+			'WS' => "Samoa",
+			'YE' => "Yemen",
+			'YT' => "Mayotte",
+			'ZA' => "South Africa",
+			'ZM' => "Zambia",
+			'ZW' => "Zimbabwe",
+		);
+	}
+}
+
 /**
  * Smarty Template Manager Singleton
  *
@@ -952,7 +1966,7 @@ class _DevblocksDatabaseManager {
 				die("[Error]: There is no connection to the database.  Check your connection details.");
 			
 			@$instance->SetFetchMode(ADODB_FETCH_ASSOC);
-			$instance->LogSQL(false);
+			//$instance->LogSQL(false);
 			
 			// Encoding
 			$instance->Execute('SET NAMES ' . DB_CHARSET_CODE);
@@ -1021,29 +2035,21 @@ class _DevblocksClassLoadManager {
 	
     private static $instance = null;
 	private $classMap = array();
-	private $newRegisters = 0;
 	
     private function __construct() {
 		$cache = DevblocksPlatform::getCacheService();
 		if(null !== ($map = $cache->load(self::CACHE_CLASS_MAP))) {
 			$this->classMap = $map;
 		} else {
-			$this->_initPEAR();	
 			$this->_initLibs();	
 			$this->_initZend();
-		}
-	}
-    
-	public function __destruct() {
-		// [JAS]: If newly registered this instance, add to cache
-		if($this->newRegisters) {
-			$cache = _DevblocksCacheManager::getInstance();
+			$this->_initPlugins();
 			$cache->save($this->classMap, self::CACHE_CLASS_MAP);
 		}
 	}
-	
+    
 	/**
-	 * @return _DevblocksRoutingManager
+	 * @return _DevblocksClassLoadManager
 	 */
 	public static function getInstance() {
 		if(null == self::$instance) {
@@ -1053,31 +2059,31 @@ class _DevblocksClassLoadManager {
 	}
 	
 	public function loadClass($className) {
-		if(class_exists($className)) return;
+		if(class_exists($className))
+			return;
 
 		@$file = $this->classMap[$className];
 		
 		if(!is_null($file) && file_exists($file)) {
 			require_once($file);
 		} else {
-	       	// [TODO]: Exception, log
-	       	// [TODO] It's probably not a good idea to send this much info to the browser
-//	       	echo sprintf("<b>ERROR: ClassLoader could not find '%s':</b><br>",
-//	       	    $className
-//	       	);
-//	       	echo "<pre>";
-//	       	print_r(debug_backtrace());
-//	       	echo "</pre>";
-//	       	die;
+			// Not found
 		}
 	}
 	
 	public function registerClasses($file,$classes=array()) {
 		if(is_array($classes))
 		foreach($classes as $class) {
-			if(!isset($this->classMap[$class]))
-				$this->newRegisters++;
 			$this->classMap[$class] = $file;
+		}
+	}
+	
+	private function _initPlugins() {
+		// Load all the exported classes defined by plugin manifests		
+		$class_map = DAO_Platform::getClassLoaderMap();
+		if(is_array($class_map) && !empty($class_map))
+		foreach($class_map as $path => $classes) {
+			$this->registerClasses($path, $classes);
 		}
 	}
 	
@@ -1121,9 +2127,6 @@ class _DevblocksClassLoadManager {
 		));		
 	}
 	
-	private function _initPEAR() {
-	}
-	
 	private function _initZend() {
 		$path = APP_PATH . '/libs/devblocks/libs/zend_framework/Zend/';
 		
@@ -1137,10 +2140,6 @@ class _DevblocksClassLoadManager {
 		
 	    $this->registerClasses($path . 'Registry.php', array(
 			'Zend_Registry',
-		));
-		
-		$this->registerClasses($path . 'Date.php', array(
-			'Zend_Date',
 		));
 		
 		$this->registerClasses($path . 'Feed/Exception.php', array(
@@ -1167,24 +2166,12 @@ class _DevblocksClassLoadManager {
 			'Zend_Json',
 		));
 		
-		$this->registerClasses($path . 'Locale.php', array(
-			'Zend_Locale',
-		));
-		
 		$this->registerClasses($path . 'Log.php', array(
 			'Zend_Log',
 		));
 		
 		$this->registerClasses($path . 'Log/Writer/Stream.php', array(
 			'Zend_Log_Writer_Stream',
-		));
-		
-		$this->registerClasses($path . 'Translate.php', array(
-			'Zend_Translate',
-		));
-		
-		$this->registerClasses($path . 'Translate/Adapter/Tmx.php', array(
-			'Zend_Translate_Adapter_Tmx',
 		));
 		
 		$this->registerClasses($path . 'Mail.php', array(
@@ -1228,35 +2215,6 @@ class _DevblocksLogManager {
 		}
 		
 		return self::$consoleLogger;
-	}
-};
-
-class _DevblocksRoutingManager {
-    private static $instance = null;
-    private $routes = array();
-    
-    private function __construct() {}
-    
-	/**
-	 * @return _DevblocksRoutingManager
-	 */
-	public static function getInstance() {
-		if(null == self::$instance) {
-			self::$instance = new _DevblocksRoutingManager();
-		}
-		return self::$instance;
-	}
-	
-	function addRoute($route, $controller_id) {
-	    $this->routes[$route] = $controller_id;
-	}
-	
-	function getRoutes() {
-	    return $this->routes;
-	}
-	
-	function getRoute($route) {
-	    return @$this->routes[$route];
 	}
 };
 
