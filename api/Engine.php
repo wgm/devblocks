@@ -2058,6 +2058,10 @@ class _DevblocksClassLoadManager {
 		return self::$instance;
 	}
 	
+	public function destroy() {
+		self::$instance = null;
+	}
+	
 	public function loadClass($className) {
 		if(class_exists($className))
 			return;

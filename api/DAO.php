@@ -305,7 +305,7 @@ class DAO_Platform {
 		$class_loader_map = array();
 		
 		$sql = sprintf("SELECT class, plugin_id, rel_path FROM %sclass_loader ORDER BY plugin_id", $prefix);
-		$rs = $db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */ // or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg())
 
 		if(is_a($rs,'ADORecordSet'))
 		while(!$rs->EOF) {
@@ -338,7 +338,7 @@ class DAO_Platform {
 		$uri_routing_map = array();
 	
 		$sql = sprintf("SELECT uri, plugin_id, controller_id FROM %suri_routing ORDER BY plugin_id", $prefix);
-		$rs = $db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */ //or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg())
 
 		if(is_a($rs,'ADORecordSet'))
 		while(!$rs->EOF) {
