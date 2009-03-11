@@ -427,7 +427,7 @@ class DevblocksPlatform extends DevblocksEngine {
 					$prefix,
 					$prefix
 				);
-			$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+			$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
 				
 			if(is_a($rs,'ADORecordSet'))
 			while(!$rs->EOF) {
@@ -507,7 +507,7 @@ class DevblocksPlatform extends DevblocksEngine {
 			$prefix,
 			$prefix
 		);
-		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
 		
 		if(is_a($rs,'ADORecordSet'))
 		while(!$rs->EOF) {
@@ -574,7 +574,7 @@ class DevblocksPlatform extends DevblocksEngine {
 			"ORDER BY p.enabled DESC, p.name ASC ",
 			$prefix
 		);
-		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
 		
 		if(is_a($rs,'ADORecordSet'))
 		while(!$rs->EOF) {
@@ -601,7 +601,7 @@ class DevblocksPlatform extends DevblocksEngine {
 		    "FROM %sevent_point p ",
 		    $prefix
 		);
-		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg() . var_dump(debug_backtrace())); /* @var $rs ADORecordSet */
+		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
 
 		if(is_a($rs,'ADORecordSet'))
 		while(!$rs->EOF) {

@@ -18,7 +18,7 @@ abstract class DevblocksORMHelper {
 			$properties['id_column'],
 			$id
 		);
-		$rs = $db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
 		
 		return $id;
 	}
@@ -53,7 +53,7 @@ abstract class DevblocksORMHelper {
 			$idcol,
 			implode(',', $ids)
 		);
-		$db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		$db->Execute($sql); /* @var $rs ADORecordSet */
 	}
 	
 	static protected function _updateWhere($table, $fields, $where) {
@@ -80,7 +80,7 @@ abstract class DevblocksORMHelper {
 			implode(', ', $sets),
 			$where
 		);
-		$db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		$db->Execute($sql); /* @var $rs ADORecordSet */
 	}
 	
 	/**
@@ -183,7 +183,7 @@ class DAO_Platform {
         $sql = sprintf("SELECT id FROM %splugin ",
             $prefix
         );
-		$rs = $db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
 
 		$plugins = DevblocksPlatform::getPluginRegistry();
 		
@@ -230,7 +230,7 @@ class DAO_Platform {
 			implode(', ', $sets),
 			$db->qstr($id)
 		);
-		$db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		$db->Execute($sql); /* @var $rs ADORecordSet */
 	}
 	
 	static function deleteExtension($extension_id) {
@@ -271,7 +271,7 @@ class DAO_Platform {
 			$db->qstr($plugin_id),
 			$revision
 		);
-		$rs = $db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
 		
 		if($rs->NumRows()) {
 			return true; //$rs->Fields('run_date')
@@ -298,14 +298,16 @@ class DAO_Platform {
 	}
 	
 	static function getClassLoaderMap() {
+		if(null == ($db = DevblocksPlatform::getDatabaseService()) && !$db->IsConnected())
+			return array();
+
 		$plugins = DevblocksPlatform::getPluginRegistry();
-		$db = DevblocksPlatform::getDatabaseService();
-		
+			
 		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup		
 		$class_loader_map = array();
 		
 		$sql = sprintf("SELECT class, plugin_id, rel_path FROM %sclass_loader ORDER BY plugin_id", $prefix);
-		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */ // or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg())
+		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */ //
 
 		if(is_a($rs,'ADORecordSet'))
 		while(!$rs->EOF) {
@@ -655,7 +657,7 @@ class DAO_Translation extends DevblocksORMHelper {
 		$sql = $select_sql . $join_sql . $where_sql .  
 			(!empty($sortBy) ? sprintf("ORDER BY %s %s",$sortBy,($sortAsc || is_null($sortAsc))?"ASC":"DESC") : "");
 		
-		$rs = $db->SelectLimit($sql,$limit,$start) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		$rs = $db->SelectLimit($sql,$limit,$start); /* @var $rs ADORecordSet */
 		
 		$results = array();
 		
