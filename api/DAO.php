@@ -298,7 +298,7 @@ class DAO_Platform {
 	}
 	
 	static function getClassLoaderMap() {
-		if(null == ($db = DevblocksPlatform::getDatabaseService()) && !$db->IsConnected())
+		if(null == ($db = DevblocksPlatform::getDatabaseService()) || !$db->IsConnected())
 			return array();
 
 		$plugins = DevblocksPlatform::getPluginRegistry();
