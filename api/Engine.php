@@ -1369,7 +1369,10 @@ class _DevblocksTranslationManager {
 		if(isset($this->_locales[$this->_locale][$token]))
 			return $this->_locales[$this->_locale][$token];
 		
-		return '$'.$token.'('.$this->_locale.')';
+		// [JAS] Make it easy to find things that don't translate
+		//return '$'.$token.'('.$this->_locale.')';
+		
+		return $token;
 	}
 	
 	public function getLocaleCodes() {
