@@ -86,12 +86,16 @@ abstract class DevblocksORMHelper {
 	/**
 	 * [TODO]: Import the searchDAO functionality + combine the extraneous classes
 	 */
-	static protected function _parseSearchParams($params,$columns=array(),$fields) {
+	static protected function _parseSearchParams($params,$columns=array(),$fields,$sortBy='') {
 		$db = DevblocksPlatform::getDatabaseService();
 		
 		$tables = array();
 		$wheres = array();
 		$selects = array();
+		
+		// Sort By
+		if(!empty($sortBy) && isset($fields[$sortBy]))
+			$tables[$fields[$sortBy]->db_table] = $fields[$sortBy]->db_table;
 		
 		// Columns
 		if(is_array($columns))
@@ -624,9 +628,9 @@ class DAO_Translation extends DevblocksORMHelper {
 		
 		// Sanitize
 		if(!isset($fields[$sortBy]))
-			unset($sortBy);
+			$sortBy=null;
 
-        list($tables,$wheres) = parent::_parseSearchParams($params, array(),$fields);
+        list($tables,$wheres) = parent::_parseSearchParams($params, array(),$fields,$sortBy);
 		$start = ($page * $limit); // [JAS]: 1-based [TODO] clean up + document
 		
 		$select_sql = sprintf("SELECT ".
