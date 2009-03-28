@@ -92,7 +92,7 @@ class DevblocksPlatform extends DevblocksEngine {
 		// Remove any empty tokens
 		foreach($parts as $idx => $part) {
 			$parts[$idx] = trim($part);
-			if(empty($parts[$idx])) 
+			if(0 == strlen($parts[$idx])) 
 				unset($parts[$idx]);
 		}
 		
@@ -141,7 +141,7 @@ class DevblocksPlatform extends DevblocksEngine {
 		
 		foreach($tokens as $k => $v) {
 			$tokens[$k] = trim($v);
-			if(empty($tokens[$k]))
+			if(0==strlen($tokens[$k]))
 				unset($tokens[$k]);
 		}
 		
