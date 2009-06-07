@@ -772,9 +772,8 @@ class DevblocksPlatform extends DevblocksEngine {
 	}
 
 	static function setLocale($locale) {
-		if(@setlocale(LC_ALL, $locale)) {
-			self::$locale = $locale;
-		}
+		@setlocale(LC_ALL, $locale);
+		self::$locale = $locale;
 	}
 	
 	static function getLocale() {
