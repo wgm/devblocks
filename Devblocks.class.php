@@ -889,27 +889,33 @@ class DevblocksPlatform extends DevblocksEngine {
 			self::$start_peak_memory = memory_get_peak_usage();
 		}
 		
-	    // [JAS]: [TODO] Do we need an explicit init() call?
 	    // [JAS] [MDF]: Automatically determine the relative webpath to Devblocks files
-	    if(!defined('DEVBLOCKS_WEBPATH')) {
-	        $php_self = $_SERVER["PHP_SELF"];
-	        
-		    @$proxyhost = $_SERVER['HTTP_DEVBLOCKSPROXYHOST'];
-		    @$proxybase = $_SERVER['HTTP_DEVBLOCKSPROXYBASE'];
-        
-            if(!empty($proxybase)) {
-                $php_self = $proxybase . '/';
-            } elseif(DEVBLOCKS_REWRITE) {
-	            $pos = strrpos($php_self,'/');
-	            $php_self = substr($php_self,0,$pos) . '/';
-	        } else {
-	            $pos = strrpos($php_self,'index.php');
-	            if(false === $pos) $pos = strrpos($php_self,'ajax.php');
-	            $php_self = substr($php_self,0,$pos);
-	        }
-	        
-	        @define('DEVBLOCKS_WEBPATH',$php_self);
-	    }
+	    @$proxyhost = $_SERVER['HTTP_DEVBLOCKSPROXYHOST'];
+	    @$proxybase = $_SERVER['HTTP_DEVBLOCKSPROXYBASE'];
+    
+		// App path (always backend)
+	
+		$app_self = $_SERVER["PHP_SELF"];
+		
+        if(DEVBLOCKS_REWRITE) {
+            $pos = strrpos($app_self,'/');
+            $app_self = substr($app_self,0,$pos) . '/';
+        } else {
+            $pos = strrpos($app_self,'index.php');
+            if(false === $pos) $pos = strrpos($app_self,'ajax.php');
+            $app_self = substr($app_self,0,$pos);
+        }
+		
+		// Context path (abstracted: proxies or backend)
+		
+        if(!empty($proxybase)) { // proxy
+            $context_self = $proxybase . '/';
+		} else { // non-proxy
+			$context_self = $app_self;
+		}
+		
+        @define('DEVBLOCKS_WEBPATH',$context_self);
+        @define('DEVBLOCKS_APP_WEBPATH',$app_self);
 	}
 
 //	static function setPluginDelegate($class) {
