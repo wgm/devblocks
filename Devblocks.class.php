@@ -889,6 +889,9 @@ class DevblocksPlatform extends DevblocksEngine {
 			self::$start_peak_memory = memory_get_peak_usage();
 		}
 		
+		// Encoding (mbstring)
+		mb_internal_encoding(LANG_CHARSET_CODE);
+		
 	    // [JAS] [MDF]: Automatically determine the relative webpath to Devblocks files
 	    @$proxyhost = $_SERVER['HTTP_DEVBLOCKSPROXYHOST'];
 	    @$proxybase = $_SERVER['HTTP_DEVBLOCKSPROXYBASE'];
