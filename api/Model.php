@@ -92,9 +92,16 @@ class DevblocksSearchCriteria {
 			case "in":
 				if(!is_array($this->value)) break;
 				$value = (!empty($this->value)) ? $this->value : array(-1);
+				$vals = array();
+				
+				// Escape quotes
+				foreach($this->value as $idx=>$val) {
+					$vals[$idx] = $db->escape($val);
+				}
+				
 				$where = sprintf("%s IN ('%s')",
 					$db_field_name,
-					implode("','",$value) // [TODO] Needs BlobEncode compat
+					implode("','",$vals) // [TODO] Needs BlobEncode compat
 				);
 				break;
 
