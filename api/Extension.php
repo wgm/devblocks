@@ -3,11 +3,6 @@ abstract class DevblocksApplication {
 	
 }
 
-abstract class DevblocksPlugin {
-	public $id = '';
-	public $manifest = null;
-}
-
 /**
  * The superclass of instanced extensions.
  *

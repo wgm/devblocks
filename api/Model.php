@@ -353,26 +353,6 @@ class DevblocksPluginManifest {
 	var $class_loader = array();
 	var $uri_routing = array();
 	
-	/**
-	 * @return DevblocksPlugin
-	 */
-	function createInstance() {
-		if(empty($this->id)) 
-			return null;
-
-		$class_file = DEVBLOCKS_PLUGIN_PATH . $this->dir . '/' . $this->file;
-		$class_name = $this->class;
-
-		DevblocksPlatform::registerClasses($class_file,array($class_name));
-
-		if(!class_exists($class_name, true)) {
-			return null;
-		}
-		
-		$instance = new $class_name($this);
-		return $instance;
-	}
-	
 	function setEnabled($bool) {
 		$this->enabled = ($bool) ? 1 : 0;
 		
