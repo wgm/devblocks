@@ -1,6 +1,7 @@
 <?php
-$path = APP_PATH . '/libs/devblocks/libs/zend_framework/Zend/';
+$path = DEVBLOCKS_PATH . 'libs/zend_framework/Zend/';
 require_once($path.'Cache.php');
+require_once(DEVBLOCKS_PATH . 'libs/swift/swift_required.php');
 
 function __autoload($className) {
 	DevblocksPlatform::loadClass($className);
@@ -823,7 +824,7 @@ class _DevblocksEmailManager {
 	 * @return Swift_Message
 	 */
 	function createMessage() {
-		return new Swift_Message();
+		return Swift_Message::newInstance();
 	}
 	
 	/**
@@ -859,19 +860,19 @@ class _DevblocksEmailManager {
 			// Encryption
 			switch($smtp_enc) {
 				case 'TLS':
-					$smtp_enc = Swift_Connection_SMTP::ENC_TLS;
+					$smtp_enc = 'tls';
 					break;
 					
 				case 'SSL':
-					$smtp_enc = Swift_Connection_SMTP::ENC_SSL;
+					$smtp_enc = 'ssl';
 					break;
 					
 				default:
-					$smtp_enc = Swift_Connection_SMTP::ENC_OFF;
+					$smtp_enc = null;
 					break;
 			}
 			
-			$smtp = new Swift_Connection_SMTP($smtp_host, $smtp_port, $smtp_enc);
+			$smtp = Swift_SmtpTransport::newInstance($smtp_host, $smtp_port, $smtp_enc);
 			$smtp->setTimeout($smtp_timeout);
 			
 			if(!empty($smtp_user) && !empty($smtp_pass)) {
@@ -879,10 +880,10 @@ class _DevblocksEmailManager {
 				$smtp->setPassword($smtp_pass);
 			}
 			
-			$swift =& new Swift($smtp);
-			$swift->attachPlugin(new Swift_Plugin_AntiFlood($smtp_max_sends,1), "anti-flood");
+			$mailer = Swift_Mailer::newInstance($smtp);
+			$mailer->registerPlugin(new Swift_Plugins_AntiFloodPlugin($smtp_max_sends,1));
 			
-			$this->mailers[$hash] =& $swift;
+			$this->mailers[$hash] =& $mailer;
 		}
 
 		return $this->mailers[$hash];
@@ -2095,43 +2096,6 @@ class _DevblocksClassLoadManager {
 	}
 	
 	private function _initLibs() {
-		$path = DEVBLOCKS_PATH . 'libs/swift/';
-		
-		$this->registerClasses($path . 'Swift.php',array(
-			'Swift',
-			'Swift_Message_Part',
-			'Swift_Message_Attachment',
-			'Swift_File',
-			'Swift_Address'
-		));
-			
-		$this->registerClasses($path . 'Swift/LogContainer.php',array(
-			'Swift_LogContainer',
-		));
-		
-		$this->registerClasses($path . 'Swift/Log/DefaultLog.php',array(
-			'Swift_Log_DefaultLog',
-		));
-		
-		$this->registerClasses($path . 'Swift/RecipientList.php',array(
-			'Swift_RecipientList',
-		));
-		
-		$this->registerClasses($path . 'Swift/Connection/SMTP.php',array(
-			'Swift_Connection_SMTP',
-		));
-		
-		$this->registerClasses($path . 'Swift/AddressContainer.php',array(
-			'Swift_AddressContainer',
-		));
-		
-		$this->registerClasses($path . 'Swift/Plugin/AntiFlood.php',array(
-			'Swift_Plugin_AntiFlood',
-		));
-		
-		$this->registerClasses($path . 'Swift/Message/Headers.php',array(
-			'Swift_Message_Headers',
-		));		
 	}
 	
 	private function _initZend() {

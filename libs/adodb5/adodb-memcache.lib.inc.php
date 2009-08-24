@@ -11,7 +11,7 @@ if (empty($ADODB_INCLUDED_CSV)) include(ADODB_DIR.'/adodb-csvlib.inc.php');
 
 /* 
 
-  V5.06 16 Oct 2008  (c) 2000-2008 John Lim (jlim#natsoft.com). All rights reserved.
+  V5.06 16 Oct 2008  (c) 2000-2009 John Lim (jlim#natsoft.com). All rights reserved.
   Released under both BSD license and Lesser GPL library license. 
   Whenever there is any discrepancy between the two licenses, 
   the BSD license will take precedence. See License.txt. 
@@ -77,9 +77,9 @@ $db->CacheExecute($sql);
 				$err = 'Can\'t connect to any memcache server';
 				return false;
 			}
-			
+			$this->_connected = true;
 			$this->_memcache = $memcache;
-			return 0;
+			return true;
 		}
 		
 		// returns true or false. true if successful save
@@ -91,7 +91,7 @@ $db->CacheExecute($sql);
 			}
 			if (!$this->_memcache) return false;
 			
-			if (!$this->_memcache->set($filename, $contents, $this->compress, 0)) {
+			if (!$this->_memcache->set($filename, $contents, $this->compress, $secs2cache)) {
 				if ($debug) ADOConnection::outp(" Failed to save data at the memcached server!<br>\n");
 				return false;
 			}
@@ -100,7 +100,7 @@ $db->CacheExecute($sql);
 		}
 		
 		// returns a recordset
-		function &readcache($filename, &$err, $secs2cache, $rsClass)
+		function readcache($filename, &$err, $secs2cache, $rsClass)
 		{
 			$false = false;
 			if (!$this->_connected) $this->connect($err);
@@ -121,6 +121,8 @@ $db->CacheExecute($sql);
 				$err = 'Unable to unserialize $rs';		
 				return $false;
 			}
+			if ($rs->timeCreated == 0) return $rs; // apparently have been reports that timeCreated was set to 0 somewhere
+			
 			$tdiff = intval($rs->timeCreated+$secs2cache - time());
 			if ($tdiff <= 2) {
 				switch($tdiff) {
@@ -150,7 +152,7 @@ $db->CacheExecute($sql);
 				$err = '';
 				if (!$this->connect($err) && $debug) ADOConnection::outp($err);
 			}
-			if ($this->_memcache) return false;
+			if (!$this->_memcache) return false;
 			
 			$del = $this->_memcache->flush();
 			
@@ -163,6 +165,12 @@ $db->CacheExecute($sql);
 		
 		function flushcache($filename, $debug=false)
 		{
+			if (!$this->_connected) {
+  				$err = '';
+  				if (!$this->connect($err) && $debug) ADOConnection::outp($err); 
+			} 
+			if (!$this->_memcache) return false;
+  
 			$del = $this->_memcache->delete($filename);
 			
 			if ($debug) 
