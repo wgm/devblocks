@@ -326,11 +326,13 @@ abstract class DevblocksEngine {
 	 * @param string $arg
 	 * @return string
 	 */
-	static function strToRegExp($arg) {
+	static function strToRegExp($arg, $is_partial=false) {
 		$arg = str_replace(array('*'),array('__WILD__'),$arg);
 		
-		return sprintf("/^%s$/i",
-			str_replace(array('__WILD__','/'),array('.*?','\/'),preg_quote($arg))
+		return sprintf("/%s%s%s/i",
+			($is_partial ? '' : '^'),
+			str_replace(array('__WILD__','/'),array('.*?','\/'),preg_quote($arg)),
+			($is_partial ? '' : '$')
 		);
 	}
 	
