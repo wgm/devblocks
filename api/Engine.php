@@ -3,9 +3,11 @@ $path = DEVBLOCKS_PATH . 'libs/zend_framework/Zend/';
 require_once($path.'Cache.php');
 require_once(DEVBLOCKS_PATH . 'libs/swift/swift_required.php');
 
-function __autoload($className) {
+function devblocks_autoload($className) {
 	DevblocksPlatform::loadClass($className);
 }
+
+spl_autoload_register('devblocks_autoload');
 
 /**
  * Description
@@ -2073,7 +2075,7 @@ class _DevblocksClassLoadManager {
 			return;
 
 		@$file = $this->classMap[$className];
-		
+
 		if(!is_null($file) && file_exists($file)) {
 			require_once($file);
 		} else {
