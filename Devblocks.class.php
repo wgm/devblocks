@@ -87,7 +87,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	}
 	
 	static function parseCrlfString($string) {
-		$parts = split("[\r\n]", $string);
+		$parts = explode("[\r\n]", $string);
 		
 		// Remove any empty tokens
 		foreach($parts as $idx => $part) {

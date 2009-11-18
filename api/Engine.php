@@ -2250,7 +2250,7 @@ class _DevblocksUrlManager {
 		
 		if(empty($request)) return array();
 		
-		$parts = split('/', $request);
+		$parts = explode('/', $request);
 
 		if(trim($parts[count($parts)-1]) == '') {
 			unset($parts[count($parts)-1]);
