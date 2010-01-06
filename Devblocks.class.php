@@ -765,6 +765,13 @@ class DevblocksPlatform extends DevblocksEngine {
 	}
 
 	/**
+	 * @return _DevblocksTemplateBuilder
+	 */
+	static function getTemplateBuilder() {
+	    return _DevblocksTemplateBuilder::getInstance();
+	}
+
+	/**
 	 * @return _DevblocksDateManager
 	 */
 	static function getDateService($datestamp=null) {

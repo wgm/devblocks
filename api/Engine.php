@@ -1931,6 +1931,93 @@ class _DevblocksTemplateManager {
 	}
 };
 
+class _DevblocksTemplateBuilder {
+	private $_tpl = null;
+	private $_errors = array();
+	
+	private function _DevblocksTemplateBuilder() {
+		$this->_tpl = DevblocksPlatform::getTemplateService();
+		
+		// register 'string:' resource type
+		$this->_tpl->register_resource("string", array(array($this,"_smarty_get_template"),
+		                                       array($this,"_smarty_get_timestamp"),
+		                                       array($this,"_smarty_get_secure"),
+		                                       array($this,"_smarty_get_trusted")
+		));		
+	}
+	
+	/**
+	 * 
+	 * @return _DevblocksTemplateBuilder
+	 */
+	static function getInstance() {
+		static $instance = null;
+		if(null == $instance) {
+			$instance = new _DevblocksTemplateBuilder();
+		}
+		return $instance;
+	}
+
+	function _smarty_get_template($tpl_name, &$tpl_source, &$smarty) {
+		$tpl_source = $tpl_name;
+		return true;
+	}
+
+	function _smarty_get_timestamp($tpl_name, &$tpl_timestamp, &$smarty_obj) {
+		$tpl_timestamp = time();
+		return true;
+	}
+	
+	function _smarty_get_secure($tpl_name, &$smarty_obj) {
+		return false;
+	}
+	
+	function _smarty_get_trusted($tpl_name, &$smarty_obj) {
+		return false;
+	}
+	
+	function _null_error_handler($n, $m, $f, $l) {
+		if($n > E_NOTICE)
+			$this->errors[] = $m;
+	}
+	
+	public function getErrors() {
+		return $this->_errors;
+	}
+	
+	private function _setUp() {
+		$this->_errors = array();
+		//$this->_tpl->force_compile = true;
+		$this->_tpl->security = true;
+		$this->_tpl->security_settings = array(
+			'PHP_TAGS' => false,
+			'INCLUDE_ANY' => true, 
+		);
+
+		set_error_handler(array($this,'_null_error_handler'));
+	}
+	
+	private function _tearDown() {
+		restore_error_handler();
+		//$this->_tpl->force_compile = false;
+		$this->_tpl->security = false;
+	}
+	
+	/**
+	 * 
+	 * @param Smarty $tpl
+	 * @param string $template
+	 * @return string
+	 */
+	function build($template) {
+		$this->_setUp();
+		$out = $this->_tpl->fetch('string:'.$template);
+		$this->_tearDown();
+		
+		return $out;
+	} 
+};
+
 /**
  * ADODB Database Singleton
  *
