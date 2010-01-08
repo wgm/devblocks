@@ -401,7 +401,7 @@ class DevblocksExtensionManifest {
 		if(null == ($plugin = DevblocksPlatform::getPlugin($this->plugin_id)))
 			return;
 
-		$class_file = DEVBLOCKS_PLUGIN_PATH . $plugin->dir . '/' . $this->file;
+		$class_file = APP_PATH . '/' . $plugin->dir . '/' . $this->file;
 		$class_name = $this->class;
 
 		DevblocksPlatform::registerClasses($class_file,array($class_name));

@@ -322,7 +322,7 @@ class DAO_Platform {
 			// Make sure the plugin is valid
 			if(isset($plugins[$plugin_id])) {
 				// Build an absolute path
-				$path = DEVBLOCKS_PLUGIN_PATH . $plugin_id . DIRECTORY_SEPARATOR . $rel_path;
+				$path = APP_PATH . DIRECTORY_SEPARATOR . $plugins[$plugin_id]->dir . DIRECTORY_SEPARATOR . $rel_path;
 				
 				// Init the array
 				if(!isset($class_loader_map[$path]))

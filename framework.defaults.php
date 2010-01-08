@@ -44,13 +44,6 @@ define('APP_TEMP_PATH',APP_STORAGE_PATH . '/tmp');
 if(!defined('DEVBLOCKS_PATH'))
 define('DEVBLOCKS_PATH',APP_PATH . '/libs/devblocks/');
 
-if(!defined('DEVBLOCKS_PLUGIN_PATH'))
-define('DEVBLOCKS_PLUGIN_PATH',APP_PATH.DIRECTORY_SEPARATOR.'plugins'.DIRECTORY_SEPARATOR);
-
-//define('DEVBLOCKS_ATTACHMENT_SAVE_PATH',DEVBLOCKS_PATH.'tmp/');
-//define('DEVBLOCKS_ATTACHMENT_ACCESS_PATH','http://localhost/cerb4/devblocks/tmp/');
-//define('DEVBLOCKS_WEBPATH',''); // uncomment to override
-
 if(!defined('LANG_CHARSET_MAIL_CONTENT_TYPE'))
 define('LANG_CHARSET_MAIL_CONTENT_TYPE','text/plain');
 

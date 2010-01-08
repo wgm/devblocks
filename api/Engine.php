@@ -23,19 +23,21 @@ abstract class DevblocksEngine {
 	 * 
 	 * @static 
 	 * @private
-	 * @param string $file
+	 * @param string $dir
 	 * @return DevblocksPluginManifest
 	 */
-	static protected function _readPluginManifest($dir) {
-		if(!file_exists(DEVBLOCKS_PLUGIN_PATH.$dir.'/plugin.xml'))
+	static protected function _readPluginManifest($rel_dir) {
+		$manifest_file = APP_PATH . '/' . $rel_dir . '/plugin.xml'; 
+		
+		if(!file_exists($manifest_file))
 			return NULL;
 		
-		$plugin = simplexml_load_file(DEVBLOCKS_PLUGIN_PATH.$dir.'/plugin.xml');
+		$plugin = simplexml_load_file($manifest_file);
 		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 				
 		$manifest = new DevblocksPluginManifest();
 		$manifest->id = (string) $plugin->id;
-		$manifest->dir = $dir;
+		$manifest->dir = $rel_dir;
 		$manifest->description = (string) $plugin->description;
 		$manifest->author = (string) $plugin->author;
 		$manifest->revision = (integer) $plugin->revision;
@@ -399,12 +401,14 @@ abstract class DevblocksEngine {
 	    $path = $parts;
 		switch(array_shift($path)) {
 		    case "resource":
-			    // [TODO] Set the mime-type/filename in response headers
-			    $plugin = array_shift($path);
+			    $plugin_id = array_shift($path);
+			    if(null == ($plugin = DevblocksPlatform::getPlugin($plugin_id)))
+			    	break;
+			    
 			    $file = implode(DIRECTORY_SEPARATOR, $path); // combine path
-		        $dir = DEVBLOCKS_PLUGIN_PATH . $plugin . DIRECTORY_SEPARATOR . 'resources';
+		        $dir = APP_PATH . '/' . $plugin->dir . '/' . 'resources';
 		        if(!is_dir($dir)) die(""); // basedir Security
-		        $resource = $dir . DIRECTORY_SEPARATOR . $file;
+		        $resource = $dir . '/' . $file;
 		        if(0 != strstr($dir,$resource)) die("");
 		        $ext = @array_pop(explode('.', $resource));
 		        if(!is_file($resource) || 'php' == $ext) die(""); // extension security

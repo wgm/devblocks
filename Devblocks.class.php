@@ -590,7 +590,7 @@ class DevblocksPlatform extends DevblocksEngine {
 		    @$plugin->class = $rs->fields['class'];
 		    @$plugin->dir = $rs->fields['dir'];
 	
-		    if(file_exists(DEVBLOCKS_PLUGIN_PATH . $plugin->dir . DIRECTORY_SEPARATOR . 'plugin.xml')) {
+		    if(file_exists(APP_PATH . DIRECTORY_SEPARATOR . $plugin->dir . DIRECTORY_SEPARATOR . 'plugin.xml')) {
 		        $plugins[$plugin->id] = $plugin;
 		    }
 		    	
@@ -640,32 +640,42 @@ class DevblocksPlatform extends DevblocksEngine {
 	}
 
 	/**
-	 * Reads and caches manifests from the plugin directory.
+	 * Reads and caches manifests from the features + plugins directories.
 	 *
 	 * @static 
 	 * @return DevblocksPluginManifest[]
 	 */
 	static function readPlugins() {
-	    $dir = DEVBLOCKS_PLUGIN_PATH;
+		$scan_dirs = array(
+			'features',
+			'storage/plugins',
+		);
+		
 	    $plugins = array();
 
-	    if (is_dir($dir)) {
-	        if ($dh = opendir($dir)) {
-	            while (($file = readdir($dh)) !== false) {
-	                if($file=="." || $file == ".." || 0 == strcasecmp($file,"CVS"))
-	                continue;
-
-	                $path = $dir . '/' . $file;
-	                if(is_dir($path) && file_exists($path.'/plugin.xml')) {
-	                    $manifest = self::_readPluginManifest($file); /* @var $manifest DevblocksPluginManifest */
-
-	                    if(null != $manifest) {
-	                        $plugins[] = $manifest;
-	                    }
-	                }
-	            }
-	            closedir($dh);
-	        }
+	    if(is_array($scan_dirs))
+	    foreach($scan_dirs as $scan_dir) {
+	    	$scan_path = APP_PATH . '/' . $scan_dir;
+		    if (is_dir($scan_path)) {
+		        if ($dh = opendir($scan_path)) {
+		            while (($file = readdir($dh)) !== false) {
+		                if($file=="." || $file == "..")
+		                	continue;
+		                	
+		                $plugin_path = $scan_path . '/' . $file;
+		                $rel_path = $scan_dir . '/' . $file;
+		                
+		                if(is_dir($plugin_path) && file_exists($plugin_path.'/plugin.xml')) {
+		                    $manifest = self::_readPluginManifest($rel_path); /* @var $manifest DevblocksPluginManifest */
+	
+		                    if(null != $manifest) {
+		                        $plugins[] = $manifest;
+		                    }
+		                }
+		            }
+		            closedir($dh);
+		        }
+		    }
 	    }
 	    
 		// [TODO] Instance the plugins in dependency order
