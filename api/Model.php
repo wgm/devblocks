@@ -394,7 +394,7 @@ class DevblocksExtensionManifest {
 	 * @param integer $instance_id
 	 * @return object
 	 */
-	function createInstance($instance_id=1) {
+	function createInstance() {
 		if(empty($this->id) || empty($this->plugin_id)) // empty($instance_id) || 
 			return null;
 
@@ -410,7 +410,7 @@ class DevblocksExtensionManifest {
 			return null;
 		}
 		
-		$instance = new $class_name($this,$instance_id);
+		$instance = new $class_name($this);
 		return $instance;
 	}
 	

@@ -11,7 +11,6 @@ abstract class DevblocksApplication {
  */
 class DevblocksExtension {
 	public $manifest = null;
-	public $instance_id = 1;
 	public $id  = '';
 	private $params = array();
 	private $params_loaded = false;
@@ -21,15 +20,13 @@ class DevblocksExtension {
 	 *
 	 * @private
 	 * @param DevblocksExtensionManifest $manifest
-	 * @param int $instance_id
 	 * @return DevblocksExtension
 	 */
-	function DevblocksExtension($manifest,$instance_id=1) { /* @var $manifest DevblocksExtensionManifest */
+	function DevblocksExtension($manifest) { /* @var $manifest DevblocksExtensionManifest */
         if(empty($manifest)) return;
         
 		$this->manifest = $manifest;
 		$this->id = $manifest->id;
-		$this->instance_id = $instance_id;
 //		$this->params = $this->_getParams();
 	}
 	
@@ -49,8 +46,8 @@ class DevblocksExtension {
 
 		$db->Replace(
 			$prefix.'property_store',
-			array('extension_id'=>$db->qstr($this->id),'instance_id'=>$this->instance_id,'property'=>$db->qstr($key),'value'=>$db->qstr($value)),
-			array('extension_id','instance_id','property'),
+			array('extension_id'=>$db->qstr($this->id),'property'=>$db->qstr($key),'value'=>$db->qstr($value)),
+			array('extension_id','property'),
 			false
 		);
 	}
@@ -70,7 +67,7 @@ class DevblocksExtension {
 	private function _getParams() {
 //		static $params = null;
 		
-		if(empty($this->id) || empty($this->instance_id))
+		if(empty($this->id))
 			return null;
 		
 //		if(null != $params)
@@ -82,10 +79,9 @@ class DevblocksExtension {
 		
 		$sql = sprintf("SELECT property,value ".
 			"FROM %sproperty_store ".
-			"WHERE extension_id=%s AND instance_id='%d' ",
+			"WHERE extension_id=%s ",
 			$prefix,
-			$db->qstr($this->id),
-			$this->instance_id
+			$db->qstr($this->id)
 		);
 		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		
@@ -101,7 +97,7 @@ class DevblocksExtension {
 
 abstract class DevblocksHttpResponseListenerExtension extends DevblocksExtension {
 	function __construct($manifest) {
-		$this->DevblocksExtension($manifest, 1);
+		$this->DevblocksExtension($manifest);
 	}
     
 	function run(DevblocksHttpResponse $request, Smarty $tpl) {
@@ -110,7 +106,7 @@ abstract class DevblocksHttpResponseListenerExtension extends DevblocksExtension
 
 abstract class DevblocksTranslationsExtension extends DevblocksExtension {
 	function __construct($manifest) {
-		$this->DevblocksExtension($manifest, 1);
+		$this->DevblocksExtension($manifest);
 	}
 	
 	function getTmxFile() {
@@ -125,7 +121,7 @@ abstract class DevblocksPatchContainerExtension extends DevblocksExtension {
 	private $patches = array();
 
 	function __construct($manifest) {
-		$this->DevblocksExtension($manifest, 1);
+		$this->DevblocksExtension($manifest);
 	}
 		
 	public function registerPatch(DevblocksPatch $patch) {
