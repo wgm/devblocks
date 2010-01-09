@@ -61,4 +61,20 @@ if(isset($columns['CLASS'])) {
 	$datadict->ExecuteSQLArray($sql);	
 }
 
+// ============================================================================
+// devblocks_setting
+
+if(!isset($tables['devblocks_setting'])) {
+    $flds = "
+    	plugin_id C(255) DEFAULT '' NOTNULL PRIMARY,
+		setting C(32) DEFAULT '' NOTNULL PRIMARY,
+		value C(255) DEFAULT '' NOTNULL
+    ";
+    $sql = $datadict->CreateTableSQL('devblocks_setting', $flds);
+    $datadict->ExecuteSQLArray($sql);
+}
+
+$columns = $datadict->MetaColumns('devblocks_setting');
+$indexes = $datadict->MetaIndexes('devblocks_setting',false);
+
 return TRUE;

@@ -30,16 +30,16 @@ define('PLATFORM_BUILD',303);
  * @author Jeff Standen <jeff@webgroupmedia.com>
  */
 class DevblocksPlatform extends DevblocksEngine {
-    const CACHE_POINTS = 'devblocks_points';
-    const CACHE_PLUGINS = 'devblocks_plugins';
-    const CACHE_EXTENSIONS = 'devblocks_extensions';
-    const CACHE_TABLES = 'devblocks_tables';
-    const CACHE_TAG_TRANSLATIONS = 'devblocks_translations';
+    const CACHE_ACL = 'devblocks_acl';
     const CACHE_EVENT_POINTS = 'devblocks_event_points';
     const CACHE_EVENTS = 'devblocks_events';
-    const CACHE_ACL = 'devblocks_acl';
+    const CACHE_EXTENSIONS = 'devblocks_extensions';
+    const CACHE_PLUGINS = 'devblocks_plugins';
+    const CACHE_POINTS = 'devblocks_points';
+    const CACHE_SETTINGS = 'devblocks_settings';
+    const CACHE_TABLES = 'devblocks_tables';
+    const CACHE_TAG_TRANSLATIONS = 'devblocks_translations';
     
-//    static private $pluginDelegate = null;
     static private $extensionDelegate = null;
     
     static private $start_time = 0;
@@ -154,13 +154,14 @@ class DevblocksPlatform extends DevblocksEngine {
 	 */
 	static function clearCache() {
 	    $cache = self::getCacheService(); /* @var $cache Zend_Cache_Core */
+	    $cache->remove(self::CACHE_ACL);
 	    $cache->remove(self::CACHE_PLUGINS);
-	    $cache->remove(self::CACHE_EXTENSIONS);
-	    $cache->remove(self::CACHE_POINTS);
 	    $cache->remove(self::CACHE_EVENT_POINTS);
 	    $cache->remove(self::CACHE_EVENTS);
+	    $cache->remove(self::CACHE_EXTENSIONS);
+	    $cache->remove(self::CACHE_POINTS);
+	    $cache->remove(self::CACHE_SETTINGS);
 	    $cache->remove(self::CACHE_TABLES);
-	    $cache->remove(self::CACHE_ACL);
 	    $cache->remove(_DevblocksClassLoadManager::CACHE_CLASS_MAP);
 
 	    // Clear all locale caches
@@ -687,6 +688,13 @@ class DevblocksPlatform extends DevblocksEngine {
 	}
 
 	/**
+	 * @return _DevblocksPluginSettingsManager
+	 */
+	static function getPluginSettingsService() {
+		return _DevblocksPluginSettingsManager::getInstance();
+	}
+
+	/**
 	 * @return Zend_Log
 	 */
 	static function getConsoleLog() {
@@ -974,6 +982,6 @@ class PlatformPatchContainer extends DevblocksPatchContainerExtension {
 		$this->registerPatch(new DevblocksPatch('devblocks.core',1,$file_prefix.'1.0.0.php',''));
 		$this->registerPatch(new DevblocksPatch('devblocks.core',253,$file_prefix.'1.0.0_beta.php',''));
 		$this->registerPatch(new DevblocksPatch('devblocks.core',290,$file_prefix.'1.1.0.php',''));
-		$this->registerPatch(new DevblocksPatch('devblocks.core',293,$file_prefix.'2.0.0.php',''));
+		$this->registerPatch(new DevblocksPatch('devblocks.core',294,$file_prefix.'2.0.0.php',''));
 	}
 };

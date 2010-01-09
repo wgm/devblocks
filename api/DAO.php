@@ -359,7 +359,64 @@ class DAO_Platform {
 	
 		return $uri_routing_map;
 	}
+};
+
+class DAO_DevblocksSetting extends DevblocksORMHelper {
+	static function set($plugin_id, $key, $value) {
+		$db = DevblocksPlatform::getDatabaseService();
+		$db->Replace(
+			'devblocks_setting',
+			array(
+				'plugin_id'=>$db->qstr($plugin_id),
+				'setting'=>$db->qstr($key),
+				'value'=>$db->qstr($value)
+			),
+			array('plugin_id','setting'),
+			false
+		);
+		
+//		$cache = DevblocksPlatform::getCacheService();
+//		$cache->remove(DevblocksPlatform::CACHE_SETTINGS);
+	}
 	
+	static function get($plugin_id, $key) {
+		$db = DevblocksPlatform::getDatabaseService();
+		$sql = sprintf("SELECT value FROM devblocks_setting WHERE plugin_id = %s AND setting = %s",
+			$db->qstr($plugin_id),
+			$db->qstr($key)
+		);
+		$value = $db->GetOne($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		
+		return $value;
+	}
+	
+	static function getSettings($plugin_id=null) {
+	    $cache = DevblocksPlatform::getCacheService();
+	    if(null === ($plugin_settings = $cache->load(DevblocksPlatform::CACHE_SETTINGS))) {
+			$db = DevblocksPlatform::getDatabaseService();
+			$plugin_settings = array();
+			
+			$sql = sprintf("SELECT plugin_id,setting,value FROM devblocks_setting");
+			$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+			
+			if(is_a($rs,'ADORecordSet'))
+			while(!$rs->EOF) {
+				$plugin_id = $rs->Fields('plugin_id');
+				$k = $rs->Fields('setting');
+				$v = $rs->Fields('value');
+				
+				if(!isset($plugin_settings[$plugin_id]))
+					$plugin_settings[$plugin_id] = array();
+				
+				$plugin_settings[$plugin_id][$k] = $v;
+				$rs->MoveNext();
+			}
+			
+			$cache->save($plugin_settings, DevblocksPlatform::CACHE_SETTINGS);
+	    }
+	    
+		return $plugin_settings;
+	}
 };
 
 class DAO_Translation extends DevblocksORMHelper {
