@@ -43,14 +43,12 @@ abstract class DevblocksEngine {
 		$manifest->revision = (integer) $plugin->revision;
 		$manifest->link = (string) $plugin->link;
 		$manifest->name = (string) $plugin->name;
-        $manifest->file = (string) $plugin->class->file;
-        $manifest->class = (string) $plugin->class->name;
 
-        // [TODO] Check that file + class exist
 		// [TODO] Clear out any removed plugins/classes/exts?
         
 		$db = DevblocksPlatform::getDatabaseService();
-		if(is_null($db)) return;
+		if(is_null($db)) 
+			return;
 		
 		// Manifest
 		$db->Replace(
@@ -62,8 +60,6 @@ abstract class DevblocksEngine {
 				'author' => $db->qstr($manifest->author),
 				'revision' => $manifest->revision,
 				'link' => $db->qstr($manifest->link),
-				'file' => $db->qstr($manifest->file),
-				'class' => $db->qstr($manifest->class),
 				'dir' => $db->qstr($manifest->dir)
 			),
 			array('id'),

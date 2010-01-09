@@ -43,4 +43,22 @@ if(isset($columns['INSTANCE_ID'])) {
 	$datadict->ExecuteSQLArray($sql);	
 }
 
+// ============================================================================
+// plugin updates
+
+$columns = $datadict->MetaColumns($prefix.'plugin');
+$indexes = $datadict->MetaIndexes($prefix.'plugin',false);
+
+// Drop 'file'
+if(isset($columns['FILE'])) {
+	$sql = $datadict->DropColumnSQL($prefix.'plugin', 'file');
+	$datadict->ExecuteSQLArray($sql);	
+}
+
+// Drop 'class'
+if(isset($columns['CLASS'])) {
+	$sql = $datadict->DropColumnSQL($prefix.'plugin', 'class');
+	$datadict->ExecuteSQLArray($sql);	
+}
+
 return TRUE;
