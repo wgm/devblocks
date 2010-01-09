@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!ELEMENT plugin (id,name,description,author,revision,link,class,event_points?,acl?,extensions?)>
+<!ELEMENT plugin (id,name,description,author,revision,link,uri_routing?,class_loader?,event_points?,acl?,extensions?)>
 <!ELEMENT id (#PCDATA)>
 <!ELEMENT name (#PCDATA)>
 <!ELEMENT description (#PCDATA)>
@@ -10,13 +10,18 @@
 	<!ATTLIST priv id CDATA #REQUIRED>
 	<!ATTLIST priv label CDATA #REQUIRED>
 	<!ELEMENT priv (#PCDATA)>
+<!ELEMENT uri_routing (#PCDATA)>
+<!ELEMENT class_loader (file*)>
+	<!ELEMENT file (#PCDATA|class)*>
+		<!ATTLIST file path CDATA #IMPLIED>
 <!ELEMENT event_points (event*)>
 	<!ATTLIST event id CDATA #REQUIRED>
 	<!ELEMENT event (name,param*)>
 <!ELEMENT extensions (extension*)>
 	<!ATTLIST extension point CDATA #REQUIRED>
 	<!ELEMENT extension (id,name,class,params?)>
-	<!ELEMENT class (file,name)>
+	<!ELEMENT class (file|class|name)*>
+		<!ATTLIST class name CDATA #IMPLIED>
 		<!ELEMENT file (#PCDATA)>
 	<!ELEMENT params (param*)>
 	<!ELEMENT param (value*)>
