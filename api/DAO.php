@@ -397,7 +397,7 @@ class DAO_DevblocksSetting extends DevblocksORMHelper {
 			$plugin_settings = array();
 			
 			$sql = sprintf("SELECT plugin_id,setting,value FROM devblocks_setting");
-			$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+			$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
 			
 			if(is_a($rs,'ADORecordSet'))
 			while(!$rs->EOF) {
@@ -412,7 +412,8 @@ class DAO_DevblocksSetting extends DevblocksORMHelper {
 				$rs->MoveNext();
 			}
 			
-			$cache->save($plugin_settings, DevblocksPlatform::CACHE_SETTINGS);
+			if(!empty($plugin_settings))
+				$cache->save($plugin_settings, DevblocksPlatform::CACHE_SETTINGS);
 	    }
 	    
 		return $plugin_settings;
