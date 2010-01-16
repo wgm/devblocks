@@ -4,9 +4,7 @@ include_once(DEVBLOCKS_PATH . "api/Model.php");
 include_once(DEVBLOCKS_PATH . "api/DAO.php");
 include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
-//include_once(DEVBLOCKS_PATH . "libs/cloudglue/CloudGlue.php");
-
-define('PLATFORM_BUILD',303);
+define('PLATFORM_BUILD',304);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -723,15 +721,6 @@ class DevblocksPlatform extends DevblocksEngine {
 	static function getPatchService() {
 	    return _DevblocksPatchManager::getInstance();
 	}
-
-	/**
-	 * Enter description here...
-	 *
-	 * @return CloudGlue
-	 */
-//	static function getCloudGlueService() {
-//	    return CloudGlue::getInstance();
-//	}
 
 	/**
 	 * @return _DevblocksUrlManager
