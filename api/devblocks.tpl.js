@@ -1,26 +1,4 @@
-<!--
 var DevblocksAppPath = '{$smarty.const.DEVBLOCKS_WEBPATH}';
-
-{literal}
-var DevblocksUrl = function() {
-{/literal}
-
-this.base_url = '{devblocks_url}{/devblocks_url}';
-this.rewrite = {if $smarty.const.DEVBLOCKS_REWRITE}true{else}false{/if};
-
-{literal}
-	this.vars = new Array();
-
-	this.addVar = function(v) {
-		this.vars[this.vars.length] = v;
-	}
-	
-	// [JAS]: Write our URL using either Apache Rewrite or Query String
-	this.getUrl = function() {
-		var url = this.base_url + this.vars.join('/');
-		return url;
-	}
-};
 
 var DevblocksClass = function() {
 	/* Source: http://bytes.com/forum/thread90068.html */
@@ -121,7 +99,7 @@ function interceptInputCRLF(e,cb) {
 	var code = (window.Event) ? e.which : event.keyCode;
 	
 	if(null != cb && code == 13) {
-		try { cb(); } catch(e) {}
+		try { cb(); } catch(e) { }
 	}
 	
 	return code != 13;
@@ -308,7 +286,7 @@ function genericAjaxPanel(request,target,modal,width,cb) {
 							genericPanel.destroy();
 							genericPanel = null;
 						},100);
-					} catch(e){}
+					} catch(e) { }
 				});
 				
 				genericPanel.setHeader('&nbsp;');
@@ -324,12 +302,12 @@ function genericAjaxPanel(request,target,modal,width,cb) {
 					genericPanel.center();
 				}
 				
-				try { callback(o); } catch(e) {}				
+				try { callback(o); } catch(e) { }				
 				
 				genericPanel.show();
 			},
-			failure: function(o) {},
-			argument:{request:request,target:target,options:options,cb:cb}
+			failure: function(o) { },
+			argument: { request:request, target:target, options:options, cb:cb }
 		}
 	);	
 }
@@ -346,13 +324,13 @@ function saveGenericAjaxPanel(div,close,cb) {
 					try {
 						genericPanel.destroy();
 						genericPanel = null;
-					} catch(e) {}
+					} catch(e) { }
 				}
 				
-				try { callback(o); } catch(e) {}
+				try { callback(o); } catch(e) { }
 			},
-			failure: function(o) {},
-			argument:{div:div,close:close,cb:cb}
+			failure: function(o) { },
+			argument: { div:div, close:close, cb:cb }
 	});
 	
 	YAHOO.util.Connect.setForm(0);
@@ -379,8 +357,8 @@ function genericAjaxGet(divName,args,cb) {
 	
 	var cObj = YAHOO.util.Connect.asyncRequest('GET', DevblocksAppPath+'ajax.php?'+args, {
 		success: cb,
-		failure: function(o) {},
-		argument:{caller:this,divName:divName}
+		failure: function(o) { },
+		argument: { caller:this, divName:divName }
 		}
 	);
 }
@@ -414,13 +392,10 @@ function genericAjaxPost(formName,divName,args,cb) {
 	YAHOO.util.Connect.setForm(frm);
 	var cObj = YAHOO.util.Connect.asyncRequest('POST', DevblocksAppPath+'ajax.php'+(null!=args?('?'+args):''), {
 			success: cb,
-			failure: function(o) {},
-			argument:{caller:this,divName:divName}
+			failure: function(o) { },
+			argument: { caller:this,divName:divName }
 			},
 			null
 	);
 	YAHOO.util.Connect.setForm(0);
 }
-
-{/literal}
--->

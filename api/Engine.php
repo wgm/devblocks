@@ -520,21 +520,6 @@ abstract class DevblocksEngine {
 		
 		return;
 	}
-
-	/**
-	 * Prints out the Platform Javascript Library for use by Application.
-	 * This library provides the ability to rewrite URLs in Javascript for 
-	 * Ajax functionality, etc.
-	 * 
-	 * @example
-	 * <script language="javascript" type="text/javascript">{php}DevblocksPlatform::printJavascriptLibrary();{/php}</script>
-	 */
-	static function printJavascriptLibrary() {
-		$tpl = DevblocksPlatform::getTemplateService();
-		$path = dirname(__FILE__);
-		$tpl->caching = 0;
-		$tpl->display("file:$path/devblocks.tpl.js");
-	}
 };
 
 class _DevblocksPluginSettingsManager {
@@ -1974,19 +1959,91 @@ class _DevblocksTemplateManager {
 	static function getInstance() {
 		static $instance = null;
 		if(null == $instance) {
+			define('SMARTY_RESOURCE_CHAR_SET', LANG_CHARSET_CODE);
 			require(DEVBLOCKS_PATH . 'libs/smarty/Smarty.class.php');
+
 			$instance = new Smarty();
-			$instance->template_dir = APP_PATH . '/templates'; // [TODO] Themes
+			
+			$instance->template_dir = APP_PATH . '/templates';
 			$instance->compile_dir = APP_TEMP_PATH . '/templates_c';
 			$instance->cache_dir = APP_TEMP_PATH . '/cache';
-			$instance->plugins_dir = DEVBLOCKS_PATH . 'libs/smarty_plugins';
-			
-			//$smarty->config_dir = DEVBLOCKS_PATH. 'configs';
+
 			$instance->caching = 0;
 			$instance->cache_lifetime = 0;
+			
+			// Devblocks plugins
+			$instance->register_block('devblocks_url', array(_DevblocksTemplateManager, 'block_devblocks_url'));
+			$instance->register_modifier('devblocks_date', array(_DevblocksTemplateManager, 'modifier_devblocks_date'));
+			$instance->register_modifier('devblocks_prettytime', array(_DevblocksTemplateManager, 'modifier_devblocks_prettytime'));
+			$instance->register_modifier('devblocks_translate', array(_DevblocksTemplateManager, 'modifier_devblocks_translate'));
 		}
 		return $instance;
 	}
+	
+	static function modifier_devblocks_translate($string) {
+		$translate = DevblocksPlatform::getTranslationService();
+		
+		// Variable number of arguments
+		$args = func_get_args();
+		array_shift($args); // pop off $string
+		
+		$translated = $translate->_($string);
+		$translated = @vsprintf($translated,$args);
+		return $translated;
+	}
+	
+	static function block_devblocks_url($params, $content, $smarty, $repeat, $smarty_tpl) {
+		$url = DevblocksPlatform::getUrlService();
+		
+		$contents = $url->write($content, !empty($params['full']) ? true : false);
+		
+	    if (!empty($params['assign'])) {
+	        $smarty->assign($params['assign'], $contents);
+	    } else {
+	        return $contents;
+	    }
+	}
+	
+	static function modifier_devblocks_date($string, $format=null) {
+		if(empty($string))
+			return '';
+	
+		$date = DevblocksPlatform::getDateService();
+		return $date->formatTime($format, $string);
+	}
+	
+	static function modifier_devblocks_prettytime($string, $format=null) {
+		if(empty($string) || !is_numeric($string))
+			return '';
+		
+		$diffsecs = time() - intval($string);
+		$whole = '';		
+		
+		// The past
+		if($diffsecs >= 0) {
+			if($diffsecs >= 86400) { // days
+				$whole = floor($diffsecs/86400).'d ago';
+			} elseif($diffsecs >= 3600) { // hours
+				$whole = floor($diffsecs/3600).'h ago';
+			} elseif($diffsecs >= 60) { // mins
+				$whole = floor($diffsecs/60).'m ago';
+			} elseif($diffsecs >= 0) { // secs
+				$whole = $diffsecs.'s ago';
+			}
+		} else { // The future
+			if($diffsecs <= -86400) { // days
+				$whole = floor($diffsecs/-86400).'d';
+			} elseif($diffsecs <= -3600) { // hours
+				$whole = floor($diffsecs/-3600).'h';
+			} elseif($diffsecs <= -60) { // mins
+				$whole = floor($diffsecs/-60).'m';
+			} elseif($diffsecs <= 0) { // secs
+				$whole = $diffsecs.'s';
+			}
+		}
+		
+		echo $whole;
+}	
 };
 
 class _DevblocksTemplateBuilder {
