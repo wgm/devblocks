@@ -2052,13 +2052,6 @@ class _DevblocksTemplateBuilder {
 	
 	private function _DevblocksTemplateBuilder() {
 		$this->_tpl = DevblocksPlatform::getTemplateService();
-		
-		// register 'string:' resource type
-		$this->_tpl->register_resource("string", array(array($this,"_smarty_get_template"),
-		                                       array($this,"_smarty_get_timestamp"),
-		                                       array($this,"_smarty_get_secure"),
-		                                       array($this,"_smarty_get_trusted")
-		));		
 	}
 	
 	/**
@@ -2091,30 +2084,22 @@ class _DevblocksTemplateBuilder {
 		return false;
 	}
 	
-	function _null_error_handler($n, $m, $f, $l) {
-		if($n > E_NOTICE)
-			$this->errors[] = $m;
-	}
-	
 	public function getErrors() {
 		return $this->_errors;
 	}
 	
 	private function _setUp() {
 		$this->_errors = array();
-		//$this->_tpl->force_compile = true;
+		$this->_tpl->force_compile = true;
 		$this->_tpl->security = true;
 		$this->_tpl->security_settings = array(
 			'PHP_TAGS' => false,
 			'INCLUDE_ANY' => true, 
 		);
-
-		set_error_handler(array($this,'_null_error_handler'));
 	}
 	
 	private function _tearDown() {
-		restore_error_handler();
-		//$this->_tpl->force_compile = false;
+		$this->_tpl->force_compile = false;
 		$this->_tpl->security = false;
 	}
 	
@@ -2126,8 +2111,15 @@ class _DevblocksTemplateBuilder {
 	 */
 	function build($template) {
 		$this->_setUp();
-		$out = $this->_tpl->fetch('string:'.$template);
+		try {
+			$out = $this->_tpl->fetch('string:'.$template);
+		} catch(Exception $e) {
+			$this->_errors[] = $e->getMessage();
+		}
 		$this->_tearDown();
+
+		if(!empty($this->_errors))
+			return false;
 		
 		return $out;
 	} 
