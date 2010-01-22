@@ -2170,24 +2170,6 @@ class _DevblocksTemplateBuilder {
 		return $instance;
 	}
 
-	function _smarty_get_template($tpl_name, &$tpl_source, &$smarty) {
-		$tpl_source = $tpl_name;
-		return true;
-	}
-
-	function _smarty_get_timestamp($tpl_name, &$tpl_timestamp, &$smarty_obj) {
-		$tpl_timestamp = time();
-		return true;
-	}
-	
-	function _smarty_get_secure($tpl_name, &$smarty_obj) {
-		return false;
-	}
-	
-	function _smarty_get_trusted($tpl_name, &$smarty_obj) {
-		return false;
-	}
-	
 	public function getErrors() {
 		return $this->_errors;
 	}
