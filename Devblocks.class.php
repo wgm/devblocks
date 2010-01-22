@@ -568,7 +568,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	    if(is_null($db)) return;
 	    $prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 
-	    $sql = sprintf("SELECT * ". // p.id , p.enabled , p.name, p.description, p.author, p.revision, p.link, p.class, p.file, p.dir
+	    $sql = sprintf("SELECT p.id, p.enabled, p.name, p.description, p.author, p.revision, p.link, p.dir, p.templates_json ".
 			"FROM %splugin p ".
 			"ORDER BY p.enabled DESC, p.name ASC ",
 			$prefix
@@ -585,10 +585,13 @@ class DevblocksPlatform extends DevblocksEngine {
 		    @$plugin->author = $rs->fields['author'];
 		    @$plugin->revision = intval($rs->fields['revision']);
 		    @$plugin->link = $rs->fields['link'];
-		    @$plugin->file = $rs->fields['file'];
-		    @$plugin->class = $rs->fields['class'];
 		    @$plugin->dir = $rs->fields['dir'];
-	
+
+		    // JSON decode templates
+		    if(null != ($templates_json = $rs->Fields('templates_json'))) {
+		    	$plugin->templates = json_decode($templates_json, true);
+		    }
+		    
 		    if(file_exists(APP_PATH . DIRECTORY_SEPARATOR . $plugin->dir . DIRECTORY_SEPARATOR . 'plugin.xml')) {
 		        $plugins[$plugin->id] = $plugin;
 		    }
@@ -771,6 +774,32 @@ class DevblocksPlatform extends DevblocksEngine {
 	    return _DevblocksTemplateManager::getInstance();
 	}
 
+	/**
+	 * 
+	 * @param string $set
+	 * @return DevblocksTemplate[]
+	 */
+	static function getTemplates($set=null) {
+		$templates = array();
+		$plugins = self::getPluginRegistry();
+		
+		if(is_array($plugins))
+		foreach($plugins as $plugin) {
+			if(is_array($plugin->templates))
+			foreach($plugin->templates as $tpl) {
+				if(empty($set) || 0 == strcasecmp($set, $tpl['set'])) {
+					$template = new DevblocksTemplate();
+					$template->plugin_id = $tpl['plugin_id'];
+					$template->set = $tpl['set'];
+					$template->path = $tpl['path'];
+					$templates[] = $template;
+				}
+			}
+		}
+		
+		return $templates;
+	}
+	
 	/**
 	 * @return _DevblocksTemplateBuilder
 	 */
@@ -971,6 +1000,6 @@ class PlatformPatchContainer extends DevblocksPatchContainerExtension {
 		$this->registerPatch(new DevblocksPatch('devblocks.core',1,$file_prefix.'1.0.0.php',''));
 		$this->registerPatch(new DevblocksPatch('devblocks.core',253,$file_prefix.'1.0.0_beta.php',''));
 		$this->registerPatch(new DevblocksPatch('devblocks.core',290,$file_prefix.'1.1.0.php',''));
-		$this->registerPatch(new DevblocksPatch('devblocks.core',294,$file_prefix.'2.0.0.php',''));
+		$this->registerPatch(new DevblocksPatch('devblocks.core',296,$file_prefix.'2.0.0.php',''));
 	}
 };

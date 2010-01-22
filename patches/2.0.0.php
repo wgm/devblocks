@@ -77,4 +77,34 @@ if(!isset($tables['devblocks_setting'])) {
 $columns = $datadict->MetaColumns('devblocks_setting');
 $indexes = $datadict->MetaIndexes('devblocks_setting',false);
 
+// ============================================================================
+// devblocks_template
+
+if(!isset($tables['devblocks_template'])) {
+    $flds = "
+    	id I4 DEFAULT 0 NOTNULL PRIMARY,
+    	plugin_id C(255) DEFAULT '' NOTNULL,
+		path C(255) DEFAULT '' NOTNULL,
+		tag C(255) DEFAULT '' NOTNULL,
+		last_updated I4 DEFAULT 0 NOTNULL,
+		content XL
+    ";
+    $sql = $datadict->CreateTableSQL('devblocks_template', $flds);
+    $datadict->ExecuteSQLArray($sql);
+}
+
+$columns = $datadict->MetaColumns('devblocks_template');
+$indexes = $datadict->MetaIndexes('devblocks_template',false);
+
+// ===========================================================================
+// Add 'template' manifests to 'plugin'
+
+$columns = $datadict->MetaColumns($prefix.'plugin');
+$indexes = $datadict->MetaIndexes($prefix.'plugin',false);
+
+if(!isset($columns['TEMPLATES_JSON'])) {
+	$sql = $datadict->AddColumnSQL($prefix.'plugin', "templates_json XL");
+	$datadict->ExecuteSQLArray($sql);
+}
+
 return TRUE;

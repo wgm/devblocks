@@ -420,6 +420,257 @@ class DAO_DevblocksSetting extends DevblocksORMHelper {
 	}
 };
 
+class DAO_DevblocksTemplate extends DevblocksORMHelper {
+	const ID = 'id';
+	const PLUGIN_ID = 'plugin_id';
+	const PATH = 'path';
+	const TAG = 'tag';
+	const LAST_UPDATED = 'last_updated';
+	const CONTENT = 'content';
+
+	static function create($fields) {
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		$id = $db->GenID('generic_seq');
+		
+		$sql = sprintf("INSERT INTO devblocks_template (id) ".
+			"VALUES (%d)",
+			$id
+		);
+		$db->Execute($sql);
+		
+		self::update($id, $fields);
+		
+		return $id;
+	}
+	
+	static function update($ids, $fields) {
+		parent::_update($ids, 'devblocks_template', $fields);
+	}
+	
+	static function updateWhere($fields, $where) {
+		parent::_updateWhere('devblocks_template', $fields, $where);
+	}
+	
+	/**
+	 * @param string $where
+	 * @return Model_DevblocksTemplate[]
+	 */
+	static function getWhere($where=null) {
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		$sql = "SELECT id, plugin_id, path, tag, last_updated, content ".
+			"FROM devblocks_template ".
+			(!empty($where) ? sprintf("WHERE %s ",$where) : "").
+			"ORDER BY id asc";
+		$rs = $db->Execute($sql);
+		
+		return self::_getObjectsFromResult($rs);
+	}
+
+	/**
+	 * @param integer $id
+	 * @return Model_DevblocksTemplate	 */
+	static function get($id) {
+		$objects = self::getWhere(sprintf("%s = %d",
+			self::ID,
+			$id
+		));
+		
+		if(isset($objects[$id]))
+			return $objects[$id];
+		
+		return null;
+	}
+	
+	/**
+	 * @param ADORecordSet $rs
+	 * @return Model_DevblocksTemplate[]
+	 */
+	static private function _getObjectsFromResult($rs) {
+		$objects = array();
+		
+		while(!$rs->EOF) {
+			$object = new Model_DevblocksTemplate();
+			$object->id = $rs->fields['id'];
+			$object->plugin_id = $rs->fields['plugin_id'];
+			$object->path = $rs->fields['path'];
+			$object->tag = $rs->fields['tag'];
+			$object->last_updated = $rs->fields['last_updated'];
+			$object->content = $rs->fields['content'];
+			$objects[$object->id] = $object;
+			$rs->MoveNext();
+		}
+		
+		return $objects;
+	}
+	
+	static function delete($ids) {
+		if(!is_array($ids)) $ids = array($ids);
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		if(empty($ids))
+			return;
+
+		$ids_list = implode(',', $ids);
+
+		// Load before we delete so we can do some logic after
+		$templates = self::getWhere(sprintf("id IN (%s)", $ids_list));
+		
+		$db->Execute(sprintf("DELETE FROM devblocks_template WHERE id IN (%s)", $ids_list));
+		
+		// Recache in Smarty
+		if(!empty($templates)) {
+			$tpl = DevblocksPlatform::getTemplateService();
+			$force_compile = $tpl->force_compile;
+			$tpl->force_compile = true;
+
+			foreach($templates as $template)
+				$tpl->fetch('devblocks:'.$template->plugin_id.':'.$template->path.':'.$template->tag);
+			
+			// Force Smarty to recache the template
+			$tpl->force_compile = $force_compile; // reset
+		}
+		
+		return true;
+	}
+	
+    /**
+     * Enter description here...
+     *
+     * @param array $columns
+     * @param DevblocksSearchCriteria[] $params
+     * @param integer $limit
+     * @param integer $page
+     * @param string $sortBy
+     * @param boolean $sortAsc
+     * @param boolean $withCounts
+     * @return array
+     */
+    static function search($columns, $params, $limit=10, $page=0, $sortBy=null, $sortAsc=null, $withCounts=true) {
+		$db = DevblocksPlatform::getDatabaseService();
+		$fields = SearchFields_DevblocksTemplate::getFields();
+		
+		// Sanitize
+		if(!isset($fields[$sortBy]))
+			$sortBy=null;
+
+        list($tables,$wheres) = parent::_parseSearchParams($params, $columns, $fields, $sortBy);
+		$start = ($page * $limit); // [JAS]: 1-based
+		$total = -1;
+		
+		$select_sql = sprintf("SELECT ".
+			"devblocks_template.id as %s, ".
+			"devblocks_template.plugin_id as %s, ".
+			"devblocks_template.path as %s, ".
+			"devblocks_template.tag as %s, ".
+			"devblocks_template.last_updated as %s, ".
+			"devblocks_template.content as %s ",
+				SearchFields_DevblocksTemplate::ID,
+				SearchFields_DevblocksTemplate::PLUGIN_ID,
+				SearchFields_DevblocksTemplate::PATH,
+				SearchFields_DevblocksTemplate::TAG,
+				SearchFields_DevblocksTemplate::LAST_UPDATED,
+				SearchFields_DevblocksTemplate::CONTENT
+			);
+			
+		$join_sql = "FROM devblocks_template ";
+		
+		// Custom field joins
+		//list($select_sql, $join_sql, $has_multiple_values) = self::_appendSelectJoinSqlForCustomFieldTables(
+		//	$tables,
+		//	$params,
+		//	'devblocks_template.id',
+		//	$select_sql,
+		//	$join_sql
+		//);
+				
+		$where_sql = "".
+			(!empty($wheres) ? sprintf("WHERE %s ",implode(' AND ',$wheres)) : "");
+			
+		$sort_sql = (!empty($sortBy)) ? sprintf("ORDER BY %s %s ",$sortBy,($sortAsc || is_null($sortAsc))?"ASC":"DESC") : " ";
+			
+		$sql = 
+			$select_sql.
+			$join_sql.
+			$where_sql.
+			($has_multiple_values ? 'GROUP BY devblocks_template.id ' : '').
+			$sort_sql;
+			
+		// [TODO] Could push the select logic down a level too
+		if($limit > 0) {
+    		$rs = $db->SelectLimit($sql,$limit,$start) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		} else {
+		    $rs = $db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+            $total = $rs->RecordCount();
+		}
+		
+		$results = array();
+		
+		if(is_a($rs,'ADORecordSet'))
+		while(!$rs->EOF) {
+			$result = array();
+			foreach($rs->fields as $f => $v) {
+				$result[$f] = $v;
+			}
+			$object_id = intval($rs->fields[SearchFields_DevblocksTemplate::ID]);
+			$results[$object_id] = $result;
+			$rs->MoveNext();
+		}
+
+		// [JAS]: Count all
+		if($withCounts) {
+			$count_sql = 
+				($has_multiple_values ? "SELECT COUNT(DISTINCT devblocks_template.id) " : "SELECT COUNT(devblocks_template.id) ").
+				$join_sql.
+				$where_sql;
+			$total = $db->GetOne($count_sql);
+		}
+		
+		return array($results,$total);
+	}
+
+};
+
+class SearchFields_DevblocksTemplate implements IDevblocksSearchFields {
+	const ID = 'd_id';
+	const PLUGIN_ID = 'd_plugin_id';
+	const PATH = 'd_path';
+	const TAG = 'd_tag';
+	const LAST_UPDATED = 'd_last_updated';
+	const CONTENT = 'd_content';
+	
+	/**
+	 * @return DevblocksSearchField[]
+	 */
+	static function getFields() {
+		$translate = DevblocksPlatform::getTranslationService();
+		
+		$columns = array(
+			self::ID => new DevblocksSearchField(self::ID, 'devblocks_template', 'id', null, $translate->_('common.id')),
+			self::PLUGIN_ID => new DevblocksSearchField(self::PLUGIN_ID, 'devblocks_template', 'plugin_id', null, $translate->_('plugin_id')),
+			self::PATH => new DevblocksSearchField(self::PATH, 'devblocks_template', 'path', null, $translate->_('path')),
+			self::TAG => new DevblocksSearchField(self::TAG, 'devblocks_template', 'tag', null, $translate->_('tag')),
+			self::LAST_UPDATED => new DevblocksSearchField(self::LAST_UPDATED, 'devblocks_template', 'last_updated', null, $translate->_('last_updated')),
+			self::CONTENT => new DevblocksSearchField(self::CONTENT, 'devblocks_template', 'content', null, $translate->_('content')),
+		);
+		
+		// Custom Fields
+		//$fields = DAO_CustomField::getBySource(PsCustomFieldSource_XXX::ID);
+
+		//if(is_array($fields))
+		//foreach($fields as $field_id => $field) {
+		//	$key = 'cf_'.$field_id;
+		//	$columns[$key] = new DevblocksSearchField($key,$key,'field_value',null,$field->name);
+		//}
+		
+		// Sort by label (translation-conscious)
+		uasort($columns, create_function('$a, $b', "return strcasecmp(\$a->db_label,\$b->db_label);\n"));
+
+		return $columns;		
+	}
+};
+
 class DAO_Translation extends DevblocksORMHelper {
 	const ID = 'id';
 	const STRING_ID = 'string_id';

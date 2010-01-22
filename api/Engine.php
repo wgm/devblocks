@@ -50,6 +50,22 @@ abstract class DevblocksEngine {
 		if(is_null($db)) 
 			return;
 		
+		// Templates
+		if(isset($plugin->templates)) {
+			foreach($plugin->templates as $eTemplates) {
+				$template_set = (string) $eTemplates['set'];
+				
+				if(isset($eTemplates->template))
+				foreach($eTemplates->template as $eTemplate) {
+					$manifest->templates[] = array(
+						'plugin_id' => $manifest->id,
+						'set' => $template_set,
+						'path' => (string) $eTemplate['path'],
+					);
+				}
+			}
+		}
+			
 		// Manifest
 		$db->Replace(
 			$prefix.'plugin',
@@ -60,7 +76,8 @@ abstract class DevblocksEngine {
 				'author' => $db->qstr($manifest->author),
 				'revision' => $manifest->revision,
 				'link' => $db->qstr($manifest->link),
-				'dir' => $db->qstr($manifest->dir)
+				'dir' => $db->qstr($manifest->dir),
+				'templates_json' => $db->qstr(json_encode($manifest->templates)),
 			),
 			array('id'),
 			false
@@ -1976,10 +1993,16 @@ class _DevblocksTemplateManager {
 			$instance->register_modifier('devblocks_date', array(_DevblocksTemplateManager, 'modifier_devblocks_date'));
 			$instance->register_modifier('devblocks_prettytime', array(_DevblocksTemplateManager, 'modifier_devblocks_prettytime'));
 			$instance->register_modifier('devblocks_translate', array(_DevblocksTemplateManager, 'modifier_devblocks_translate'));
+			$instance->register_resource('devblocks', array(
+				array(_DevblocksSmartyTemplateResource, 'get_template'),
+				array(_DevblocksSmartyTemplateResource, 'get_timestamp'),
+				array(_DevblocksSmartyTemplateResource, 'get_secure'),
+				array(_DevblocksSmartyTemplateResource, 'get_trusted'),
+			));
 		}
 		return $instance;
 	}
-	
+
 	static function modifier_devblocks_translate($string) {
 		$translate = DevblocksPlatform::getTranslationService();
 		
@@ -2043,7 +2066,88 @@ class _DevblocksTemplateManager {
 		}
 		
 		echo $whole;
-}	
+	}	
+};
+
+class _DevblocksSmartyTemplateResource {
+	static function get_template($tpl_name, &$tpl_source, $smarty_obj) {
+		list($plugin_id, $tpl_path, $tag) = explode(':',$tpl_name,3);
+		
+		if(empty($plugin_id) || empty($tpl_path))
+			return false;
+			
+		$plugins = DevblocksPlatform::getPluginRegistry();
+		$db = DevblocksPlatform::getDatabaseService();
+			
+		if(null == ($plugin = @$plugins[$plugin_id])) /* @var $plugin DevblocksPluginManifest */
+			return false;
+			
+		// Check if template is overloaded in DB/cache
+		$matches = DAO_DevblocksTemplate::getWhere(sprintf("plugin_id = %s AND path = %s %s",
+			$db->qstr($plugin_id),
+			$db->qstr($tpl_path),
+			(!empty($tag) ? sprintf("AND tag = %s ",$db->qstr($tag)) : "")
+		));
+			
+		if(!empty($matches)) {
+			$match = array_shift($matches); /* @var $match Model_DevblocksTemplate */
+			$tpl_source = $match->content;
+			return true;
+		}
+		
+		// If not in DB, check plugin's relative path on disk
+		$path = APP_PATH . '/' . $plugin->dir . '/templates/' . $tpl_path;
+		
+		if(!file_exists($path))
+			return false;
+		
+		$tpl_source = file_get_contents($path);
+		return true;			
+	}
+	
+	static function get_timestamp($tpl_name, &$tpl_timestamp, $smarty_obj) { /* @var $smarty_obj Smarty */
+		list($plugin_id, $tpl_path, $tag) = explode(':',$tpl_name,3);
+		
+		if(empty($plugin_id) || empty($tpl_path))
+			return false;
+			
+		$plugins = DevblocksPlatform::getPluginRegistry();
+		$db = DevblocksPlatform::getDatabaseService();
+			
+		if(null == ($plugin = @$plugins[$plugin_id])) /* @var $plugin DevblocksPluginManifest */
+			return false;
+			
+		// Check if template is overloaded in DB/cache
+		$matches = DAO_DevblocksTemplate::getWhere(sprintf("plugin_id = %s AND path = %s %s",
+			$db->qstr($plugin_id),
+			$db->qstr($tpl_path),
+			(!empty($tag) ? sprintf("AND tag = %s ",$db->qstr($tag)) : "")
+		));
+
+		if(!empty($matches)) {
+			$match = array_shift($matches); /* @var $match Model_DevblocksTemplate */
+			$tpl_timestamp = $match->last_updated;
+			return true; 
+		}
+			
+		// If not in DB, check plugin's relative path on disk
+		$path = APP_PATH . '/' . $plugin->dir . '/templates/' . $tpl_path;
+		
+		if(!file_exists($path))
+			return false;
+		
+		$stat = stat($path);
+		$tpl_timestamp = $stat['mtime'];
+		return true;
+	}
+	
+	static function get_secure($tpl_name, &$smarty_obj) {
+		return false;
+	}
+	
+	static function get_trusted($tpl_name, &$smarty_obj) {
+		// not used
+	}
 };
 
 class _DevblocksTemplateBuilder {

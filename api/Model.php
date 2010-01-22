@@ -331,6 +331,12 @@ class DevblocksExtensionPoint {
 	var $extensions = array();
 };
 
+class DevblocksTemplate {
+	var $set = '';
+	var $plugin_id = '';
+	var $path = '';
+};
+
 /**
  * Manifest information for plugin.
  * @ingroup plugin
@@ -343,8 +349,6 @@ class DevblocksPluginManifest {
 	var $author = '';
 	var $revision = 0;
 	var $link = '';
-	var $file = '';
-	var $class = '';
 	var $dir = '';
 	var $extension_points = array();
 	var $extensions = array();
@@ -352,6 +356,7 @@ class DevblocksPluginManifest {
 	var $acl_privs = array();
 	var $class_loader = array();
 	var $uri_routing = array();
+	var $templates = array();
 	
 	function setEnabled($bool) {
 		$this->enabled = ($bool) ? 1 : 0;
@@ -513,6 +518,15 @@ class Model_DevblocksEvent {
       $this->id = $id;
       $this->params = $params;
   }
+};
+
+class Model_DevblocksTemplate {
+	public $id;
+	public $plugin_id;
+	public $path;
+	public $tag;
+	public $last_updated;
+	public $content;
 };
 
 class Model_Translation {
