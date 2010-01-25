@@ -525,8 +525,11 @@ class DAO_DevblocksTemplate extends DevblocksORMHelper {
 			$force_compile = $tpl->force_compile;
 			$tpl->force_compile = true;
 
-			foreach($templates as $template)
-				$tpl->fetch('devblocks:'.$template->plugin_id.':'.$template->path.':'.$template->tag);
+			foreach($templates as $template) {
+				try {
+					$out = $tpl->fetch('devblocks:'.$template->plugin_id.':'.$template->path.':'.$template->tag);
+				} catch(Exception $e) {}
+			}
 			
 			// Force Smarty to recache the template
 			$tpl->force_compile = $force_compile; // reset

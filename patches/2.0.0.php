@@ -107,4 +107,19 @@ if(!isset($columns['TEMPLATES_JSON'])) {
 	$datadict->ExecuteSQLArray($sql);
 }
 
+// ============================================================================
+// Extension updates
+
+$columns = $datadict->MetaColumns($prefix.'extension');
+$indexes = $datadict->MetaIndexes($prefix.'extension',false);
+
+// Fix blob encoding
+if(isset($columns['PARAMS'])) {
+	if(0==strcasecmp('longblob',$columns['PARAMS']->type)) {
+		$sql = sprintf("ALTER TABLE ${prefix}extension CHANGE COLUMN params params TEXT");
+		$db->Execute($sql);
+	}
+}
+
+
 return TRUE;

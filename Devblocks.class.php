@@ -787,7 +787,7 @@ class DevblocksPlatform extends DevblocksEngine {
 		foreach($plugins as $plugin) {
 			if(is_array($plugin->templates))
 			foreach($plugin->templates as $tpl) {
-				if(empty($set) || 0 == strcasecmp($set, $tpl['set'])) {
+				if(null === $set || 0 == strcasecmp($set, $tpl['set'])) {
 					$template = new DevblocksTemplate();
 					$template->plugin_id = $tpl['plugin_id'];
 					$template->set = $tpl['set'];
@@ -1000,6 +1000,6 @@ class PlatformPatchContainer extends DevblocksPatchContainerExtension {
 		$this->registerPatch(new DevblocksPatch('devblocks.core',1,$file_prefix.'1.0.0.php',''));
 		$this->registerPatch(new DevblocksPatch('devblocks.core',253,$file_prefix.'1.0.0_beta.php',''));
 		$this->registerPatch(new DevblocksPatch('devblocks.core',290,$file_prefix.'1.1.0.php',''));
-		$this->registerPatch(new DevblocksPatch('devblocks.core',296,$file_prefix.'2.0.0.php',''));
+		$this->registerPatch(new DevblocksPatch('devblocks.core',297,$file_prefix.'2.0.0.php',''));
 	}
 };
