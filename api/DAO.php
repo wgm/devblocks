@@ -514,26 +514,7 @@ class DAO_DevblocksTemplate extends DevblocksORMHelper {
 
 		$ids_list = implode(',', $ids);
 
-		// Load before we delete so we can do some logic after
-		$templates = self::getWhere(sprintf("id IN (%s)", $ids_list));
-		
 		$db->Execute(sprintf("DELETE FROM devblocks_template WHERE id IN (%s)", $ids_list));
-		
-		// Recache in Smarty
-		if(!empty($templates)) {
-			$tpl = DevblocksPlatform::getTemplateService();
-			$force_compile = $tpl->force_compile;
-			$tpl->force_compile = true;
-
-			foreach($templates as $template) {
-				try {
-					$out = $tpl->fetch('devblocks:'.$template->plugin_id.':'.$template->path.':'.$template->tag);
-				} catch(Exception $e) {}
-			}
-			
-			// Force Smarty to recache the template
-			$tpl->force_compile = $force_compile; // reset
-		}
 		
 		return true;
 	}

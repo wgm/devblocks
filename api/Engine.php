@@ -1987,6 +1987,7 @@ class _DevblocksTemplateManager {
 
 			$instance->caching = 0;
 			$instance->cache_lifetime = 0;
+			$instance->compile_check = false;
 			
 			// Devblocks plugins
 			$instance->register_block('devblocks_url', array(_DevblocksTemplateManager, 'block_devblocks_url'));
@@ -2110,6 +2111,8 @@ class _DevblocksSmartyTemplateResource {
 		
 		if(empty($plugin_id) || empty($tpl_path))
 			return false;
+		
+//		echo $tpl_name,"<BR>";
 			
 		$plugins = DevblocksPlatform::getPluginRegistry();
 		$db = DevblocksPlatform::getDatabaseService();
@@ -2126,6 +2129,7 @@ class _DevblocksSmartyTemplateResource {
 
 		if(!empty($matches)) {
 			$match = array_shift($matches); /* @var $match Model_DevblocksTemplate */
+//			echo time(),"==(DB)",$match->last_updated,"<BR>";
 			$tpl_timestamp = $match->last_updated;
 			return true; 
 		}
@@ -2138,6 +2142,7 @@ class _DevblocksSmartyTemplateResource {
 		
 		$stat = stat($path);
 		$tpl_timestamp = $stat['mtime'];
+//		echo time(),"==(DISK)",$stat['mtime'],"<BR>";
 		return true;
 	}
 	
