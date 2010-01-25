@@ -567,14 +567,14 @@ class DAO_DevblocksTemplate extends DevblocksORMHelper {
 			"devblocks_template.plugin_id as %s, ".
 			"devblocks_template.path as %s, ".
 			"devblocks_template.tag as %s, ".
-			"devblocks_template.last_updated as %s, ".
-			"devblocks_template.content as %s ",
+			"devblocks_template.last_updated as %s ",
+//			"devblocks_template.content as %s ",
 				SearchFields_DevblocksTemplate::ID,
 				SearchFields_DevblocksTemplate::PLUGIN_ID,
 				SearchFields_DevblocksTemplate::PATH,
 				SearchFields_DevblocksTemplate::TAG,
-				SearchFields_DevblocksTemplate::LAST_UPDATED,
-				SearchFields_DevblocksTemplate::CONTENT
+				SearchFields_DevblocksTemplate::LAST_UPDATED
+//				SearchFields_DevblocksTemplate::CONTENT
 			);
 			
 		$join_sql = "FROM devblocks_template ";
@@ -632,6 +632,53 @@ class DAO_DevblocksTemplate extends DevblocksORMHelper {
 		
 		return array($results,$total);
 	}
+	
+	static function importXmlFile($filename, $tag) {
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		if(!file_exists($filename) && empty($tag))
+			return;
+		
+		if(false == (@$xml = simplexml_load_file($filename))) /* @var $xml SimpleXMLElement */
+			return;
+
+		// Loop through all the template elements and insert/update for this tag
+		foreach($xml->templates->template as $eTemplate) { /* @var $eTemplate SimpleXMLElement */
+			$plugin_id = (string) $eTemplate['plugin_id'];
+			$path = (string) $eTemplate['path'];
+			$content = (string) $eTemplate[0];
+
+			// Pull the template if it exists already
+			@$template = array_shift(self::getWhere(sprintf("%s = %s AND %s = %s AND %s = %s",
+				self::PLUGIN_ID,
+				$db->qstr($plugin_id),
+				self::PATH,
+				$db->qstr($path),
+				self::TAG,
+				$db->qstr($tag)
+			)));
+
+			// Common fields
+			$fields = array(
+				self::CONTENT => $content,
+				self::LAST_UPDATED => time(),
+			);
+			
+			// Create or update
+			if(empty($template)) { // new
+				$fields[self::PLUGIN_ID] = $plugin_id;
+				$fields[self::PATH] = $path;
+				$fields[self::TAG] = $tag;
+				self::create($fields);
+				
+			} else { // update
+				self::update($template->id, $fields);
+				
+			}
+		}
+			
+		unset($xml);
+	}	
 
 };
 
@@ -641,7 +688,7 @@ class SearchFields_DevblocksTemplate implements IDevblocksSearchFields {
 	const PATH = 'd_path';
 	const TAG = 'd_tag';
 	const LAST_UPDATED = 'd_last_updated';
-	const CONTENT = 'd_content';
+//	const CONTENT = 'd_content';
 	
 	/**
 	 * @return DevblocksSearchField[]
@@ -655,7 +702,7 @@ class SearchFields_DevblocksTemplate implements IDevblocksSearchFields {
 			self::PATH => new DevblocksSearchField(self::PATH, 'devblocks_template', 'path', null, $translate->_('path')),
 			self::TAG => new DevblocksSearchField(self::TAG, 'devblocks_template', 'tag', null, $translate->_('tag')),
 			self::LAST_UPDATED => new DevblocksSearchField(self::LAST_UPDATED, 'devblocks_template', 'last_updated', null, $translate->_('last_updated')),
-			self::CONTENT => new DevblocksSearchField(self::CONTENT, 'devblocks_template', 'content', null, $translate->_('content')),
+//			self::CONTENT => new DevblocksSearchField(self::CONTENT, 'devblocks_template', 'content', null, $translate->_('content')),
 		);
 		
 		// Custom Fields
