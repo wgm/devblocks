@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Zend Framework
  *
@@ -14,37 +13,36 @@
  * to license@zend.com so we can send you a copy immediately.
  *
  * @category   Zend
- * @package    Zend_Validate
+ * @package    Zend_Ldap
+ * @subpackage Filter
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Se.php 8064 2008-02-16 10:58:39Z thomas $
+ * @version    $Id: And.php 17826 2009-08-26 15:01:34Z sgehrig $
  */
 
-
 /**
- * @see Zend_Validate_Hostname_Interface
+ * @see Zend_Ldap_Filter_Logical
  */
-require_once 'Zend/Validate/Hostname/Interface.php';
-
+require_once 'Zend/Ldap/Filter/Logical.php';
 
 /**
+ * Zend_Ldap_Filter_And provides an 'and' filter.
+ *
  * @category   Zend
- * @package    Zend_Validate
+ * @package    Zend_Ldap
+ * @subpackage Filter
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
  */
-class Zend_Validate_Hostname_Se implements Zend_Validate_Hostname_Interface
+class Zend_Ldap_Filter_And extends Zend_Ldap_Filter_Logical
 {
-
     /**
-     * Returns UTF-8 characters allowed in DNS hostnames for the specified Top-Level-Domain
+     * Creates an 'and' grouping filter.
      *
-     * @see http://www.iis.se/english/IDN_campaignsite.shtml?lang=en Sweden (.SE)
-     * @return string
+     * @param array $subfilters
      */
-    static function getCharacters()
+    public function __construct(array $subfilters)
     {
-        return '\x{00E5}\x{00E4}\x{00F6}\x{00FC}\x{00E9}';
+        parent::__construct($subfilters, self::TYPE_AND);
     }
-
 }

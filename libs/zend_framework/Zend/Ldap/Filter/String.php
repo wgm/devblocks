@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Zend Framework
  *
@@ -14,37 +13,53 @@
  * to license@zend.com so we can send you a copy immediately.
  *
  * @category   Zend
- * @package    Zend_Validate
+ * @package    Zend_Ldap
+ * @subpackage Filter
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Fi.php 8064 2008-02-16 10:58:39Z thomas $
+ * @version    $Id: String.php 17826 2009-08-26 15:01:34Z sgehrig $
  */
 
-
 /**
- * @see Zend_Validate_Hostname_Interface
+ * @see Zend_Ldap_Filter_Abstract
  */
-require_once 'Zend/Validate/Hostname/Interface.php';
-
+require_once 'Zend/Ldap/Filter/Abstract.php';
 
 /**
+ * Zend_Ldap_Filter_String provides a simple custom string filter.
+ *
  * @category   Zend
- * @package    Zend_Validate
+ * @package    Zend_Ldap
+ * @subpackage Filter
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
  */
-class Zend_Validate_Hostname_Fi implements Zend_Validate_Hostname_Interface
+class Zend_Ldap_Filter_String extends Zend_Ldap_Filter_Abstract
 {
+    /**
+     * The filter.
+     *
+     * @var string
+     */
+    protected $_filter;
 
     /**
-     * Returns UTF-8 characters allowed in DNS hostnames for the specified Top-Level-Domain
+     * Creates a Zend_Ldap_Filter_String.
      *
-     * @see http://www.ficora.fi/en/index/palvelut/fiverkkotunnukset/aakkostenkaytto.html Finland (.FI)
-     * @return string
+     * @param string $filter
      */
-    static function getCharacters()
+    public function __construct($filter)
     {
-        return '\x{00E5}\x{00E4}\x{00F6}';
+        $this->_filter = $filter;
     }
 
+    /**
+     * Returns a string representation of the filter.
+     *
+     * @return string
+     */
+    public function toString()
+    {
+        return '(' . $this->_filter . ')';
+    }
 }

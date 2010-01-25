@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Zend Framework
  *
@@ -14,37 +13,34 @@
  * to license@zend.com so we can send you a copy immediately.
  *
  * @category   Zend
- * @package    Zend_Validate
+ * @package    Zend_Ldap
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
- * @version    $Id: Li.php 8064 2008-02-16 10:58:39Z thomas $
+ * @version    $Id: Interface.php 17826 2009-08-26 15:01:34Z sgehrig $
  */
 
-
 /**
- * @see Zend_Validate_Hostname_Interface
- */
-require_once 'Zend/Validate/Hostname/Interface.php';
-
-
-/**
+ * Zend_Ldap_Collection_Iterator_Interface provides a contract for
+ * adapter specific collection iterators
+ *
  * @category   Zend
- * @package    Zend_Validate
+ * @package    Zend_Ldap
  * @copyright  Copyright (c) 2005-2008 Zend Technologies USA Inc. (http://www.zend.com)
  * @license    http://framework.zend.com/license/new-bsd     New BSD License
  */
-class Zend_Validate_Hostname_Li implements Zend_Validate_Hostname_Interface
+interface Zend_Ldap_Collection_Iterator_Interface extends Iterator, Countable
 {
+    /**
+     * Closes the current result set
+     *
+     * @return boolean
+     */
+    public function close();
 
     /**
-     * Returns UTF-8 characters allowed in DNS hostnames for the specified Top-Level-Domain
+     * Gets the current LDAP connection.
      *
-     * @see https://nic.switch.ch/reg/ocView.action?res=EF6GW2JBPVTG67DLNIQXU234MN6SC33JNQQGI7L6#anhang1 Liechtenstein (.LI)
-     * @return string
+     * @return Zend_Ldap
      */
-    static function getCharacters()
-    {
-        return '\x{00EO}-\x{00F6}\x{00F8}-\x{00FF}\x{0153}';
-    }
-
+    public function getLdap();
 }
