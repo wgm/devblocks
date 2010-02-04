@@ -216,186 +216,187 @@ function appendTextboxAsCsv(formName, field, oLink) {
 var loadingPanel;
 function showLoadingPanel() {
 	if(null != loadingPanel) {
-		loadingPanel.destroy();
-		loadingPanel = null;
+		hideLoadingPanel();
 	}
+	
+	var options = {
+			bgiframe : true,
+			autoOpen : false,
+			closeOnEscape : false,
+			draggable : false,
+			resizable : false,
+			modal : true,
+			width : "300",
+			title : 'Running...'
+		};
 
-	var options = { 
-	  width : "300px",
-	  fixedcenter : true,
-	  visible : false, 
-	  constraintoviewport : true,
-	  underlay : "shadow",
-	  modal : true,
-	  close : false,
-	  draggable : false
-	};
+	// Set the content
+	$("#loadingPanel").html("This may take a few moments.  Please wait!");
 	
-	loadingPanel = new YAHOO.widget.Panel("loadingPanel", options);
+	if(0 == $("#loadingPanel").length) {
+		$("body").append("<div id='loadingPanel' style='display:none;'></div>");
+	}
 	
-	loadingPanel.setHeader('Running...');
-	loadingPanel.setBody('');
-	loadingPanel.render(document.body);
+	// Render
+	loadingPanel = $("#loadingPanel").dialog(options);
 	
-	loadingPanel.hide();
-	loadingPanel.setBody("This may take a few moments.  Please wait!");
-	loadingPanel.center();
-	
-	loadingPanel.show();
+	loadingPanel.dialog('open');
 }
 
 function hideLoadingPanel() {
-	loadingPanel.destroy();
+	loadingPanel.unbind();
+	loadingPanel.dialog('destroy');
 	loadingPanel = null;
 }
 
 var genericPanel;
 function genericAjaxPanel(request,target,modal,width,cb) {
+	// Reset
 	if(null != genericPanel) {
-		genericPanel.destroy();
+		genericPanel.unbind();
+		genericPanel.dialog('destroy');
 		genericPanel = null;
 	}
 
-	var options = { 
-	  width : "300px",
-	  fixedcenter : false,
-	  visible : false, 
-	  constraintoviewport : true,
-	  underlay : "shadow",
-	  modal : false,
-	  close : true,
-	  draggable : true
+	// Options
+	var options = {
+		bgiframe : true,
+		autoOpen : false,
+		closeOnEscape : true,
+		draggable : true,
+		modal : false,
+		stack: true,
+		width : "300",
+		close: function(event, ui) { 
+			$(this).unbind();
+		}
 	};
-
+	
 	if(null != width) options.width = width;
 	if(null != modal) options.modal = modal;
-	if(true == modal) options.fixedcenter = true;
-//	if(true != modal) options.draggable = true;
 	
-	var cObj = YAHOO.util.Connect.asyncRequest('GET', DevblocksAppPath+'ajax.php?'+request, {
-			success: function(o) {
-				var caller = o.argument.caller;
-				var target = o.argument.target;
-				var options = o.argument.options;
-				var callback = o.argument.cb;
-
-				genericPanel = new YAHOO.widget.Panel("genericPanel", options);
-				genericPanel.hideEvent.subscribe(function(type,args,me) {
-					try {
-						setTimeout(function(){
-							genericPanel.destroy();
-							genericPanel = null;
-						},100);
-					} catch(e) { }
-				});
+	genericAjaxGet('',request,
+		function(html) {
+			if(0 == $("#genericPanel").length) {
+				$("body").append("<div id='genericPanel' style='display:none;'></div>");
+			}
+			
+			genericPanel = $("#genericPanel");
+			
+			// Set the content
+			genericPanel.html(html);
+			
+			// Target
+			if(null != target) {
+				var offset = $(target).offset();
+				var left = offset.left - $(document).scrollLeft();
+				var top = offset.top - $(document).scrollTop();
+				options.position = [left, top];
 				
-				genericPanel.setHeader('&nbsp;');
-				genericPanel.setBody('');
-				genericPanel.render(document.body);
-				
-				genericPanel.hide();
-				genericPanel.setBody(o.responseText);
-				
-				if(null != target && !options.fixedcenter) {
-					genericPanel.cfg.setProperty('context',[target,"bl","tl"]);
-				} else {
-					genericPanel.center();
-				}
-				
-				try { callback(o); } catch(e) { }				
-				
-				genericPanel.show();
-			},
-			failure: function(o) { },
-			argument: { request:request, target:target, options:options, cb:cb }
+			} else {
+				options.position = [ 'center', 'top' ];
+			}
+			
+			// Render
+			genericPanel.dialog(options);
+			genericPanel.dialog('open');
+			
+			// Focus
+			//if(null != target) {
+				//var offset = $(target).offset();
+				//$(document).scrollTop(offset.top); // Focus
+			//}
+			
+			// Callback
+			try { cb(html); } catch(e) { }
 		}
-	);	
+	);
 }
 
-function saveGenericAjaxPanel(div,close,cb) {
-	YAHOO.util.Connect.setForm(div);
+function genericAjaxPanelPostCloseReloadView(frm, view_id, has_output) {
+	var has_view = (null != view_id && view_id.length > 0 && $('#view'+view_id).length > 0) ? true : false;
+	if(null == has_output)
+		has_output = false;
+
+	if(has_view)
+		$('#view'+view_id).fadeTo("slow", 0.2);
 	
-	var cObj = YAHOO.util.Connect.asyncRequest('POST', DevblocksAppPath+'ajax.php', {
-			success: function(o) {
-				var callback = o.argument.cb;
-				var close = o.argument.close;
+	genericAjaxPost(frm,view_id,'',
+		function(html) {
+			if(has_view && has_output) { // Reload from post content
+				if(html.length > 0)
+					$('#view'+view_id).html(html);
+			} else if (has_view && !has_output) { // Reload from view_id
+				genericAjaxGet('view'+view_id, 'c=internal&a=viewRefresh&id=' + view_id);
+			}
+
+			if(has_view)
+				$('#view'+view_id).fadeTo("slow", 1.0);
+
+			if(null != genericPanel) {
+				genericPanel.trigger('devblocks_dialogsaved');
 				
-				if(null != genericPanel && close) {
-					try {
-						genericPanel.destroy();
-						genericPanel = null;
-					} catch(e) { }
-				}
-				
-				try { callback(o); } catch(e) { }
-			},
-			failure: function(o) { },
-			argument: { div:div, close:close, cb:cb }
-	});
-	
-	YAHOO.util.Connect.setForm(0);
+				try {
+					genericPanel.unbind();
+					genericPanel.dialog('destroy');
+					genericPanel = null;
+				} catch(e) {}
+			}
+		}
+	);
 }
 
 function genericAjaxGet(divName,args,cb) {
-	if(null == cb) {
-		var frm = document.getElementById(divName);
+	if(null == divName || 0 == divName.length)
+		divName = 'null';
 
-		if(null != frm) {
-			var anim = new YAHOO.util.Anim(frm, { opacity: { to: 0.2 } }, 1, YAHOO.util.Easing.easeOut);
-			anim.animate();
-		}
+	if(null == cb) {
+		$('#'+divName).fadeTo("slow", 0.2);
 		
-		var cb = function(o) {
-			var frm = document.getElementById(divName);
-			if(null == frm) return;
-			frm.innerHTML = o.responseText;
-			
-			var anim = new YAHOO.util.Anim(frm, { opacity: { to: 1.0 } }, 1, YAHOO.util.Easing.easeOut);
-			anim.animate();
+		var cb = function(html) {
+			$('#'+divName).html(html);
+			$('#'+divName).fadeTo("slow", 1.0);
 		}
 	}
 	
-	var cObj = YAHOO.util.Connect.asyncRequest('GET', DevblocksAppPath+'ajax.php?'+args, {
-		success: cb,
-		failure: function(o) { },
-		argument: { caller:this, divName:divName }
-		}
-	);
+	$.ajax( {
+		type: "GET",
+		url: DevblocksAppPath+'ajax.php?'+args,
+		cache: false,
+		success : cb, 
+	} );
 }
 
-var genericAjaxPostAfterSubmitEvent = new YAHOO.util.CustomEvent("genericAjaxPostAfterSubmitEvent", window);
-
 function genericAjaxPost(formName,divName,args,cb) {
-	var frm = document.getElementById(formName);
-	if(null == cb) {
-		var div = document.getElementById(divName);
-		
-		if(null != div) {
-			var anim = new YAHOO.util.Anim(div, { opacity: { to: 0.2 } }, 1, YAHOO.util.Easing.easeOut);
-			anim.animate();
-		}
+	if(null == divName || 0 == divName.length)
+		divName = 'null';
 	
-		var cb = function(o) {
-			// Events
-			genericAjaxPostAfterSubmitEvent.fire();
-			genericAjaxPostAfterSubmitEvent.unsubscribeAll();
-
-			var div = document.getElementById(divName);
-			if(null == div) return;
-			div.innerHTML = o.responseText;
-			
-			var anim = new YAHOO.util.Anim(div, { opacity: { to: 1.0 } }, 1, YAHOO.util.Easing.easeOut);
-			anim.animate();
+	if(null == cb) {
+		$('#'+divName).fadeTo("slow", 0.2);
+		
+		var cb = function(html) {
+			$('#'+divName).html(html);
+			$('#'+divName).fadeTo("slow", 1.0);
 		};
 	}
-	
-	YAHOO.util.Connect.setForm(frm);
-	var cObj = YAHOO.util.Connect.asyncRequest('POST', DevblocksAppPath+'ajax.php'+(null!=args?('?'+args):''), {
-			success: cb,
-			failure: function(o) { },
-			argument: { caller:this,divName:divName }
-			},
-			null
+
+	$.ajax( {
+		type: "POST",
+		url: DevblocksAppPath+'ajax.php'+(null!=args?('?'+args):''),
+		data: $('#'+formName).serialize(),
+		cache: false,
+		success: cb 
+	} );
+}
+
+function devblocksAjaxDateChooser(div, field) {
+	var chooser = $("#"+div).datepicker(
+		{ 
+			dateFormat: 'DD, d MM, yy',
+			onSelect: function(dateText, inst) {
+				$("#"+field).val(dateText);
+				chooser.datepicker('destroy');					
+			}
+		}
 	);
-	YAHOO.util.Connect.setForm(0);
 }
