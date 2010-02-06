@@ -72,29 +72,6 @@ function selectValue(e) {
 	return e.options[e.selectedIndex].value;
 }
 
-function radioValue(e) {
-	var	numBoxes = e.length;
-
-	if(null == e.length) { // single
-		return e.value;
-	
-	} else { // multi
-		for(x=0;x<numBoxes;x++) {
-			if(e[x].checked)
-				return e[x].value;
-		}
-	}
-
-	return null;
-}
-
-function clearDiv(divName) {
-	var div = document.getElementById(divName);
-	if(null == div) return;
-	
-	div.innerHTML = '';
-}
-
 function interceptInputCRLF(e,cb) {
 	var code = (window.Event) ? e.which : event.keyCode;
 	
@@ -113,12 +90,6 @@ function getEventTarget(e) {
 	} else if (e.srcElement) {
 		return e.srcElement.nodeName;
 	}
-}
-
-function toggleClass(divName,c) {
-	var div = document.getElementById(divName);
-	if(null == div) return;
-	div.className = c;	
 }
 
 /* From:
@@ -230,12 +201,12 @@ function showLoadingPanel() {
 			title : 'Running...'
 		};
 
-	// Set the content
-	$("#loadingPanel").html("This may take a few moments.  Please wait!");
-	
 	if(0 == $("#loadingPanel").length) {
 		$("body").append("<div id='loadingPanel' style='display:none;'></div>");
 	}
+
+	// Set the content
+	$("#loadingPanel").html("This may take a few moments.  Please wait!");
 	
 	// Render
 	loadingPanel = $("#loadingPanel").dialog(options);
