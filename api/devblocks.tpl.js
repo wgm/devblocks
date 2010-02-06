@@ -389,14 +389,25 @@ function genericAjaxPost(formName,divName,args,cb) {
 	} );
 }
 
-function devblocksAjaxDateChooser(div, field) {
-	var chooser = $("#"+div).datepicker(
-		{ 
-			dateFormat: 'DD, d MM, yy',
-			onSelect: function(dateText, inst) {
-				$("#"+field).val(dateText);
+function devblocksAjaxDateChooser(field, div, options) {
+	if(null == options)
+		options = { 
+			changeMonth: true,
+			changeYear: true
+		} ;
+	
+	if(null == options.dateFormat)
+		options.dateFormat = 'DD, d MM yy';
+			
+	if(null == div) {
+		var chooser = $(field).datepicker(options);
+		
+	} else {
+		if(null == options.onSelect)
+			options.onSelect = function(dateText, inst) {
+				$(field).val(dateText);
 				chooser.datepicker('destroy');					
-			}
-		}
-	);
+			};
+		var chooser = $(div).datepicker(options);
+	}
 }
