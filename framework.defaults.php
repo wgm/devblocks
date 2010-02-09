@@ -56,6 +56,9 @@ define('DB_CHARSET_CODE','latin1'); // latin1, utf8
 if(!defined('APP_SESSION_NAME'))
 define('APP_SESSION_NAME', 'Devblocks');
 
+if(!defined('DEVELOPMENT_MODE'))
+define('DEVELOPMENT_MODE', false);
+
 // ----
 
 @ini_set('session.gc_maxlifetime','86400');
