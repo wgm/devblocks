@@ -2084,7 +2084,7 @@ class _DevblocksTemplateManager {
 
 			$instance->caching = 0;
 			$instance->cache_lifetime = 0;
-			$instance->compile_check = false;
+			$instance->compile_check = (defined('DEVELOPMENT_MODE') && DEVELOPMENT_MODE) ? true : false;
 			
 			// Devblocks plugins
 			$instance->register_block('devblocks_url', array(_DevblocksTemplateManager, 'block_devblocks_url'));
