@@ -97,6 +97,109 @@ class DevblocksPlatform extends DevblocksEngine {
 		return $parts;
 	}
 	
+	static function parseRss($url) {
+		// [TODO] curl | file_get_contents() support
+		// [TODO] rss://
+		
+		if(null == (@$data = file_get_contents($url)))
+			return false;
+		
+		if(null == (@$xml = simplexml_load_string($data)))
+			return false;
+			
+		// [TODO] Better detection of RDF/RSS/Atom + versions 
+		$root_tag = strtolower(dom_import_simplexml($xml)->tagName);
+		
+		if('feed'==$root_tag && count($xml->entry)) { // Atom
+			$feed = array(
+				'title' => (string) $xml->title,
+				'url' => $url,
+				'items' => array(),
+			);
+			
+			if(!count($xml))
+				return $feed;
+	
+			foreach($xml->entry as $entry) {
+				$id = (string) $entry->id;
+				$date = (string) $entry->published;
+				$title = (string) $entry->title;
+				$content = (string) $entry->summary;
+				$link = '';
+				
+				// Link as the <id> element
+				if(preg_match("/^(.*)\:\/\/(.*$)/i", $id, $matches)) {
+					$link = $id;
+				// Link as 'alternative' attrib
+				} elseif(count($entry->link)) {
+					foreach($entry->link as $link) {
+						if(0==strcasecmp('alternate',(string)$link['rel'])) {
+							$link = (string) $link['href'];
+							break;
+						}
+					}
+				}
+				 
+				$feed['items'][] = array(
+					'date' => strtotime($date),
+					'link' => $link,
+					'title' => $title,
+					'content' => $content,
+				);
+			}
+			
+		} elseif('rdf:rdf'==$root_tag && count($xml->item)) { // RDF
+			$feed = array(
+				'title' => (string) $xml->channel->title,
+				'url' => $url,
+				'items' => array(),
+			);
+			
+			if(!count($xml))
+				return $feed;
+	
+			foreach($xml->item as $item) {
+				$date = (string) $item->pubDate;
+				$link = (string) $item->link; 
+				$title = (string) $item->title;
+				$content = (string) $item->description;
+				
+				$feed['items'][] = array(
+					'date' => strtotime($date),
+					'link' => $link,
+					'title' => $title,
+					'content' => $content,
+				);
+			}
+			
+		} elseif('rss'==$root_tag && count($xml->channel->item)) { // RSS
+			$feed = array(
+				'title' => (string) $xml->channel->title,
+				'url' => $url,
+				'items' => array(),
+			);
+			
+			if(!count($xml))
+				return $feed;
+	
+			foreach($xml->channel->item as $item) {
+				$date = (string) $item->pubDate;
+				$link = (string) $item->link; 
+				$title = (string) $item->title;
+				$content = (string) $item->description;
+				
+				$feed['items'][] = array(
+					'date' => strtotime($date),
+					'link' => $link,
+					'title' => $title,
+					'content' => $content,
+				);
+			}
+		}
+			
+		return $feed;
+	}
+	
 	/**
 	 * Returns a string as alphanumerics delimited by underscores.
 	 * For example: "Devs: 1000 Ways to Improve Sales" becomes 
@@ -151,7 +254,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * 
 	 */
 	static function clearCache() {
-	    $cache = self::getCacheService(); /* @var $cache Zend_Cache_Core */
+	    $cache = self::getCacheService(); /* @var $cache _DevblocksCacheManager */
 	    $cache->remove(self::CACHE_ACL);
 	    $cache->remove(self::CACHE_PLUGINS);
 	    $cache->remove(self::CACHE_EVENT_POINTS);
@@ -229,15 +332,15 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return boolean
 	 */
 	static function versionConsistencyCheck() {
-		$cache = DevblocksPlatform::getCacheService(); /* @var Zend_Cache_Core $cache */ 
+		$cache = DevblocksPlatform::getCacheService(); /* @var _DevblocksCacheManager $cache */ 
 		
 		if(null === ($build_cache = $cache->load("devblocks_app_build"))
 			|| $build_cache != APP_BUILD) {
 				
 			// If build changed, clear cache regardless of patch status
 			// [TODO] We need to find a nicer way to not clear a shared memcached cluster when only one desk needs to
-			$cache = DevblocksPlatform::getCacheService(); /* @var $cache Zend_Cache_Core */
-			$cache->clean('all');
+			$cache = DevblocksPlatform::getCacheService(); /* @var $cache _DevblocksCacheManager */
+			$cache->clean();
 			
 			// Re-read manifests
 			DevblocksPlatform::readPlugins();
@@ -696,7 +799,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	}
 
 	/**
-	 * @return Zend_Log
+	 * @return _DevblocksLogManager
 	 */
 	static function getConsoleLog() {
 		return _DevblocksLogManager::getConsoleLog();
@@ -830,15 +933,17 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * @return _DevblocksTranslationManager
 	 */
 	static function getTranslationService() {
+		static $languages = array();
 		$locale = DevblocksPlatform::getLocale();
 
-	    if(Zend_Registry::isRegistered('Devblocks:getTranslationService:'.$locale)) {
-			return Zend_Registry::get('Devblocks:getTranslationService:'.$locale);
+		// Registry
+		if(isset($languages[$locale])) {
+			return $languages[$locale];
 		}
 						
 		$cache = self::getCacheService();
 	    
-	    if(null === ($map = $cache->load(self::CACHE_TAG_TRANSLATIONS.'_'.$locale))) { /* @var $cache Zend_Cache_Core */
+	    if(null === ($map = $cache->load(self::CACHE_TAG_TRANSLATIONS.'_'.$locale))) { /* @var $cache _DevblocksCacheManager */
 			$map = array();
 			$map_en = DAO_Translation::getMapByLang('en_US');
 			if(0 != strcasecmp('en_US', $locale))
@@ -875,14 +980,14 @@ class DevblocksPlatform extends DevblocksEngine {
 			unset($map_loc);
 			
 			// Cache with tag (tag allows easy clean for multiple langs at once)
-			$cache->save($map,self::CACHE_TAG_TRANSLATIONS.'_'.$locale,array(self::CACHE_TAG_TRANSLATIONS));
+			$cache->save($map,self::CACHE_TAG_TRANSLATIONS.'_'.$locale);
 	    }
 	    
 		$translate = _DevblocksTranslationManager::getInstance();
 		$translate->addLocale($locale, $map);
 		$translate->setLocale($locale);
 	    
-		Zend_Registry::set('Devblocks:getTranslationService:'.$locale, $translate);
+		$languages[$locale] = $translate;
 
 	    return $translate;
 	}

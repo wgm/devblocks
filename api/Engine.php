@@ -1,6 +1,4 @@
 <?php
-$path = DEVBLOCKS_PATH . 'libs/zend_framework/Zend/';
-require_once($path.'Cache.php');
 require_once(DEVBLOCKS_PATH . 'libs/swift/swift_required.php');
 
 function devblocks_autoload($className) {
@@ -674,15 +672,9 @@ class _DevblocksSessionManager {
 	}
 }
 
-/**
- * This class wraps Zend_Cache and implements a more intelligent 
- * cache manager that won't try to load the same cache twice 
- * during the same request.
- *
- */
 class _DevblocksCacheManager {
     private static $instance = null;
-    private static $_zend_cache = null;
+    private static $_cacher = null;
 	private $_registry = array();
 	private $_statistics = array();
 	private $_io_reads_long = 0;
@@ -698,15 +690,13 @@ class _DevblocksCacheManager {
 		if(null == self::$instance) {
 			self::$instance = new _DevblocksCacheManager();
 			
-	        $frontendOptions = array(
-	           'cache_id_prefix' => (defined('DEVBLOCKS_CACHE_PREFIX') && DEVBLOCKS_CACHE_PREFIX) ? DEVBLOCKS_CACHE_PREFIX : null,
-			   'lifetime' => 21600, // 6 hours 
-	           'write_control' => false,
-			   'automatic_serialization' => true,
+			$options = array(
+				'key_prefix' => ((defined('DEVBLOCKS_CACHE_PREFIX') && DEVBLOCKS_CACHE_PREFIX) ? DEVBLOCKS_CACHE_PREFIX : null), 
 			);
-
+			
 			// Shared-memory cache
-		    if(extension_loaded('memcache') && defined('DEVBLOCKS_MEMCACHED_SERVERS') && DEVBLOCKS_MEMCACHED_SERVERS) {
+		    if((extension_loaded('memcache') || extension_loaded('memcached')) 
+		    	&& defined('DEVBLOCKS_MEMCACHED_SERVERS') && DEVBLOCKS_MEMCACHED_SERVERS) {
 		    	$pairs = DevblocksPlatform::parseCsvString(DEVBLOCKS_MEMCACHED_SERVERS);
 		    	$servers = array();
 		    	
@@ -720,47 +710,38 @@ class _DevblocksCacheManager {
 		    		$servers[] = array(
 		    			'host'=>$host,
 		    			'port'=>$port,
-		    			'persistent'=>true
+//		    			'persistent'=>true
 		    		);
 		    	}
 		    	
-				$backendOptions = array(
-					'servers' => $servers
-				);
-						
-				self::$_zend_cache = Zend_Cache::factory('Core', 'Memcached', $frontendOptions, $backendOptions);
+				$options['servers'] = $servers;
+				
+				self::$_cacher = new _DevblocksCacheManagerMemcached($options);
 		    }
 
 		    // Disk-based cache (default)
-		    if(null == self::$_zend_cache) {
-				$backendOptions = array(
-				    'cache_dir' => APP_TEMP_PATH
-				);
+		    if(null == self::$_cacher) {
+		    	$options['cache_dir'] = APP_TEMP_PATH; 
 				
-				self::$_zend_cache = Zend_Cache::factory('Core', 'File', $frontendOptions, $backendOptions);
+				self::$_cacher = new _DevblocksCacheManagerDisk($options);
 		    }
 		}
+		
 		return self::$instance;
     }
     
-	public function save($data, $key, $tags=array(), $lifetime=false) {
+	public function save($data, $key, $tags=array(), $lifetime=0) {
 		// Monitor short-term cache memory usage
 		@$this->_statistics[$key] = intval($this->_statistics[$key]);
 		$this->_io_writes++;
-//		echo "Memory usage: ",memory_get_usage(true),"<BR>";
-		self::$_zend_cache->save($data, $key, $tags, $lifetime);
+		self::$_cacher->save($data, $key, $tags, $lifetime);
 		$this->_registry[$key] = $data;
 	}
 	
 	public function load($key, $nocache=false) {
-//		echo "Memory usage: ",memory_get_usage(true),"<BR>";
-//		print_r(array_keys($this->_registry));
-//		echo "<HR>";
-		
 		// Retrieving the long-term cache
 		if($nocache || !isset($this->_registry[$key])) {
-//			echo "Hit long-term cache for $key<br>";
-			if(false === ($this->_registry[$key] = self::$_zend_cache->load($key)))
+			if(false === ($this->_registry[$key] = self::$_cacher->load($key)))
 				return NULL;
 			
 			@$this->_statistics[$key] = intval($this->_statistics[$key]) + 1;
@@ -770,7 +751,6 @@ class _DevblocksCacheManager {
 		
 		// Retrieving the short-term cache
 		if(isset($this->_registry[$key])) {
-//			echo "Hit short-term cache for $key<br>";
 			@$this->_statistics[$key] = intval($this->_statistics[$key]) + 1;
 			$this->_io_reads_short++;
 			return $this->_registry[$key];
@@ -782,18 +762,14 @@ class _DevblocksCacheManager {
 	public function remove($key) {
 		unset($this->_registry[$key]);
 		unset($this->_statistics[$key]);
-		self::$_zend_cache->remove($key);
+		self::$_cacher->remove($key);
 	}
 	
-	public function clean($mode=null) {
+	public function clean() { // $mode=null
 		$this->_registry = array();
 		$this->_statistics = array();
 		
-		if(!empty($mode)) {
-			self::$_zend_cache->clean($mode);
-		} else { 
-			self::$_zend_cache->clean();
-		}
+		self::$_cacher->clean();
 	}
 	
 	public function printStatistics() {
@@ -804,6 +780,127 @@ class _DevblocksCacheManager {
 		echo "Reads (long): ",$this->_io_reads_long,"<BR>";
 		echo "Writes: ",$this->_io_writes,"<BR>";
 	}
+};
+
+abstract class _DevblocksCacheManagerAbstract {
+	protected $_options;
+	protected $_prefix = 'devblocks_cache---';
+	
+	function __construct($options) {
+		if(is_array($options))
+			$this->_options = $options;
+		
+		// Key prefix
+		if(!isset($this->_options['key_prefix']))
+			$this->_options['key_prefix'] = '';
+	}
+	
+	function save($data, $key, $tags=array(), $lifetime=0) {}
+	function load($key) {}
+	function remove($key) {}
+	function clean() {} // $mode=null
+};
+
+class _DevblocksCacheManagerMemcached extends _DevblocksCacheManagerAbstract {
+	private $_driver;
+	
+	function __construct($options) {
+		parent::__construct($options);
+		
+		if(extension_loaded('memcached'))
+			$this->_driver = new Memcached();
+		elseif(extension_loaded('memcache'))
+			$this->_driver = new Memcache();
+		else
+			die("PECL/Memcache or PECL/Memcached is not loaded.");
+			
+		// Check servers option
+		if(!isset($this->_options['servers']) || !is_array($this->_options['servers']))
+			die("_DevblocksCacheManagerMemcached requires the 'servers' option.");
+			
+		if(is_array($this->_options['servers']))
+		foreach($this->_options['servers'] as $params) {
+			$this->_driver->addServer($params['host'], $params['port']);
+		}
+	}
+	
+	function save($data, $key, $tags=array(), $lifetime=0) {
+		$key = $this->_options['key_prefix'] . $key;
+		return $this->_driver->set($key, $data, 0, $lifetime);
+	}
+	
+	function load($key) {
+		$key = $this->_options['key_prefix'] . $key;
+		return $this->_driver->get($key);
+	}
+	
+	function remove($key) {
+		$key = $this->_options['key_prefix'] . $key;
+		$this->_driver->delete($key);
+	}
+	
+	function clean() {
+		$this->_driver->flush();
+	}
+};
+
+class _DevblocksCacheManagerDisk extends _DevblocksCacheManagerAbstract {
+	function __construct($options) {
+		parent::__construct($options);
+
+		$path = $this->_getPath();
+		
+		if(null == $path)
+			die("_DevblocksCacheManagerDisk requires the 'cache_dir' option.");
+
+		// Ensure we have a trailing slash
+		$this->_options['cache_dir'] = rtrim($path,"\\/") . DIRECTORY_SEPARATOR;
+			
+		if(!is_writeable($path))
+			die("_DevblocksCacheManagerDisk requires write access to the 'path' directory ($path)");
+	}
+	
+	private function _getPath() {
+		return $this->_options['cache_dir'];
+	}
+	
+	private function _getFilename($key) {
+		$safe_key = preg_replace("/[^A-Za-z0-9_\-]/",'_', $key);
+		return $this->_prefix . $safe_key;
+	}
+	
+	function load($key) {
+		$key = $this->_options['key_prefix'] . $key;
+		return @unserialize(file_get_contents($this->_getPath() . $this->_getFilename($key)));
+	}
+	
+	function save($data, $key, $tags=array(), $lifetime=0) {
+		$key = $this->_options['key_prefix'] . $key;
+		return file_put_contents($this->_getPath() . $this->_getFilename($key), serialize($data));
+	}
+	
+	function remove($key) {
+		$key = $this->_options['key_prefix'] . $key;
+		$file = $this->_getPath() . $this->_getFilename($key);
+		if(file_exists($file))
+			unlink($file);
+	}
+	
+	function clean() {
+		$path = $this->_getPath();
+		
+		$files = scandir($path);
+		unset($files['.']);
+		unset($files['..']);
+		
+		if(is_array($files))
+		foreach($files as $file) {
+			if(0==strcmp('devblocks_cache',substr($file,0,15))) {
+				unlink($path . $file);
+			}
+		}
+		
+	}	
 };
 
 class _DevblocksEventManager {
@@ -2335,7 +2432,6 @@ class _DevblocksClassLoadManager {
 			$this->classMap = $map;
 		} else {
 			$this->_initLibs();	
-			$this->_initZend();
 			$this->_initPlugins();
 			$cache->save($this->classMap, self::CACHE_CLASS_MAP);
 		}
@@ -2386,95 +2482,61 @@ class _DevblocksClassLoadManager {
 	
 	private function _initLibs() {
 	}
-	
-	private function _initZend() {
-		$path = APP_PATH . '/libs/devblocks/libs/zend_framework/Zend/';
-		
-		$this->registerClasses($path . 'Cache.php', array(
-			'Zend_Cache',
-		));
-		
-		$this->registerClasses($path . 'Exception.php', array(
-			'Zend_Exception',
-		));
-		
-	    $this->registerClasses($path . 'Registry.php', array(
-			'Zend_Registry',
-		));
-		
-		$this->registerClasses($path . 'Feed/Exception.php', array(
-			'Zend_Feed_Exception',
-		));
-		
-		$this->registerClasses($path . 'Feed.php', array(
-			'Zend_Feed',
-		));
-		
-		$this->registerClasses($path . 'Feed/Atom.php', array(
-			'Zend_Feed_Atom',
-		));
-		
-		$this->registerClasses($path . 'Feed/Builder.php', array(
-			'Zend_Feed_Builder',
-		));
-		
-		$this->registerClasses($path . 'Feed/Rss.php', array(
-			'Zend_Feed_Rss',
-		));
-		
-		$this->registerClasses($path . 'Json.php', array(
-			'Zend_Json',
-		));
-		
-		$this->registerClasses($path . 'Log.php', array(
-			'Zend_Log',
-		));
-		
-		$this->registerClasses($path . 'Log/Writer/Stream.php', array(
-			'Zend_Log_Writer_Stream',
-		));
-		
-		$this->registerClasses($path . 'Mail.php', array(
-			'Zend_Mail',
-		));
-		
-		$this->registerClasses($path . 'Mail/Storage/Pop3.php', array(
-			'Zend_Mail_Storage_Pop3',
-		));
-		
-		$this->registerClasses($path . 'Mime.php', array(
-			'Zend_Mime',
-		));
-		
-		$this->registerClasses($path . 'Validate/EmailAddress.php', array(
-			'Zend_Validate_EmailAddress',
-		));
-		
-		$this->registerClasses($path . 'Mail/Transport/Smtp.php', array(
-			'Zend_Mail_Transport_Smtp',
-		));
-		
-		$this->registerClasses($path . 'Mail/Transport/Sendmail.php', array(
-			'Zend_Mail_Transport_Sendmail',
-		));
-	}
 };
 
 class _DevblocksLogManager {
-	static $consoleLogger = null;
+	static $_instance = null;
+	
+    // Used the ZF classifications
+	private static $_log_levels = array(
+		'emerg' => 0,		// Emergency: system is unusable
+		'emergency' => 0,	
+		'alert' => 1,		// Alert: action must be taken immediately
+		'crit' => 2,		// Critical: critical conditions
+		'critical' => 2,	
+		'err' => 3,			// Error: error conditions
+		'error' => 3,		
+		'warn' => 4,		// Warning: warning conditions
+		'warning' => 4,		
+		'notice' => 5,		// Notice: normal but significant condition
+		'info' => 6,		// Informational: informational messages
+		'debug' => 7,		// Debug: debug messages
+	);
+
+	private $_log_level = 0;
+	private $_fp = null;
 	
 	static function getConsoleLog() {
-		if(null == self::$consoleLogger) {
-			$writer = new Zend_Log_Writer_Stream('php://output');
-			$writer->setFormatter(new Zend_Log_Formatter_Simple('[%priorityName%]: %message%<BR>' . PHP_EOL));
-			self::$consoleLogger = new Zend_Log($writer);
-			
-			// Allow query string overloading Devblocks-wide
-			@$log_level = DevblocksPlatform::importGPC($_REQUEST['loglevel'],'integer',0);
-			self::$consoleLogger->addFilter(new Zend_Log_Filter_Priority($log_level));
+		if(null == self::$_instance) {
+			self::$_instance = new _DevblocksLogManager();
 		}
 		
-		return self::$consoleLogger;
+		return self::$_instance;
+	}
+	
+	private function __construct() {
+		// Allow query string overloading Devblocks-wide
+		@$log_level = DevblocksPlatform::importGPC($_REQUEST['loglevel'],'integer', 0);
+		$this->_log_level = intval($log_level);
+		
+		// Open file pointer
+		$this->_fp = fopen('php://output', 'w+');
+	}
+	
+	public function __destruct() {
+		@fclose($this->_fp);	
+	}	
+	
+	public function __call($name, $args) {
+		if(isset(self::$_log_levels[$name])) {
+			if(self::$_log_levels[$name] <= $this->_log_level) {
+				$out = sprintf("[%s] %s<BR>\n",
+					strtoupper($name),
+					$args[0]
+				);
+				fputs($this->_fp, $out);
+			}
+		}
 	}
 };
 
