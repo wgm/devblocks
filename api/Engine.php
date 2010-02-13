@@ -2395,7 +2395,7 @@ class _DevblocksDatabaseManager {
 		$this->Connect(APP_DB_HOST, APP_DB_USER, APP_DB_PASS, APP_DB_DATABASE, $persistent);
 	}
 	
-	function Connect($host, $user, $password, $database, $persistent=false) {
+	function Connect($host, $user, $pass, $database, $persistent=false) {
 		if($persistent) {
 			if(false === (@$this->_db = mysql_pconnect($host, $user, $pass)))
 				return false;
