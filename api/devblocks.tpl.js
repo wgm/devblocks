@@ -290,7 +290,7 @@ function genericAjaxPanelPostCloseReloadView(frm, view_id, has_output) {
 		has_output = false;
 
 	if(has_view)
-		$('#view'+view_id).fadeTo("slow", 0.2);
+		$('#view'+view_id).fadeTo("normal", 0.2);
 	
 	genericAjaxPost(frm,view_id,'',
 		function(html) {
@@ -302,7 +302,7 @@ function genericAjaxPanelPostCloseReloadView(frm, view_id, has_output) {
 			}
 
 			if(has_view)
-				$('#view'+view_id).fadeTo("slow", 1.0);
+				$('#view'+view_id).fadeTo("normal", 1.0);
 
 			if(null != genericPanel) {
 				genericPanel.trigger('devblocks_dialogsaved');
@@ -322,11 +322,11 @@ function genericAjaxGet(divName,args,cb) {
 		divName = 'null';
 
 	if(null == cb) {
-		$('#'+divName).fadeTo("slow", 0.2);
+		$('#'+divName).fadeTo("normal", 0.2);
 		
 		var cb = function(html) {
 			$('#'+divName).html(html);
-			$('#'+divName).fadeTo("slow", 1.0);
+			$('#'+divName).fadeTo("normal", 1.0);
 		}
 	}
 	
@@ -343,11 +343,11 @@ function genericAjaxPost(formName,divName,args,cb) {
 		divName = 'null';
 	
 	if(null == cb) {
-		$('#'+divName).fadeTo("slow", 0.2);
+		$('#'+divName).fadeTo("normal", 0.2);
 		
 		var cb = function(html) {
 			$('#'+divName).html(html);
-			$('#'+divName).fadeTo("slow", 1.0);
+			$('#'+divName).fadeTo("normal", 1.0);
 		};
 	}
 
