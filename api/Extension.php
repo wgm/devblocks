@@ -44,12 +44,13 @@ class DevblocksExtension {
 		$db = DevblocksPlatform::getDatabaseService();
 		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 
-		$db->Replace(
-			$prefix.'property_store',
-			array('extension_id'=>$db->qstr($this->id),'property'=>$db->qstr($key),'value'=>$db->qstr($value)),
-			array('extension_id','property'),
-			false
-		);
+		$db->Execute(sprintf(
+			"REPLACE INTO ${prefix}property_store (extension_id, property, value) ".
+			"VALUES (%s,%s,%s)",
+			$db->qstr($this->id),
+			$db->qstr($key),
+			$db->qstr($value)	
+		));			
 	}
 	
 	function getParam($key,$default=null) {
@@ -83,12 +84,10 @@ class DevblocksExtension {
 			$prefix,
 			$db->qstr($this->id)
 		);
-		$rs = $db->Execute($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		$results = $db->GetArray($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); 
 		
-		if(is_a($rs,'ADORecordSet'))
-		while(!$rs->EOF) {
-			$params[$rs->fields['property']] = $rs->fields['value'];
-			$rs->MoveNext();
+		foreach($results as $row) {
+			$params[$row['property']] = $row['value'];
 		}
 		
 		return $params;

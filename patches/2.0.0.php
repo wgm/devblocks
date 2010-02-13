@@ -1,125 +1,121 @@
 <?php
-/***********************************************************************
-| Cerberus Helpdesk(tm) developed by WebGroup Media, LLC.
-|-----------------------------------------------------------------------
-| All source code & content (c) Copyright 2010, WebGroup Media LLC
-|   unless specifically noted otherwise.
-|
-| This source code is released under the Cerberus Public License.
-| The latest version of this license can be found here:
-| http://www.cerberusweb.com/license.php
-|
-| By using this software, you acknowledge having read this license
-| and agree to be bound thereby.
-| ______________________________________________________________________
-|	http://www.cerberusweb.com	  http://www.webgroupmedia.com/
-***********************************************************************/
-
 $db = DevblocksPlatform::getDatabaseService();
-$datadict = NewDataDictionary($db); /* @var $datadict ADODB_DataDict */ // ,'mysql' 
+$tables = $db->metaTables();
 
 $prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
-
-$tables = $datadict->MetaTables();
-$tables = array_flip($tables);
 
 // ============================================================================
 // property_store updates
 
-$columns = $datadict->MetaColumns($prefix.'property_store');
-$indexes = $datadict->MetaIndexes($prefix.'property_store',false);
+list($columns, $indexes) = $db->metaTable($prefix.'property_store');
 
 // Fix blob encoding
-if(isset($columns['VALUE'])) {
-	if(0==strcasecmp('longblob',$columns['VALUE']->type)) {
+if(isset($columns['value'])) {
+	if(0 == strcasecmp('mediumblob',$columns['value']['type'])) {
 		$sql = sprintf("ALTER TABLE ${prefix}property_store CHANGE COLUMN value value TEXT");
 		$db->Execute($sql);
 	}
 }
 
 // Drop instance ID
-if(isset($columns['INSTANCE_ID'])) {
-	$sql = $datadict->DropColumnSQL($prefix.'property_store', 'instance_id');
-	$datadict->ExecuteSQLArray($sql);	
+if(isset($columns['instance_id'])) {
+	$db->Execute("ALTER TABLE ${prefix}property_store DROP COLUMN instance_id");
 }
 
 // ============================================================================
 // plugin updates
 
-$columns = $datadict->MetaColumns($prefix.'plugin');
-$indexes = $datadict->MetaIndexes($prefix.'plugin',false);
+list($columns, $indexes) = $db->metaTable($prefix.'plugin');
 
 // Drop 'file'
-if(isset($columns['FILE'])) {
-	$sql = $datadict->DropColumnSQL($prefix.'plugin', 'file');
-	$datadict->ExecuteSQLArray($sql);	
+if(isset($columns['file'])) {
+	$db->Execute("ALTER TABLE ${prefix}plugin DROP COLUMN file");
 }
 
 // Drop 'class'
-if(isset($columns['CLASS'])) {
-	$sql = $datadict->DropColumnSQL($prefix.'plugin', 'class');
-	$datadict->ExecuteSQLArray($sql);	
+if(isset($columns['class'])) {
+	$db->Execute("ALTER TABLE ${prefix}plugin DROP COLUMN class");
 }
 
 // ============================================================================
 // devblocks_setting
 
 if(!isset($tables['devblocks_setting'])) {
-    $flds = "
-    	plugin_id C(255) DEFAULT '' NOTNULL PRIMARY,
-		setting C(32) DEFAULT '' NOTNULL PRIMARY,
-		value C(255) DEFAULT '' NOTNULL
-    ";
-    $sql = $datadict->CreateTableSQL('devblocks_setting', $flds);
-    $datadict->ExecuteSQLArray($sql);
+	$sql = "
+		CREATE TABLE IF NOT EXISTS devblocks_setting (
+	    	plugin_id VARCHAR(255) DEFAULT '' NOT NULL,
+			setting VARCHAR(32) DEFAULT '' NOT NULL,
+			value VARCHAR(255) DEFAULT '' NOT NULL,
+			PRIMARY KEY (plugin_id, setting)
+		) ENGINE=MyISAM;
+	";
+	$db->Execute($sql);	
 }
-
-$columns = $datadict->MetaColumns('devblocks_setting');
-$indexes = $datadict->MetaIndexes('devblocks_setting',false);
 
 // ============================================================================
 // devblocks_template
 
 if(!isset($tables['devblocks_template'])) {
-    $flds = "
-    	id I4 DEFAULT 0 NOTNULL PRIMARY,
-    	plugin_id C(255) DEFAULT '' NOTNULL,
-		path C(255) DEFAULT '' NOTNULL,
-		tag C(255) DEFAULT '' NOTNULL,
-		last_updated I4 DEFAULT 0 NOTNULL,
-		content XL
-    ";
-    $sql = $datadict->CreateTableSQL('devblocks_template', $flds);
-    $datadict->ExecuteSQLArray($sql);
+	$sql = "
+		CREATE TABLE IF NOT EXISTS devblocks_template (
+	    	id INT UNSIGNED DEFAULT 0 NOT NULL,
+	    	plugin_id VARCHAR(255) DEFAULT '' NOT NULL,
+			path VARCHAR(255) DEFAULT '' NOT NULL,
+			tag VARCHAR(255) DEFAULT '' NOT NULL,
+			last_updated INT UNSIGNED DEFAULT 0 NOT NULL,
+			content MEDIUMTEXT,
+			PRIMARY KEY (id)
+		) ENGINE=MyISAM;
+	";
+	$db->Execute($sql);	
 }
-
-$columns = $datadict->MetaColumns('devblocks_template');
-$indexes = $datadict->MetaIndexes('devblocks_template',false);
 
 // ===========================================================================
 // Add 'template' manifests to 'plugin'
 
-$columns = $datadict->MetaColumns($prefix.'plugin');
-$indexes = $datadict->MetaIndexes($prefix.'plugin',false);
+list($columns, $indexes) = $db->metaTable($prefix.'plugin');
 
-if(!isset($columns['TEMPLATES_JSON'])) {
-	$sql = $datadict->AddColumnSQL($prefix.'plugin', "templates_json XL");
-	$datadict->ExecuteSQLArray($sql);
+if(!isset($columns['templates_json'])) {
+	$db->Execute("ALTER TABLE ${prefix}plugin ADD COLUMN templates_json MEDIUMTEXT");
 }
 
 // ============================================================================
 // Extension updates
 
-$columns = $datadict->MetaColumns($prefix.'extension');
-$indexes = $datadict->MetaIndexes($prefix.'extension',false);
+list($columns, $indexes) = $db->metaTable($prefix.'extension');
 
 // Fix blob encoding
-if(isset($columns['PARAMS'])) {
-	if(0==strcasecmp('longblob',$columns['PARAMS']->type)) {
+if(isset($columns['params'])) {
+	if(0==strcasecmp('mediumblob',$columns['params']['type'])) {
 		$sql = sprintf("ALTER TABLE ${prefix}extension CHANGE COLUMN params params TEXT");
 		$db->Execute($sql);
 	}
 }
 
+// ============================================================================
+// Drop ADODB sessions
+
+if(isset($tables[$prefix.'session'])) {
+	$db->Execute("DROP TABLE ${prefix}session");
+	unset($tables[$prefix.'session']);	
+}
+
+// ============================================================================
+// Add Devblocks-backed sessions
+
+if(!isset($tables['devblocks_session'])) {
+	$sql = "
+		CREATE TABLE IF NOT EXISTS devblocks_session (
+			session_key VARCHAR(64) DEFAULT '' NOT NULL,
+			created INT UNSIGNED DEFAULT 0 NOT NULL,
+			updated INT UNSIGNED DEFAULT 0 NOT NULL,
+			session_data MEDIUMBLOB,
+			PRIMARY KEY (session_key),
+			INDEX created (created),
+			INDEX modified (modified)
+		) ENGINE=MyISAM;
+	";
+	$db->Execute($sql);	
+}
 
 return TRUE;

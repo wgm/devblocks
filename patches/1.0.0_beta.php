@@ -1,159 +1,89 @@
 <?php
-/***********************************************************************
-| Cerberus Helpdesk(tm) developed by WebGroup Media, LLC.
-|-----------------------------------------------------------------------
-| All source code & content (c) Copyright 2007, WebGroup Media LLC
-|   unless specifically noted otherwise.
-|
-| This source code is released under the Cerberus Public License.
-| The latest version of this license can be found here:
-| http://www.cerberusweb.com/license.php
-|
-| By using this software, you acknowledge having read this license
-| and agree to be bound thereby.
-| ______________________________________________________________________
-|	http://www.cerberusweb.com	  http://www.webgroupmedia.com/
-***********************************************************************/
-/*
- * IMPORTANT LICENSING NOTE from your friends on the Cerberus Helpdesk Team
- * 
- * Sure, it would be so easy to just cheat and edit this file to use the 
- * software without paying for it.  But we trust you anyway.  In fact, we're 
- * writing this software for you! 
- * 
- * Quality software backed by a dedicated team takes money to develop.  We 
- * don't want to be out of the office bagging groceries when you call up 
- * needing a helping hand.  We'd rather spend our free time coding your 
- * feature requests than mowing the neighbors' lawns for rent money. 
- * 
- * We've never believed in encoding our source code out of paranoia over not 
- * getting paid.  We want you to have the full source code and be able to 
- * make the tweaks your organization requires to get more done -- despite 
- * having less of everything than you might need (time, people, money, 
- * energy).  We shouldn't be your bottleneck.
- * 
- * We've been building our expertise with this project since January 2002.  We 
- * promise spending a couple bucks [Euro, Yuan, Rupees, Galactic Credits] to 
- * let us take over your shared e-mail headache is a worthwhile investment.  
- * It will give you a sense of control over your in-box that you probably 
- * haven't had since spammers found you in a game of "E-mail Address 
- * Battleship".  Miss. Miss. You sunk my in-box!
- * 
- * A legitimate license entitles you to support, access to the developer 
- * mailing list, the ability to participate in betas and the warm fuzzy 
- * feeling of feeding a couple obsessed developers who want to help you get 
- * more done than 'the other guy'.
- *
- * - Jeff Standen, Mike Fogg, Brenan Cavish, Darren Sugita, Dan Hildebrandt
- * 		and Joe Geck.
- *   WEBGROUP MEDIA LLC. - Developers of Cerberus Helpdesk
- */
 $db = DevblocksPlatform::getDatabaseService();
-$datadict = NewDataDictionary($db); /* @var $datadict ADODB_DataDict */ // ,'mysql' 
+$tables = $db->metaTables();
 
 $prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 
-$tables = $datadict->MetaTables();
-$tables = array_flip($tables);
-
 // `plugin` ========================
-$columns = $datadict->MetaColumns($prefix.'plugin');
-$indexes = $datadict->MetaIndexes($prefix.'plugin',false);
+list($columns, $indexes) = $db->metaTable($prefix.'plugin');
 
-if(!isset($columns['FILE'])) {
-	$sql = $datadict->AddColumnSQL($prefix.'plugin',"file C(128) DEFAULT '' NOTNULL");
-	$datadict->ExecuteSQLArray($sql);
+if(!isset($columns['file'])) {
+	$sql = "ALTER TABLE ${prefix}plugin ADD COLUMN file VARCHAR(128) DEFAULT '' NOT NULL";
+	$db->Execute($sql);
 }
 
-if(!isset($columns['CLASS'])) {
-	$sql = $datadict->AddColumnSQL($prefix.'plugin',"class C(128) DEFAULT '' NOTNULL");
-	$datadict->ExecuteSQLArray($sql);
+if(!isset($columns['class'])) {
+	$sql = "ALTER TABLE ${prefix}plugin ADD COLUMN class VARCHAR(128) DEFAULT '' NOT NULL";
+	$db->Execute($sql);
 }
 
-if(!isset($columns['LINK'])) {
-	$sql = $datadict->AddColumnSQL($prefix.'plugin',"link C(128) DEFAULT '' NOTNULL");
-	$datadict->ExecuteSQLArray($sql);
+if(!isset($columns['link'])) {
+	$sql = "ALTER TABLE ${prefix}plugin ADD COLUMN link VARCHAR(128) DEFAULT '' NOT NULL";
+	$db->Execute($sql);
 }
 
-if(isset($columns['IS_CONFIGURABLE'])) {
-	$sql = $datadict->DropColumnSQL($prefix.'plugin','is_configurable');
-	$datadict->ExecuteSQLArray($sql);
+if(isset($columns['is_configurable'])) {
+	$sql = "ALTER TABLE ${prefix}plugin DROP COLUMN is_configurable";
+	$db->Execute($sql);
 }
 
 // `property_store` ========================
-$columns = $datadict->MetaColumns($prefix.'property_store');
-$indexes = $datadict->MetaIndexes($prefix.'property_store',false);
+list($columns, $indexes) = $db->metaTable($prefix.'property_store');
 
-if(255 == @$columns['VALUE']->max_length) {
-	$datadict->ExecuteSQLArray($datadict->RenameColumnSQL($prefix.'property_store', 'value', 'value_old',"value_old C(255) DEFAULT '' NOTNULL"));
-	$datadict->ExecuteSQLArray($datadict->AddColumnSQL($prefix.'property_store', "value B"));
+if(isset($columns['value']) && 0==strcasecmp('varchar',substr($columns['value']['type'],0,7))) {
+	$db->Execute("ALTER TABLE ${prefix}property_store CHANGE COLUMN value value_old VARCHAR(255) DEFAULT '' NOT NULL");
+	$db->Execute("ALTER TABLE ${prefix}property_store ADD COLUMN value MEDIUMBLOB");
 	
 	$sql = "SELECT extension_id, instance_id, property, value_old FROM ${prefix}property_store ";
-	$rs = $db->Execute($sql);
+	$rs = $db->GetArray($sql);
 	
-	if(is_a($rs,'ADORecordSet'))
-	while(!$rs->EOF) {
-		@$db->UpdateBlob(
-			$prefix.'property_store',
-			'value',
-			$rs->fields['value_old'],
-			sprintf("extension_id = %s AND instance_id = %s AND property = %s",
-				$db->qstr($rs->fields['extension_id']),
-				$db->qstr($rs->fields['instance_id']),
-				$db->qstr($rs->fields['property'])
-			)
+	foreach($rs as $row) {
+		$sql = sprintf(
+			"UPDATE ${prefix}property_store ".
+			"SET value=%s ".
+			"WHERE extension_id = %s ".
+			"AND instance_id = %s ".
+			"AND property = %s",
+			$db->qstr($row['value_old']),
+			$db->qstr($row['extension_id']),
+			$db->qstr($row['instance_id']),
+			$db->qstr($row['property'])
 		);
-		$rs->MoveNext();
 	}
 	
-	if($rs)
-		$datadict->ExecuteSQLArray($datadict->DropColumnSQL($prefix.'property_store', 'value_old'));
+	$db->Execute("ALTER TABLE ${prefix}property_store DROP COLUMN value_old");
 }
 
 // `translation` ========================
 if(!isset($tables['translation'])) {
-	$flds ="
-		id I4 DEFAULT 0 NOTNULL PRIMARY,
-		string_id C(255) DEFAULT '' NOTNULL,
-		lang_code C(16) DEFAULT '' NOTNULL,
-		string_default XL,
-		string_override XL
+	$sql = "
+		CREATE TABLE IF NOT EXISTS translation (
+			id INT UNSIGNED DEFAULT 0 NOT NULL,
+			string_id VARCHAR(255) DEFAULT '' NOT NULL,
+			lang_code VARCHAR(16) DEFAULT '' NOT NULL,
+			string_default LONGTEXT,
+			string_override LONGTEXT,
+			PRIMARY KEY (id),
+			INDEX string_id (string_id),
+			INDEX lang_code (lang_code)
+		) ENGINE=MyISAM;
 	";
-	
-	$sql = $datadict->CreateTableSQL('translation', $flds);
-	$datadict->ExecuteSQLArray($sql);
+	$db->Execute($sql);
 }
-
-$columns = $datadict->MetaColumns('translation');
-$indexes = $datadict->MetaIndexes('translation',false);
-
-if(!isset($indexes['string_id'])) {
-	$sql = $datadict->CreateIndexSQL('string_id','translation','string_id');
-	$datadict->ExecuteSQLArray($sql);
-}
-
-if(!isset($indexes['lang_code'])) {
-	$sql = $datadict->CreateIndexSQL('lang_code','translation','lang_code');
-	$datadict->ExecuteSQLArray($sql);
-}
-
 
 // ============================================================================
 // ACL privileges from plugins
 
 if(!isset($tables[$prefix.'acl'])) {
-	$flds ="
-		id C(255) DEFAULT '' NOTNULL PRIMARY,
-		plugin_id C(255) DEFAULT '' NOTNULL,
-		label C(255) DEFAULT '' NOTNULL
+	$sql = "
+		CREATE TABLE IF NOT EXISTS ${prefix}acl (
+			id VARCHAR(255) DEFAULT '' NOT NULL,
+			plugin_id VARCHAR(255) DEFAULT '' NOT NULL,
+			label VARCHAR(255) DEFAULT '' NOT NULL,
+			PRIMARY KEY (id)
+		) ENGINE=MyISAM;
 	";
-	
-	$sql = $datadict->CreateTableSQL($prefix.'acl', $flds);
-	$datadict->ExecuteSQLArray($sql);
-}
-
-$columns = $datadict->MetaColumns($prefix.'acl');
-$indexes = $datadict->MetaIndexes($prefix.'acl',false);
-
+	$db->Execute($sql);	
+}	
 
 return TRUE;

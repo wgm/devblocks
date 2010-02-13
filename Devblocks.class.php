@@ -4,7 +4,7 @@ include_once(DEVBLOCKS_PATH . "api/Model.php");
 include_once(DEVBLOCKS_PATH . "api/DAO.php");
 include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
-define('PLATFORM_BUILD',305);
+define('PLATFORM_BUILD',2010021201);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -314,13 +314,13 @@ class DevblocksPlatform extends DevblocksEngine {
 	    $tables = array();
 	    
 	    if(null === ($tables = $cache->load(self::CACHE_TABLES))) {
-	        $db = self::getDatabaseService(); /* @var $db ADODB_Connection */
+	        $db = self::getDatabaseService();
 	        
 	        // Make sure the database connection is valid or error out.
-	        if(is_null($db) || !$db->IsConnected())
+	        if(is_null($db) || !$db->isConnected())
 	        	return array();
 	        
-	        $tables = $db->MetaTables('TABLE',false);
+	        $tables = $db->metaTables();
 	        $cache->save($tables, self::CACHE_TABLES);
 	    }
 	    return $tables;
@@ -389,8 +389,9 @@ class DevblocksPlatform extends DevblocksEngine {
 	 */
 	static function runPluginPatches() {
 	    // Log out all sessions before patching
+	    // [TODO] The session manager should take care of this (and call an additional method on the handler)
 		$db = DevblocksPlatform::getDatabaseService();
-		$db->Execute(sprintf("DELETE FROM %s_session", APP_DB_PREFIX));
+		$db->Execute("DELETE FROM devblocks_session");
 		
 		$patchMgr = DevblocksPlatform::getPatchService();
 		
@@ -529,23 +530,21 @@ class DevblocksPlatform extends DevblocksEngine {
 					$prefix,
 					$prefix
 				);
-			$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
+			$results = $db->GetArray($sql); 
 				
-			if(is_a($rs,'ADORecordSet'))
-			while(!$rs->EOF) {
+			foreach($results as $row) {
 			    $extension = new DevblocksExtensionManifest();
-			    $extension->id = $rs->fields['id'];
-			    $extension->plugin_id = $rs->fields['plugin_id'];
-			    $extension->point = $rs->fields['point'];
-			    $extension->name = $rs->fields['name'];
-			    $extension->file = $rs->fields['file'];
-			    $extension->class = $rs->fields['class'];
-			    $extension->params = @unserialize($rs->fields['params']);
+			    $extension->id = $row['id'];
+			    $extension->plugin_id = $row['plugin_id'];
+			    $extension->point = $row['point'];
+			    $extension->name = $row['name'];
+			    $extension->file = $row['file'];
+			    $extension->class = $row['class'];
+			    $extension->params = @unserialize($row['params']);
 		
 			    if(empty($extension->params))
 					$extension->params = array();
 				$extensions[$extension->id] = $extension;
-			    $rs->MoveNext();
 			}
 
 			$cache->save($extensions, self::CACHE_EXTENSIONS);
@@ -609,18 +608,15 @@ class DevblocksPlatform extends DevblocksEngine {
 			$prefix,
 			$prefix
 		);
-		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
+		$results = $db->GetArray($sql); 
 		
-		if(is_a($rs,'ADORecordSet'))
-		while(!$rs->EOF) {
+		foreach($results as $row) {
 			$priv = new DevblocksAclPrivilege();
-			$priv->id = $rs->fields['id'];
-			$priv->plugin_id = $rs->fields['plugin_id'];
-			$priv->label = $rs->fields['label'];
+			$priv->id = $row['id'];
+			$priv->plugin_id = $row['plugin_id'];
+			$priv->label = $row['label'];
 			
 		    $acl[$priv->id] = $priv;
-		    
-		    $rs->MoveNext();
 		}
         
 		$cache->save($acl, self::CACHE_ACL);
@@ -676,53 +672,47 @@ class DevblocksPlatform extends DevblocksEngine {
 			"ORDER BY p.enabled DESC, p.name ASC ",
 			$prefix
 		);
-		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
-		
-		if(is_a($rs,'ADORecordSet'))
-		while(!$rs->EOF) {
+		$results = $db->GetArray($sql); 
+
+		foreach($results as $row) {
 		    $plugin = new DevblocksPluginManifest();
-		    @$plugin->id = $rs->fields['id'];
-		    @$plugin->enabled = intval($rs->fields['enabled']);
-		    @$plugin->name = $rs->fields['name'];
-		    @$plugin->description = $rs->fields['description'];
-		    @$plugin->author = $rs->fields['author'];
-		    @$plugin->revision = intval($rs->fields['revision']);
-		    @$plugin->link = $rs->fields['link'];
-		    @$plugin->dir = $rs->fields['dir'];
+		    @$plugin->id = $row['id'];
+		    @$plugin->enabled = intval($row['enabled']);
+		    @$plugin->name = $row['name'];
+		    @$plugin->description = $row['description'];
+		    @$plugin->author = $row['author'];
+		    @$plugin->revision = intval($row['revision']);
+		    @$plugin->link = $row['link'];
+		    @$plugin->dir = $row['dir'];
 
 		    // JSON decode templates
-		    if(null != ($templates_json = $rs->Fields('templates_json'))) {
+		    if(null != ($templates_json = $row['templates_json'])) {
 		    	$plugin->templates = json_decode($templates_json, true);
 		    }
 		    
 		    if(file_exists(APP_PATH . DIRECTORY_SEPARATOR . $plugin->dir . DIRECTORY_SEPARATOR . 'plugin.xml')) {
 		        $plugins[$plugin->id] = $plugin;
 		    }
-		    	
-		    $rs->MoveNext();
 		}
 
 		$sql = sprintf("SELECT p.id, p.name, p.params, p.plugin_id ".
 		    "FROM %sevent_point p ",
 		    $prefix
 		);
-		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
+		$results = $db->GetArray($sql); 
 
-		if(is_a($rs,'ADORecordSet'))
-		while(!$rs->EOF) {
+		foreach($results as $row) {
 		    $point = new DevblocksEventPoint();
-		    $point->id = $rs->fields['id'];
-		    $point->name = $rs->fields['name'];
-		    $point->plugin_id = $rs->fields['plugin_id'];
+		    $point->id = $row['id'];
+		    $point->name = $row['name'];
+		    $point->plugin_id = $row['plugin_id'];
 		    
-		    $params = $rs->fields['params'];
+		    $params = $row['params'];
 		    $point->params = !empty($params) ? unserialize($params) : array();
 
 		    if(isset($plugins[$point->plugin_id])) {
 		    	$plugins[$point->plugin_id]->event_points[$point->id] = $point;
 		    }
-		    
-		    $rs->MoveNext();
 		}
 			
 		$cache->save($plugins, self::CACHE_PLUGINS);
@@ -815,7 +805,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	/**
 	 * Enter description here...
 	 *
-	 * @return ADOConnection
+	 * @return _DevblocksDatabaseManager
 	 */
 	static function getDatabaseService() {
 	    return _DevblocksDatabaseManager::getInstance();
@@ -1105,6 +1095,6 @@ class PlatformPatchContainer extends DevblocksPatchContainerExtension {
 		$this->registerPatch(new DevblocksPatch('devblocks.core',1,$file_prefix.'1.0.0.php',''));
 		$this->registerPatch(new DevblocksPatch('devblocks.core',253,$file_prefix.'1.0.0_beta.php',''));
 		$this->registerPatch(new DevblocksPatch('devblocks.core',290,$file_prefix.'1.1.0.php',''));
-		$this->registerPatch(new DevblocksPatch('devblocks.core',297,$file_prefix.'2.0.0.php',''));
+		$this->registerPatch(new DevblocksPatch('devblocks.core',298,$file_prefix.'2.0.0.php',''));
 	}
 };

@@ -65,21 +65,35 @@ abstract class DevblocksEngine {
 		}
 			
 		// Manifest
-		$db->Replace(
-			$prefix.'plugin',
-			array(
-				'id' => $db->qstr($manifest->id),
-				'name' => $db->qstr($manifest->name),
-				'description' => $db->qstr($manifest->description),
-				'author' => $db->qstr($manifest->author),
-				'revision' => $manifest->revision,
-				'link' => $db->qstr($manifest->link),
-				'dir' => $db->qstr($manifest->dir),
-				'templates_json' => $db->qstr(json_encode($manifest->templates)),
-			),
-			array('id'),
-			false
-		);
+		if($db->GetOne(sprintf("SELECT id FROM ${prefix}plugin WHERE id = %s", $db->qstr($manifest->id)))) { // update
+			$db->Execute(sprintf(
+				"UPDATE ${prefix}plugin ".
+				"SET name=%s,description=%s,author=%s,revision=%s,link=%s,dir=%s,templates_json=%s ".
+				"WHERE id=%s",
+				$db->qstr($manifest->name),
+				$db->qstr($manifest->description),
+				$db->qstr($manifest->author),
+				$db->qstr($manifest->revision),
+				$db->qstr($manifest->link),
+				$db->qstr($manifest->dir),
+				$db->qstr(json_encode($manifest->templates)),
+				$db->qstr($manifest->id)
+			));
+			
+		} else { // insert
+			$db->Execute(sprintf(
+				"INSERT INTO ${prefix}plugin (id,name,description,author,revision,link,dir,templates_json) ".
+				"VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+				$db->qstr($manifest->id),
+				$db->qstr($manifest->name),
+				$db->qstr($manifest->description),
+				$db->qstr($manifest->author),
+				$db->qstr($manifest->revision),
+				$db->qstr($manifest->link),
+				$db->qstr($manifest->dir),
+				$db->qstr(json_encode($manifest->templates))
+			));
+		}
 		
 		// Class Loader
 		if(isset($plugin->class_loader->file)) {
@@ -210,22 +224,19 @@ abstract class DevblocksEngine {
 		$new_extensions = array();
 		if(is_array($manifest->extensions))
 		foreach($manifest->extensions as $pos => $extension) { /* @var $extension DevblocksExtensionManifest */
-		    // [JAS]: [TODO] Move to platform DAO
-			$db->Replace(
-				$prefix.'extension',
-				array(
-					'id' => $db->qstr($extension->id),
-					'plugin_id' => $db->qstr($extension->plugin_id),
-					'point' => $db->qstr($extension->point),
-					'pos' => $pos,
-					'name' => $db->qstr($extension->name),
-					'file' => $db->qstr($extension->file),
-					'class' => $db->qstr($extension->class),
-					'params' => $db->qstr(serialize($extension->params))
-				),
-				array('id'),
-				false
-			);
+			$db->Execute(sprintf(
+				"REPLACE INTO ${prefix}extension (id,plugin_id,point,pos,name,file,class,params) ".
+				"VALUES (%s,%s,%s,%d,%s,%s,%s,%s)",
+				$db->qstr($extension->id),
+				$db->qstr($extension->plugin_id),
+				$db->qstr($extension->point),
+				$pos,
+				$db->qstr($extension->name),
+				$db->qstr($extension->file),
+				$db->qstr($extension->class),
+				$db->qstr(serialize($extension->params))
+			));
+			
 			$new_extensions[$extension->id] = true;
 		}
 		
@@ -237,13 +248,12 @@ abstract class DevblocksEngine {
 			$prefix,
 			$db->qstr($plugin->id)
 		);
-		$rs_plugin_extensions = $db->Execute($sql);
+		$results = $db->GetArray($sql);
 
-		while(!$rs_plugin_extensions->EOF) {
-			$plugin_ext_id = $rs_plugin_extensions->fields['id'];
+		foreach($results as $row) {
+			$plugin_ext_id = $row['id'];
 			if(!isset($new_extensions[$plugin_ext_id]))
 				DAO_Platform::deleteExtension($plugin_ext_id);
-			$rs_plugin_extensions->MoveNext(); 
 		}
 		
         // [JAS]: [TODO] Extension point caching
@@ -254,64 +264,52 @@ abstract class DevblocksEngine {
 		foreach($manifest->class_loader as $file_path => $classes) {
 			if(is_array($classes) && !empty($classes))
 			foreach($classes as $class)
-			$db->Replace(
-				$prefix.'class_loader',
-				array(
-					'class' => $db->qstr($class),
-					'plugin_id' => $db->qstr($manifest->id),
-					'rel_path' => $db->qstr($file_path),
-				),
-				array('class'),
-				false
-			);
+			$db->Execute(sprintf(
+				"REPLACE INTO ${prefix}class_loader (class,plugin_id,rel_path) ".
+				"VALUES (%s,%s,%s)",
+				$db->qstr($class),
+				$db->qstr($manifest->id),
+				$db->qstr($file_path)	
+			));			
 		}
 		
 		// URI routing cache
 		$db->Execute(sprintf("DELETE FROM %suri_routing WHERE plugin_id = %s",$prefix,$db->qstr($plugin->id)));
 		if(is_array($manifest->uri_routing))
 		foreach($manifest->uri_routing as $uri => $controller_id) {
-			$db->Replace(
-				$prefix.'uri_routing',
-				array(
-					'uri' => $db->qstr($uri),
-					'plugin_id' => $db->qstr($manifest->id),
-					'controller_id' => $db->qstr($controller_id),
-				),
-				array('uri'),
-				false
-			);
+			$db->Execute(sprintf(
+				"REPLACE INTO ${prefix}uri_routing (uri,plugin_id,controller_id) ".
+				"VALUES (%s,%s,%s)",
+				$db->qstr($uri),
+				$db->qstr($manifest->id),
+				$db->qstr($controller_id)	
+			));			
 		}
 
 		// ACL caching
 		$db->Execute(sprintf("DELETE FROM %sacl WHERE plugin_id = %s",$prefix,$db->qstr($plugin->id)));
 		if(is_array($manifest->acl_privs))
 		foreach($manifest->acl_privs as $priv) { /* @var $priv DevblocksAclPrivilege */
-			$db->Replace(
-				$prefix.'acl',
-				array(
-					'id' => $db->qstr($priv->id),
-					'plugin_id' => $db->qstr($priv->plugin_id),
-					'label' => $db->qstr($priv->label),
-				),
-				array('id'),
-				false
-			);
+			$db->Execute(sprintf(
+				"REPLACE INTO ${prefix}acl (id,plugin_id,label) ".
+				"VALUES (%s,%s,%s)",
+				$db->qstr($priv->id),
+				$db->qstr($priv->plugin_id),
+				$db->qstr($priv->label)
+			));			
 		}
 		
         // [JAS]: Event point caching
 		if(is_array($manifest->event_points))
 		foreach($manifest->event_points as $event) { /* @var $event DevblocksEventPoint */
-			$db->Replace(
-				$prefix.'event_point',
-				array(
-					'id' => $db->qstr($event->id),
-					'plugin_id' => $db->qstr($event->plugin_id),
-					'name' => $db->qstr($event->name),
-					'params' => $db->qstr(serialize($event->params))
-				),
-				array('id'),
-				false
-			);
+			$db->Execute(sprintf(
+				"REPLACE INTO ${prefix}event_point (id,plugin_id,name,params) ".
+				"VALUES (%s,%s,%s,%s)",
+				$db->qstr($event->id),
+				$db->qstr($event->plugin_id),
+				$db->qstr($event->name),
+				$db->qstr(serialize($event->params))	
+			));
 		}
 		
 		return $manifest;
@@ -501,6 +499,9 @@ abstract class DevblocksEngine {
 				// [TODO] Pages like 'tickets' currently work because APP_DEFAULT_CONTROLLER
 				// is the ChPageController which looks up those URIs in manifests
 	            
+				if(empty($controllers))
+					die("No controllers are available!");
+				
 				// Set our controller based on the results
 				$controller_mft = (isset($routing[$controller_uri]))
 					? $controllers[$routing[$controller_uri]]
@@ -619,20 +620,25 @@ class _DevblocksSessionManager {
 		static $instance = null;
 		if(null == $instance) {
 		    $db = DevblocksPlatform::getDatabaseService();
-		    
-			if(is_null($db) || !$db->IsConnected()) { return null; }
+			if(is_null($db) || !$db->isConnected()) { 
+				return null;
+			}
 			
 			$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 			
 			@session_destroy();
 			
-			include_once(DEVBLOCKS_PATH . "libs/adodb5/session/adodb-session2.php");
-			$options = array();
-			$options['table'] = $prefix.'session';
-			ADOdb_Session::config(APP_DB_DRIVER, APP_DB_HOST, APP_DB_USER, APP_DB_PASS, APP_DB_DATABASE, $options);
-			ADOdb_session::Persist($connectMode=false);
-			ADOdb_session::lifetime($lifetime=86400);
-
+			$handler = '_DevblocksSessionDatabaseDriver';
+			
+			session_set_save_handler(
+				array($handler, 'open'),
+				array($handler, 'close'),
+				array($handler, 'read'),
+				array($handler, 'write'),
+				array($handler, 'destroy'),
+				array($handler, 'gc')
+			);
+			
 			session_name(APP_SESSION_NAME);
 			session_set_cookie_params(0);
 			session_start();
@@ -670,7 +676,60 @@ class _DevblocksSessionManager {
 		unset($_SESSION['db_visit']);
 		session_destroy();
 	}
-}
+};
+
+class _DevblocksSessionDatabaseDriver {
+	static function open($save_path, $session_name) {
+		return true;
+	}
+	
+	static function close() {
+		return true;
+	}
+	
+	static function read($id) {
+		$db = DevblocksPlatform::getDatabaseService();
+		if(null != ($data = $db->GetOne(sprintf("SELECT session_data FROM devblocks_session WHERE session_key = %s", $db->qstr($id)))))
+			return $data;
+			
+		return false;
+	}
+	
+	static function write($id, $session_data) {
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		if(null != ($data = $db->GetOne(sprintf("SELECT session_key FROM devblocks_session WHERE session_key = %s", $db->qstr($id))))) {
+			// Update
+			$db->Execute(sprintf("UPDATE devblocks_session SET updated=%d, session_data=%s WHERE session_key=%s",
+				time(),
+				$db->qstr($session_data),
+				$db->qstr($id)
+			));
+		} else {
+			// Insert
+			$db->Execute(sprintf("INSERT INTO devblocks_session (session_key, created, updated, session_data) ".
+				"VALUES (%s, %d, %d, %s)",
+				$db->qstr($id),
+				time(),
+				time(),
+				$db->qstr($session_data)
+			));
+		}
+		return true;
+	}
+	
+	static function destroy($id) {
+		$db = DevblocksPlatform::getDatabaseService();
+		$db->Execute(sprintf("DELETE FROM devblocks_session WHERE session_key = %s", $db->qstr($id)));
+		return true;
+	}
+	
+	static function gc($maxlifetime) {
+		$db = DevblocksPlatform::getDatabaseService();
+		$db->Execute(sprintf("DELETE FROM devblocks_session WHERE updated + %d < %d", $maxlifetime, time()));
+		return true;
+	}
+};
 
 class _DevblocksCacheManager {
     private static $instance = null;
@@ -2087,15 +2146,15 @@ class _DevblocksTemplateManager {
 			$instance->compile_check = (defined('DEVELOPMENT_MODE') && DEVELOPMENT_MODE) ? true : false;
 			
 			// Devblocks plugins
-			$instance->register_block('devblocks_url', array(_DevblocksTemplateManager, 'block_devblocks_url'));
-			$instance->register_modifier('devblocks_date', array(_DevblocksTemplateManager, 'modifier_devblocks_date'));
-			$instance->register_modifier('devblocks_prettytime', array(_DevblocksTemplateManager, 'modifier_devblocks_prettytime'));
-			$instance->register_modifier('devblocks_translate', array(_DevblocksTemplateManager, 'modifier_devblocks_translate'));
+			$instance->register_block('devblocks_url', array('_DevblocksTemplateManager', 'block_devblocks_url'));
+			$instance->register_modifier('devblocks_date', array('_DevblocksTemplateManager', 'modifier_devblocks_date'));
+			$instance->register_modifier('devblocks_prettytime', array('_DevblocksTemplateManager', 'modifier_devblocks_prettytime'));
+			$instance->register_modifier('devblocks_translate', array('_DevblocksTemplateManager', 'modifier_devblocks_translate'));
 			$instance->register_resource('devblocks', array(
-				array(_DevblocksSmartyTemplateResource, 'get_template'),
-				array(_DevblocksSmartyTemplateResource, 'get_timestamp'),
-				array(_DevblocksSmartyTemplateResource, 'get_secure'),
-				array(_DevblocksSmartyTemplateResource, 'get_trusted'),
+				array('_DevblocksSmartyTemplateResource', 'get_template'),
+				array('_DevblocksSmartyTemplateResource', 'get_timestamp'),
+				array('_DevblocksSmartyTemplateResource', 'get_secure'),
+				array('_DevblocksSmartyTemplateResource', 'get_trusted'),
 			));
 		}
 		return $instance;
@@ -2313,55 +2372,176 @@ class _DevblocksTemplateBuilder {
 	} 
 };
 
-/**
- * ADODB Database Singleton
- *
- * @ingroup services
- */
 class _DevblocksDatabaseManager {
+	private $_db = null;
+	static $instance = null;
 	
-	/**
-	 * Constructor 
-	 * 
-	 * @private
-	 */
 	private function _DevblocksDatabaseManager() {}
 	
-	/**
-	 * Returns an ADODB database resource
-	 *
-	 * @static 
-	 * @return ADOConnection
-	 */
 	static function getInstance() {
-		static $instance = null;
-		
-		if(null == $instance) {
-			include_once(DEVBLOCKS_PATH . "libs/adodb5/adodb.inc.php");
-			$ADODB_CACHE_DIR = APP_TEMP_PATH . "/cache";
-			
+		if(null == self::$instance) {
+			// Bail out early for pre-install
 			if('' == APP_DB_DRIVER || '' == APP_DB_HOST)
 			    return null;
 			
-			@$instance =& ADONewConnection(APP_DB_DRIVER); /* @var $instance ADOConnection */
-			
-			// Make the connection (or persist it)
-			if(defined('APP_DB_PCONNECT') && APP_DB_PCONNECT) {
-				@$instance->PConnect(APP_DB_HOST,APP_DB_USER,APP_DB_PASS,APP_DB_DATABASE);
-			} else { 
-				@$instance->Connect(APP_DB_HOST,APP_DB_USER,APP_DB_PASS,APP_DB_DATABASE);
-			}
-
-			if(null == $instance || !$instance->IsConnected())
-				die("[Error]: There is no connection to the database.  Check your connection details.");
-			
-			@$instance->SetFetchMode(ADODB_FETCH_ASSOC);
-			//$instance->LogSQL(false);
-			
-			// Encoding
-			$instance->Execute('SET NAMES ' . DB_CHARSET_CODE);
+			self::$instance = new _DevblocksDatabaseManager();
 		}
-		return $instance;
+		
+		return self::$instance;
+	}
+	
+	function __construct() {
+		$persistent = (defined('APP_DB_PCONNECT') && APP_DB_PCONNECT) ? true : false;
+		$this->Connect(APP_DB_HOST, APP_DB_USER, APP_DB_PASS, APP_DB_DATABASE, $persistent);
+	}
+	
+	function Connect($host, $user, $password, $database, $persistent=false) {
+		if($persistent) {
+			if(false === (@$this->_db = mysql_pconnect($host, $user, $pass)))
+				return false;
+		} else {
+			if(false === (@$this->_db = mysql_connect($host, $user, $pass)))
+				return false;
+		}
+
+		if(false === mysql_select_db($database, $this->_db)) {
+			return false;
+		}
+		
+		// Encoding
+		//mysql_set_charset(DB_CHARSET_CODE, $this->_db); 
+		$this->Execute('SET NAMES ' . DB_CHARSET_CODE);
+		
+		return true;
+	}
+	
+	function isConnected() {
+		return mysql_ping($this->_db);
+	}
+	
+	function metaTables() {
+		$tables = array();
+		
+		$sql = "SHOW TABLES";
+		$rs_tables = $this->GetArray($sql);
+		
+		foreach($rs_tables as $row) {
+			$table = array_shift($row);
+			$tables[$table] = $table;
+		}
+		
+		return $tables;
+	}
+	
+	function metaTable($table_name) {
+		$columns = array();
+		$indexes = array();
+		
+		$sql = sprintf("SHOW COLUMNS FROM %s", $table_name);
+		$rs_columns = $this->GetArray($sql);
+		
+		foreach($rs_columns as $row) {
+			$field = $row['Field'];
+			
+			$columns[$field] = array(
+				'field' => $field,
+				'type' => $row['Type'],
+				'null' => $row['Null'],
+				'key' => $row['Key'],
+				'default' => $row['Default'],
+				'extra' => $row['Extra'],
+			);
+		}
+		
+		$sql = sprintf("SHOW INDEXES FROM %s", $table_name);
+		$rs_indexes = $this->GetArray($sql);
+
+		foreach($rs_indexes as $row) {
+			$key_name = $row['Key_name'];
+			$column_name = $row['Column_name'];
+
+			if(!isset($indexes[$key_name]))
+				$indexes[$key_name] = array(
+					'columns' => array(),
+				);
+			
+			$indexes[$key_name]['columns'][$column_name] = array(
+				'column_name' => $column_name,
+				'cardinality' => $row['Cardinality'],
+				'index_type' => $row['Index_type'],
+			);
+		}
+		
+		return array(
+			$columns,
+			$indexes
+		);
+	}
+	
+	function Execute($sql) {
+		if(false === ($rs = mysql_query($sql, $this->_db))) {
+			error_log(sprintf("[%d] %s ::SQL:: %s", 
+				mysql_errno(),
+				mysql_error(),
+				$sql
+			));
+			return false;
+		}
+			
+		return $rs;
+	}
+	
+	function SelectLimit($sql, $limit, $start=0) {
+		return $this->Execute($sql . sprintf(" LIMIT %d,%d", $start, $limit));
+	}
+	
+	function qstr($string) {
+		return "'".mysql_real_escape_string($string, $this->_db)."'";
+	}
+	
+	function GetArray($sql) {
+		$results = array();
+		
+		if(false !== ($rs = $this->Execute($sql))) {
+			while($row = mysql_fetch_assoc($rs)) {
+				$results[] = $row;
+			}
+			mysql_free_result($rs);
+		}
+		
+		return $results;
+	}
+	
+//	function getRow($sql) {
+//		$rs = $this->Execute($sql);
+//		return mysql_fetch_assoc($rs);
+//	}
+
+	function GetOne($sql) {
+		if(false !== ($rs = $this->Execute($sql))) {
+			$row = mysql_fetch_row($rs);
+			mysql_free_result($rs);
+			return $row[0];
+		}
+		
+		return false;
+	}
+	
+	function GenID($seq) {
+		// Attempt to update and see if we fail, if so we need to create table
+		if(false === ($rs = $this->Execute("UPDATE ${seq} SET id=LAST_INSERT_ID(id+1)"))) {
+			// Create the table
+			$sql = "
+				CREATE TABLE IF NOT EXISTS ${seq} (
+					id INT UNSIGNED NOT NULL
+				) ENGINE=MyISAM;
+			";
+			$this->Execute($sql);
+			$this->Execute(sprintf("INSERT INTO ${seq} (id) VALUES (1)"));
+			return 1;
+		}
+		
+		return mysql_insert_id($this->_db);
 	}
 };
 
@@ -2431,7 +2611,6 @@ class _DevblocksClassLoadManager {
 		if(null !== ($map = $cache->load(self::CACHE_CLASS_MAP))) {
 			$this->classMap = $map;
 		} else {
-			$this->_initLibs();	
 			$this->_initPlugins();
 			$cache->save($this->classMap, self::CACHE_CLASS_MAP);
 		}
@@ -2478,9 +2657,6 @@ class _DevblocksClassLoadManager {
 		foreach($class_map as $path => $classes) {
 			$this->registerClasses($path, $classes);
 		}
-	}
-	
-	private function _initLibs() {
 	}
 };
 

@@ -18,7 +18,7 @@ abstract class DevblocksORMHelper {
 			$properties['id_column'],
 			$id
 		);
-		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
+		$db->Execute($sql); 
 		
 		return $id;
 	}
@@ -53,7 +53,7 @@ abstract class DevblocksORMHelper {
 			$idcol,
 			implode(',', $ids)
 		);
-		$db->Execute($sql); /* @var $rs ADORecordSet */
+		$db->Execute($sql); 
 	}
 	
 	static protected function _updateWhere($table, $fields, $where) {
@@ -80,7 +80,7 @@ abstract class DevblocksORMHelper {
 			implode(', ', $sets),
 			$where
 		);
-		$db->Execute($sql); /* @var $rs ADORecordSet */
+		$db->Execute($sql); 
 	}
 	
 	/**
@@ -187,14 +187,13 @@ class DAO_Platform {
         $sql = sprintf("SELECT id FROM %splugin ",
             $prefix
         );
-		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
+		$results = $db->GetArray($sql); 
 
 		$plugins = DevblocksPlatform::getPluginRegistry();
 		
 		// [JAS]: Remove any plugins that are no longer in the filesystem
-		if(is_a($rs,'ADORecordSet'))
-		while(!$rs->EOF) {
-		    $plugin_id = $rs->fields['id'];
+		foreach($results as $row) {
+		    $plugin_id = $row['id'];
 		    if(!isset($plugins[$plugin_id])) {
 		        $db->Execute(sprintf("DELETE FROM %splugin WHERE id = %s",
 		            $prefix,
@@ -209,9 +208,7 @@ class DAO_Platform {
 		            $db->qstr($plugin_id)
 		        ));
 		    }
-		    $rs->MoveNext();
 		}
-		
     }
     
 	static function updatePlugin($id, $fields) {
@@ -234,7 +231,7 @@ class DAO_Platform {
 			implode(', ', $sets),
 			$db->qstr($id)
 		);
-		$db->Execute($sql); /* @var $rs ADORecordSet */
+		$db->Execute($sql); 
 	}
 	
 	static function deleteExtension($extension_id) {
@@ -275,13 +272,11 @@ class DAO_Platform {
 			$db->qstr($plugin_id),
 			$revision
 		);
-		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
 		
-		if($rs->NumRows()) {
-			return true; //$rs->Fields('run_date')
-		}
-		
-		return FALSE;
+		if($db->GetOne($sql))
+			 return true;
+			 
+		return false;
 	}
 	
 	/**
@@ -292,17 +287,17 @@ class DAO_Platform {
 		$db = DevblocksPlatform::getDatabaseService();
 		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
 		
-		$db->Replace(
-			$prefix.'patch_history',
-			array('plugin_id'=>$db->qstr($plugin_id),'revision'=>$revision,'run_date'=>time()),
-			array('plugin_id'),
-			false,
-			false
+		$sql = sprintf("REPLACE INTO ${prefix}patch_history (plugin_id, revision, run_date) ".
+			"VALUES (%s, %d, %d)",
+			$db->qstr($plugin_id),
+			$revision,
+			time()
 		);
+		$db->Execute($sql);
 	}
 	
 	static function getClassLoaderMap() {
-		if(null == ($db = DevblocksPlatform::getDatabaseService()) || !$db->IsConnected())
+		if(null == ($db = DevblocksPlatform::getDatabaseService()) || !$db->isConnected())
 			return array();
 
 		$plugins = DevblocksPlatform::getPluginRegistry();
@@ -311,13 +306,12 @@ class DAO_Platform {
 		$class_loader_map = array();
 		
 		$sql = sprintf("SELECT class, plugin_id, rel_path FROM %sclass_loader ORDER BY plugin_id", $prefix);
-		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */ //
+		$results = $db->GetArray($sql);
 
-		if(is_a($rs,'ADORecordSet'))
-		while(!$rs->EOF) {
-			@$class = $rs->fields['class'];
-			@$plugin_id = $rs->fields['plugin_id'];
-			@$rel_path = $rs->fields['rel_path'];
+		foreach($results as $row) {
+			@$class = $row['class'];
+			@$plugin_id = $row['plugin_id'];
+			@$rel_path = $row['rel_path'];
 			
 			// Make sure the plugin is valid
 			if(isset($plugins[$plugin_id])) {
@@ -330,8 +324,6 @@ class DAO_Platform {
 				
 				$class_loader_map[$path][] = $class;
 			}
-			
-			$rs->MoveNext();
 		}
 		
 		return $class_loader_map;
@@ -344,17 +336,14 @@ class DAO_Platform {
 		$uri_routing_map = array();
 	
 		$sql = sprintf("SELECT uri, plugin_id, controller_id FROM %suri_routing ORDER BY plugin_id", $prefix);
-		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */ //or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg())
+		$results = $db->GetArray($sql);
 
-		if(is_a($rs,'ADORecordSet'))
-		while(!$rs->EOF) {
-			@$uri = $rs->fields['uri'];
-			@$plugin_id = $rs->fields['plugin_id'];
-			@$controller_id = $rs->fields['controller_id'];
+		foreach($results as $row) {
+			@$uri = $row['uri'];
+			@$plugin_id = $row['plugin_id'];
+			@$controller_id = $row['controller_id'];
 			
 			$uri_routing_map[$uri] = $controller_id;
-			
-			$rs->MoveNext();
 		}
 	
 		return $uri_routing_map;
@@ -364,16 +353,14 @@ class DAO_Platform {
 class DAO_DevblocksSetting extends DevblocksORMHelper {
 	static function set($plugin_id, $key, $value) {
 		$db = DevblocksPlatform::getDatabaseService();
-		$db->Replace(
-			'devblocks_setting',
-			array(
-				'plugin_id'=>$db->qstr($plugin_id),
-				'setting'=>$db->qstr($key),
-				'value'=>$db->qstr($value)
-			),
-			array('plugin_id','setting'),
-			false
-		);
+		
+		$db->Execute(sprintf(
+			"REPLACE INTO devblocks_setting (plugin_id, setting, value) ".
+			"VALUES (%s,%s,%s) ",
+				$db->qstr($plugin_id),
+				$db->qstr($key),
+				$db->qstr($value)
+		));
 		
 //		$cache = DevblocksPlatform::getCacheService();
 //		$cache->remove(DevblocksPlatform::CACHE_SETTINGS);
@@ -385,7 +372,7 @@ class DAO_DevblocksSetting extends DevblocksORMHelper {
 			$db->qstr($plugin_id),
 			$db->qstr($key)
 		);
-		$value = $db->GetOne($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		$value = $db->GetOne($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); 
 		
 		return $value;
 	}
@@ -397,19 +384,17 @@ class DAO_DevblocksSetting extends DevblocksORMHelper {
 			$plugin_settings = array();
 			
 			$sql = sprintf("SELECT plugin_id,setting,value FROM devblocks_setting");
-			$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
+			$results = $db->GetArray($sql); 
 			
-			if(is_a($rs,'ADORecordSet'))
-			while(!$rs->EOF) {
-				$plugin_id = $rs->Fields('plugin_id');
-				$k = $rs->Fields('setting');
-				$v = $rs->Fields('value');
+			foreach($results as $row) {
+				$plugin_id = $row['plugin_id'];
+				$k = $row['setting'];
+				$v = $row['value'];
 				
 				if(!isset($plugin_settings[$plugin_id]))
 					$plugin_settings[$plugin_id] = array();
 				
 				$plugin_settings[$plugin_id][$k] = $v;
-				$rs->MoveNext();
 			}
 			
 			if(!empty($plugin_settings))
@@ -484,22 +469,21 @@ class DAO_DevblocksTemplate extends DevblocksORMHelper {
 	}
 	
 	/**
-	 * @param ADORecordSet $rs
+	 * @param resource $rs
 	 * @return Model_DevblocksTemplate[]
 	 */
 	static private function _getObjectsFromResult($rs) {
 		$objects = array();
 		
-		while(!$rs->EOF) {
+		while($row = mysql_fetch_assoc($rs)) {
 			$object = new Model_DevblocksTemplate();
-			$object->id = $rs->fields['id'];
-			$object->plugin_id = $rs->fields['plugin_id'];
-			$object->path = $rs->fields['path'];
-			$object->tag = $rs->fields['tag'];
-			$object->last_updated = $rs->fields['last_updated'];
-			$object->content = $rs->fields['content'];
+			$object->id = $row['id'];
+			$object->plugin_id = $row['plugin_id'];
+			$object->path = $row['path'];
+			$object->tag = $row['tag'];
+			$object->last_updated = $row['last_updated'];
+			$object->content = $row['content'];
 			$objects[$object->id] = $object;
-			$rs->MoveNext();
 		}
 		
 		return $objects;
@@ -581,25 +565,22 @@ class DAO_DevblocksTemplate extends DevblocksORMHelper {
 			($has_multiple_values ? 'GROUP BY devblocks_template.id ' : '').
 			$sort_sql;
 			
-		// [TODO] Could push the select logic down a level too
 		if($limit > 0) {
-    		$rs = $db->SelectLimit($sql,$limit,$start) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+    		$rs = $db->SelectLimit($sql,$limit,$start) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); 
 		} else {
-		    $rs = $db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
-            $total = $rs->RecordCount();
+		    $rs = $db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); 
+            $total = mysql_num_rows($rs);
 		}
 		
 		$results = array();
 		
-		if(is_a($rs,'ADORecordSet'))
-		while(!$rs->EOF) {
+		while($row = mysql_fetch_assoc($rs)) {
 			$result = array();
 			foreach($rs->fields as $f => $v) {
 				$result[$f] = $v;
 			}
-			$object_id = intval($rs->fields[SearchFields_DevblocksTemplate::ID]);
+			$object_id = intval($row[SearchFields_DevblocksTemplate::ID]);
 			$results[$object_id] = $result;
-			$rs->MoveNext();
 		}
 
 		// [JAS]: Count all
@@ -678,12 +659,11 @@ class SearchFields_DevblocksTemplate implements IDevblocksSearchFields {
 		$translate = DevblocksPlatform::getTranslationService();
 		
 		$columns = array(
-			self::ID => new DevblocksSearchField(self::ID, 'devblocks_template', 'id', null, $translate->_('common.id')),
-			self::PLUGIN_ID => new DevblocksSearchField(self::PLUGIN_ID, 'devblocks_template', 'plugin_id', null, $translate->_('plugin_id')),
-			self::PATH => new DevblocksSearchField(self::PATH, 'devblocks_template', 'path', null, $translate->_('path')),
-			self::TAG => new DevblocksSearchField(self::TAG, 'devblocks_template', 'tag', null, $translate->_('tag')),
-			self::LAST_UPDATED => new DevblocksSearchField(self::LAST_UPDATED, 'devblocks_template', 'last_updated', null, $translate->_('last_updated')),
-//			self::CONTENT => new DevblocksSearchField(self::CONTENT, 'devblocks_template', 'content', null, $translate->_('content')),
+			self::ID => new DevblocksSearchField(self::ID, 'devblocks_template', 'id', $translate->_('common.id')),
+			self::PLUGIN_ID => new DevblocksSearchField(self::PLUGIN_ID, 'devblocks_template', 'plugin_id', $translate->_('plugin_id')),
+			self::PATH => new DevblocksSearchField(self::PATH, 'devblocks_template', 'path', $translate->_('path')),
+			self::TAG => new DevblocksSearchField(self::TAG, 'devblocks_template', 'tag', $translate->_('tag')),
+			self::LAST_UPDATED => new DevblocksSearchField(self::LAST_UPDATED, 'devblocks_template', 'last_updated', $translate->_('last_updated')),
 		);
 		
 		// Custom Fields
@@ -692,7 +672,7 @@ class SearchFields_DevblocksTemplate implements IDevblocksSearchFields {
 		//if(is_array($fields))
 		//foreach($fields as $field_id => $field) {
 		//	$key = 'cf_'.$field_id;
-		//	$columns[$key] = new DevblocksSearchField($key,$key,'field_value',null,$field->name);
+		//	$columns[$key] = new DevblocksSearchField($key,$key,'field_value',$field->name);
 		//}
 		
 		// Sort by label (translation-conscious)
@@ -844,7 +824,7 @@ class DAO_Translation extends DevblocksORMHelper {
 		
 		// Look up distinct land codes from existing translations
 		$sql = sprintf("SELECT DISTINCT lang_code FROM translation ORDER BY lang_code ASC");
-		$rs = $db->Execute($sql); /* @var $rs ADORecordSet */
+		$results = $db->GetArray($sql); 
 		
 		// Languages
 		$langs = $translate->getLanguageCodes();
@@ -852,9 +832,8 @@ class DAO_Translation extends DevblocksORMHelper {
 		// Countries
 		$countries = $translate->getCountryCodes();
 		
-		if(is_a($rs,'ADORecordSet'))
-		while(!$rs->EOF) {
-			$code = $rs->fields['lang_code'];
+		foreach($results as $row) {
+			$code = $row['lang_code'];
 			$data = explode('_', $code);
 			@$lang = $langs[strtolower($data[0])];
 			@$terr = $countries[strtoupper($data[1])];
@@ -862,8 +841,6 @@ class DAO_Translation extends DevblocksORMHelper {
 			$lang_codes[$code] = (!empty($lang) && !empty($terr))
 				? ($lang . ' (' . $terr . ')')
 				: $code;
-
-			$rs->MoveNext();
 		}
 		
 		return $lang_codes;
@@ -915,15 +892,14 @@ class DAO_Translation extends DevblocksORMHelper {
 	static private function _getObjectsFromResult($rs) {
 		$objects = array();
 		
-		while(is_a($rs,'ADORecordSet') && !$rs->EOF) {
+		while($row = mysql_fetch_assoc($rs)) {
 			$object = new Model_Translation();
-			$object->id = $rs->fields['id'];
-			$object->string_id = $rs->fields['string_id'];
-			$object->lang_code = $rs->fields['lang_code'];
-			$object->string_default = $rs->fields['string_default'];
-			$object->string_override = $rs->fields['string_override'];
+			$object->id = $row['id'];
+			$object->string_id = $row['string_id'];
+			$object->lang_code = $row['lang_code'];
+			$object->string_default = $row['string_default'];
+			$object->string_override = $row['string_override'];
 			$objects[$object->id] = $object;
-			$rs->MoveNext();
 		}
 		
 		return $objects;
@@ -1004,19 +980,17 @@ class DAO_Translation extends DevblocksORMHelper {
 		$sql = $select_sql . $join_sql . $where_sql .  
 			(!empty($sortBy) ? sprintf("ORDER BY %s %s",$sortBy,($sortAsc || is_null($sortAsc))?"ASC":"DESC") : "");
 		
-		$rs = $db->SelectLimit($sql,$limit,$start); /* @var $rs ADORecordSet */
+		$rs = $db->SelectLimit($sql,$limit,$start); 
 		
 		$results = array();
 		
-		if(is_a($rs,'ADORecordSet'))
-		while(!$rs->EOF) {
+		while($row = mysql_fetch_assoc($rs)) {
 			$result = array();
-			foreach($rs->fields as $f => $v) {
+			foreach($row as $f => $v) {
 				$result[$f] = $v;
 			}
-			$id = intval($rs->fields[SearchFields_Translation::ID]);
+			$id = intval($row[SearchFields_Translation::ID]);
 			$results[$id] = $result;
-			$rs->MoveNext();
 		}
 
 		// [JAS]: Count all
@@ -1045,11 +1019,11 @@ class SearchFields_Translation implements IDevblocksSearchFields {
 	static function getFields() {
 		$translate = DevblocksPlatform::getTranslationService();
 		return array(
-			self::ID => new DevblocksSearchField(self::ID, 'tl', 'id', null, $translate->_('translate.id')),
-			self::STRING_ID => new DevblocksSearchField(self::STRING_ID, 'tl', 'string_id', null, $translate->_('translate.string_id')),
-			self::LANG_CODE => new DevblocksSearchField(self::LANG_CODE, 'tl', 'lang_code', null, $translate->_('translate.lang_code')),
-			self::STRING_DEFAULT => new DevblocksSearchField(self::STRING_DEFAULT, 'tl', 'string_default', null, $translate->_('translate.string_default')),
-			self::STRING_OVERRIDE => new DevblocksSearchField(self::STRING_OVERRIDE, 'tl', 'string_override', null, $translate->_('translate.string_override')),
+			self::ID => new DevblocksSearchField(self::ID, 'tl', 'id', $translate->_('translate.id')),
+			self::STRING_ID => new DevblocksSearchField(self::STRING_ID, 'tl', 'string_id', $translate->_('translate.string_id')),
+			self::LANG_CODE => new DevblocksSearchField(self::LANG_CODE, 'tl', 'lang_code', $translate->_('translate.lang_code')),
+			self::STRING_DEFAULT => new DevblocksSearchField(self::STRING_DEFAULT, 'tl', 'string_default', $translate->_('translate.string_default')),
+			self::STRING_OVERRIDE => new DevblocksSearchField(self::STRING_OVERRIDE, 'tl', 'string_override', $translate->_('translate.string_override')),
 		);
 	}
 };

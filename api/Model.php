@@ -96,12 +96,12 @@ class DevblocksSearchCriteria {
 				
 				// Escape quotes
 				foreach($this->value as $idx=>$val) {
-					$vals[$idx] = $db->escape($val);
+					$vals[$idx] = addslashes($val); // [TODO] Test
 				}
 				
 				$where = sprintf("%s IN ('%s')",
 					$db_field_name,
-					implode("','",$vals) // [TODO] Needs BlobEncode compat
+					implode("','",$vals)
 				);
 				break;
 
@@ -110,7 +110,7 @@ class DevblocksSearchCriteria {
 				$value = (!empty($this->value)) ? $this->value : array(-1);
 				$where = sprintf("%s NOT IN ('%s')",
 					$db_field_name,
-					implode("','",$value) // [TODO] Needs BlobEncode compat
+					implode("','",$value)
 				);
 				break;
 				
@@ -203,95 +203,22 @@ class DevblocksSearchCriteria {
 		return $where;
 	}
 	
-//	/**
-//	 * @param DevblocksSearchCriteria[] $fields
-//	 */
-//	public static function whereOr ($params, $fields) {
-//		if(!is_array($params)) return '';
-//		
-//		$wheres = array();
-//		
-//		foreach($params as $param) { /* @var $param DevblocksSearchCriteria */
-//			$wheres[] = $param->getWhereSQL($fields);
-//		}
-//		
-//		return sprintf("(%s)",
-//			implode(' OR ', $wheres)
-//		);
-//	}
-	
 	static protected function _escapeSearchParam(DevblocksSearchCriteria $param, $fields) {
 	    $db = DevblocksPlatform::getDatabaseService();
 	    $field = $fields[$param->field];
 	    $where_value = null;
-/*	    
-   	 *	C for character < 250 chars
-	 *	X for teXt (>= 250 chars)
-	 *	B for Binary
-	 * 	N for numeric or floating point
-	 *	D for date
-	 *	T for timestamp
-	 * 	L for logical/Boolean
-	 *	I for integer
-	 *	R for autoincrement counter/integer
-*/	    
-//	    $datadict = new ADODB_DataDict($db);
-//	    $datadict->MetaType()
 
-        if($field) {
-            switch(strtoupper($field->db_type)) {
-                case 'B':
-                case 'X':
-                case 'XL':
-                    if($db->blobEncodeType) {
-	                    if(!is_array($param->value)) {
-	                        $where_value = "'" . $db->BlobEncode($param->value) . "'";
-	                    } else {
-	                        $where_value = array();
-	                        foreach($param->value as $v) {
-	                            $where_value[] = "'" . $db->BlobEncode($v) . "'";
-	                        }
-	                    }
-                    } else {
-	                    if(!is_array($param->value)) {
-	                        $where_value = $db->qstr($param->value);
-	                    } else {
-	                        $where_value = array();
-	                        foreach($param->value as $v) {
-	                            $where_value[] = $db->qstr($v);
-	                        }
-	                    }
-                    }
-                    break;
-                    
-                case 'I':
-                case 'N':
-                case 'L':
-                case 'R':
-                    if(!is_array($param->value)) {
-                        $where_value = $param->value;
-                    } else {
-                        $where_value = array();
-                        foreach($param->value as $v) {
-                            $where_value[] = $v;
-                        }
-                    }
-                    break;
-                
-                case 'C':
-                default:
-                    if(!is_array($param->value)) {
-                        $where_value = $db->qstr($param->value);
-                    } else {
-                        $where_value = array();
-                        foreach($param->value as $v) {
-                            $where_value[] = $db->qstr($v);
-                        }
-                    }
-                    break; 
-            }
-        }
-        
+	    if($field) {
+	    	if(!is_array($param->value)) {
+	    		$where_value = $db->qstr($param->value);
+	    	} else {
+	    		$where_value = array();
+	    		foreach($param->value as $v) {
+	    			$where_value[] = $db->qstr($v);
+	    		}
+	    	}
+	    }
+
         return $where_value;
 	}
 	
@@ -300,14 +227,12 @@ class DevblocksSearchField {
 	public $token;
 	public $db_table;
 	public $db_column;
-	public $db_type;
 	public $db_label;
 	
-	function __construct($token, $db_table, $db_column, $db_type=null, $db_label=null) {
+	function __construct($token, $db_table, $db_column, $db_label=null) {
 		$this->token = $token;
 		$this->db_table = $db_table;
 		$this->db_column = $db_column;
-		$this->db_type = $db_type;
 		$this->db_label = $db_label;
 	}
 };
@@ -365,7 +290,7 @@ class DevblocksPluginManifest {
 		$fields = array(
 			'enabled' => $this->enabled
 		);
-		DAO_Platform::updatePlugin($this->id,$fields);
+		DAO_Platform::updatePlugin($this->id, $fields);
 	}
 	
 	/**
