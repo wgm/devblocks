@@ -112,7 +112,7 @@ if(!isset($tables['devblocks_session'])) {
 			session_data MEDIUMBLOB,
 			PRIMARY KEY (session_key),
 			INDEX created (created),
-			INDEX modified (modified)
+			INDEX updated (updated)
 		) ENGINE=MyISAM;
 	";
 	$db->Execute($sql);	

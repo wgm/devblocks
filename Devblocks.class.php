@@ -4,7 +4,7 @@ include_once(DEVBLOCKS_PATH . "api/Model.php");
 include_once(DEVBLOCKS_PATH . "api/DAO.php");
 include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
-define('PLATFORM_BUILD',2010021201);
+define('PLATFORM_BUILD',2010021202);
 
 /**
  *  @defgroup core Devblocks Framework Core
@@ -1095,6 +1095,6 @@ class PlatformPatchContainer extends DevblocksPatchContainerExtension {
 		$this->registerPatch(new DevblocksPatch('devblocks.core',1,$file_prefix.'1.0.0.php',''));
 		$this->registerPatch(new DevblocksPatch('devblocks.core',253,$file_prefix.'1.0.0_beta.php',''));
 		$this->registerPatch(new DevblocksPatch('devblocks.core',290,$file_prefix.'1.1.0.php',''));
-		$this->registerPatch(new DevblocksPatch('devblocks.core',298,$file_prefix.'2.0.0.php',''));
+		$this->registerPatch(new DevblocksPatch('devblocks.core',299,$file_prefix.'2.0.0.php',''));
 	}
 };
