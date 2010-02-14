@@ -2423,9 +2423,9 @@ class _DevblocksDatabaseManager {
 		$tables = array();
 		
 		$sql = "SHOW TABLES";
-		$rs_tables = $this->GetArray($sql);
+		$rs = $this->GetArray($sql);
 		
-		foreach($rs_tables as $row) {
+		foreach($rs as $row) {
 			$table = array_shift($row);
 			$tables[$table] = $table;
 		}
@@ -2438,9 +2438,9 @@ class _DevblocksDatabaseManager {
 		$indexes = array();
 		
 		$sql = sprintf("SHOW COLUMNS FROM %s", $table_name);
-		$rs_columns = $this->GetArray($sql);
+		$rs = $this->GetArray($sql);
 		
-		foreach($rs_columns as $row) {
+		foreach($rs as $row) {
 			$field = $row['Field'];
 			
 			$columns[$field] = array(
@@ -2454,9 +2454,9 @@ class _DevblocksDatabaseManager {
 		}
 		
 		$sql = sprintf("SHOW INDEXES FROM %s", $table_name);
-		$rs_indexes = $this->GetArray($sql);
+		$rs = $this->GetArray($sql);
 
-		foreach($rs_indexes as $row) {
+		foreach($rs as $row) {
 			$key_name = $row['Key_name'];
 			$column_name = $row['Column_name'];
 
@@ -2492,7 +2492,13 @@ class _DevblocksDatabaseManager {
 	}
 	
 	function SelectLimit($sql, $limit, $start=0) {
-		return $this->Execute($sql . sprintf(" LIMIT %d,%d", $start, $limit));
+		$limit = intval($limit);
+		$start = intval($start);
+		
+		if($limit > 0)
+			return $this->Execute($sql . sprintf(" LIMIT %d,%d", $start, $limit));
+		else
+			return $this->Execute($sql);
 	}
 	
 	function qstr($string) {
@@ -2512,10 +2518,14 @@ class _DevblocksDatabaseManager {
 		return $results;
 	}
 	
-//	function getRow($sql) {
-//		$rs = $this->Execute($sql);
-//		return mysql_fetch_assoc($rs);
-//	}
+	function GetRow($sql) {
+		if($rs = $this->Execute($sql)) {
+			$row = mysql_fetch_assoc($rs);
+			mysql_free_result($rs);
+			return $row;
+		}
+		return false;
+	}
 
 	function GetOne($sql) {
 		if(false !== ($rs = $this->Execute($sql))) {

@@ -886,7 +886,7 @@ class DAO_Translation extends DevblocksORMHelper {
 	}
 	
 	/**
-	 * @param ADORecordSet $rs
+	 * @param resource $rs
 	 * @return Model_TranslationDefault[]
 	 */
 	static private function _getObjectsFromResult($rs) {
