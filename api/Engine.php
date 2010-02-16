@@ -2553,6 +2553,10 @@ class _DevblocksDatabaseManager {
 		
 		return mysql_insert_id($this->_db);
 	}
+	
+	function ErrorMsg() {
+		return mysql_error($this->_db);
+	}
 };
 
 class _DevblocksPatchManager {
