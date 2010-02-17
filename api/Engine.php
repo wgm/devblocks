@@ -2565,6 +2565,10 @@ class _DevblocksDatabaseManager {
 		return mysql_insert_id($this->_db);
 	}
 	
+	function Affected_Rows() {
+		return mysql_affected_rows($this->_db);
+	}
+	
 	function ErrorMsg() {
 		return mysql_error($this->_db);
 	}
