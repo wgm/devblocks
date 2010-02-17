@@ -7,24 +7,8 @@ include_once(DEVBLOCKS_PATH . "api/Extension.php");
 define('PLATFORM_BUILD',2010021202);
 
 /**
- *  @defgroup core Devblocks Framework Core
- *  Core data structures of the framework
- */
-
-/**
- *  @defgroup plugin Devblocks Framework Plugins
- *  Components for plugin/extensions
- */
-
-/**
- *  @defgroup services Devblocks Framework Services
- *  Services provided by the framework
- */
-
-/**
  * A platform container for plugin/extension registries.
  *
- * @ingroup core
  * @author Jeff Standen <jeff@webgroupmedia.com>
  */
 class DevblocksPlatform extends DevblocksEngine {
@@ -389,9 +373,8 @@ class DevblocksPlatform extends DevblocksEngine {
 	 */
 	static function runPluginPatches() {
 	    // Log out all sessions before patching
-	    // [TODO] The session manager should take care of this (and call an additional method on the handler)
-		$db = DevblocksPlatform::getDatabaseService();
-		$db->Execute("DELETE FROM devblocks_session");
+	    $session = DevblocksPlatform::getSessionService();
+	    $session->clearAll();
 		
 		$patchMgr = DevblocksPlatform::getPatchService();
 		
@@ -1059,11 +1042,6 @@ class DevblocksPlatform extends DevblocksEngine {
         @define('DEVBLOCKS_APP_WEBPATH',$app_self);
 	}
 
-//	static function setPluginDelegate($class) {
-//		if(!empty($class) && class_exists($class, true))
-//			self::$pluginDelegate = $class;
-//	}
-	
 	static function setExtensionDelegate($class) {
 		if(!empty($class) && class_exists($class, true))
 			self::$extensionDelegate = $class;
@@ -1095,6 +1073,6 @@ class PlatformPatchContainer extends DevblocksPatchContainerExtension {
 		$this->registerPatch(new DevblocksPatch('devblocks.core',1,$file_prefix.'1.0.0.php',''));
 		$this->registerPatch(new DevblocksPatch('devblocks.core',253,$file_prefix.'1.0.0_beta.php',''));
 		$this->registerPatch(new DevblocksPatch('devblocks.core',290,$file_prefix.'1.1.0.php',''));
-		$this->registerPatch(new DevblocksPatch('devblocks.core',299,$file_prefix.'2.0.0.php',''));
+		$this->registerPatch(new DevblocksPatch('devblocks.core',301,$file_prefix.'2.0.0.php',''));
 	}
 };

@@ -109,13 +109,30 @@ if(!isset($tables['devblocks_session'])) {
 			session_key VARCHAR(64) DEFAULT '' NOT NULL,
 			created INT UNSIGNED DEFAULT 0 NOT NULL,
 			updated INT UNSIGNED DEFAULT 0 NOT NULL,
-			session_data MEDIUMBLOB,
+			session_data MEDIUMTEXT,
 			PRIMARY KEY (session_key),
 			INDEX created (created),
 			INDEX updated (updated)
 		) ENGINE=MyISAM;
 	";
-	$db->Execute($sql);	
+	$db->Execute($sql);
+}
+
+// ============================================================================
+// Fix BLOBs
+
+list($columns, $indexes) = $db->metaTable('devblocks_session');
+
+if(isset($columns['session_data']) && 
+	0 != strcasecmp('mediumtext', $columns['session_data']['type'])) {
+		$db->Execute('ALTER TABLE devblocks_session MODIFY COLUMN session_data MEDIUMTEXT');		
+}
+
+list($columns, $indexes) = $db->metaTable($prefix.'event_point');
+
+if(isset($columns['params'])
+	&& 0 != strcasecmp('mediumtext',$columns['params']['type'])) {
+		$db->Execute("ALTER TABLE ${prefix}event_point MODIFY COLUMN params MEDIUMTEXT");
 }
 
 return TRUE;

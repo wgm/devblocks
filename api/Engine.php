@@ -676,6 +676,12 @@ class _DevblocksSessionManager {
 		unset($_SESSION['db_visit']);
 		session_destroy();
 	}
+	
+	function clearAll() {
+		self::clear();
+		// [TODO] Allow subclasses to be cleared here too
+		_DevblocksSessionDatabaseDriver::destroyAll();
+	}
 };
 
 class _DevblocksSessionDatabaseDriver {
@@ -728,6 +734,11 @@ class _DevblocksSessionDatabaseDriver {
 		$db = DevblocksPlatform::getDatabaseService();
 		$db->Execute(sprintf("DELETE FROM devblocks_session WHERE updated + %d < %d", $maxlifetime, time()));
 		return true;
+	}
+	
+	static function destroyAll() {
+		$db = DevblocksPlatform::getDatabaseService();
+		$db->Execute("DELETE FROM devblocks_session");
 	}
 };
 
