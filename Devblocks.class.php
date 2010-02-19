@@ -180,7 +180,10 @@ class DevblocksPlatform extends DevblocksEngine {
 				);
 			}
 		}
-			
+
+		if(empty($feed))
+			return false;
+		
 		return $feed;
 	}
 	
