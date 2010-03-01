@@ -116,6 +116,16 @@ class DevblocksPlatform extends DevblocksEngine {
 	static function strAlphaNumDash($arg) {
 		return preg_replace("/[^A-Z0-9_\-\.]/i","", $arg);
 	}	
+
+	/**
+	 * Return a string with only its alphanumeric characters or underscore
+	 *
+	 * @param string $arg
+	 * @return string
+	 */
+	static function strAlphaNumUnder($arg) {
+		return preg_replace("/[^A-Z0-9_]/i","", $arg);
+	}	
 	
 	static function stripHTML($str) {
 		// Strip all CRLF and tabs, spacify </TD>
