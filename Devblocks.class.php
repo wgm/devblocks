@@ -3551,6 +3551,7 @@ class _DevblocksTemplateManager {
 			$instance->register_block('devblocks_url', array('_DevblocksTemplateManager', 'block_devblocks_url'));
 			$instance->register_modifier('devblocks_date', array('_DevblocksTemplateManager', 'modifier_devblocks_date'));
 			$instance->register_modifier('devblocks_prettytime', array('_DevblocksTemplateManager', 'modifier_devblocks_prettytime'));
+			$instance->register_modifier('devblocks_prettybytes', array('_DevblocksTemplateManager', 'modifier_devblocks_prettybytes'));
 			$instance->register_modifier('devblocks_translate', array('_DevblocksTemplateManager', 'modifier_devblocks_translate'));
 			$instance->register_resource('devblocks', array(
 				array('_DevblocksSmartyTemplateResource', 'get_template'),
@@ -3625,6 +3626,27 @@ class _DevblocksTemplateManager {
 		}
 		
 		echo $whole;
+	}	
+
+	static function modifier_devblocks_prettybytes($string, $precision='0') {
+		if(!is_numeric($string))
+			return '';
+			
+		$bytes = intval($string);
+		$precision = intval($precision);
+		$out = '';
+		
+		if($bytes >= 1000000000) {
+			$out = number_format($bytes/1000000000,$precision) . ' GB';
+		} elseif ($bytes >= 1000000) {
+			$out = number_format($bytes/1000000,$precision) . ' MB';
+		} elseif ($bytes >= 1000) {
+			$out = number_format($bytes/1000,$precision) . ' KB';
+		} else {
+			$out = $bytes . ' bytes';
+		}
+		
+		echo $out;
 	}	
 };
 
