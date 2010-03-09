@@ -836,6 +836,11 @@ class DevblocksPlatform extends DevblocksEngine {
 		
 	    $plugins = array();
 
+	    // Devblocks
+	    if(null !== ($manifest = self::_readPluginManifest('libs/devblocks')))
+	    	$plugin[] = $manifest;
+	    	
+	    // Application
 	    if(is_array($scan_dirs))
 	    foreach($scan_dirs as $scan_dir) {
 	    	$scan_path = APP_PATH . '/' . $scan_dir;
@@ -1268,10 +1273,12 @@ abstract class DevblocksEngine {
 			));
 			
 		} else { // insert
+			$enabled = ('devblocks.core'==$manifest->id) ? 1 : 0;
 			$db->Execute(sprintf(
-				"INSERT INTO ${prefix}plugin (id,name,description,author,revision,link,dir,templates_json) ".
-				"VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+				"INSERT INTO ${prefix}plugin (id,enabled,name,description,author,revision,link,dir,templates_json) ".
+				"VALUES (%s,%d,%s,%s,%s,%s,%s,%s,%s)",
 				$db->qstr($manifest->id),
+				$enabled,
 				$db->qstr($manifest->name),
 				$db->qstr($manifest->description),
 				$db->qstr($manifest->author),
