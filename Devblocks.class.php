@@ -4053,6 +4053,7 @@ class _DevblocksClassLoadManager {
 		if(null !== ($map = $cache->load(self::CACHE_CLASS_MAP))) {
 			$this->classMap = $map;
 		} else {
+			$this->_initLibs();
 			$this->_initPlugins();
 			$cache->save($this->classMap, self::CACHE_CLASS_MAP);
 		}
@@ -4090,6 +4091,12 @@ class _DevblocksClassLoadManager {
 		foreach($classes as $class) {
 			$this->classMap[$class] = $file;
 		}
+	}
+	
+	private function _initLibs() {
+		$this->registerClasses(DEVBLOCKS_PATH . 'libs/s3/S3.php', array(
+			'S3'
+		));
 	}
 	
 	private function _initPlugins() {
