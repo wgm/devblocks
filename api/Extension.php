@@ -12,8 +12,6 @@ abstract class DevblocksApplication {
 class DevblocksExtension {
 	public $manifest = null;
 	public $id  = '';
-	private $params = array();
-	private $params_loaded = false;
 	
 	/**
 	 * Constructor
@@ -27,70 +25,18 @@ class DevblocksExtension {
         
 		$this->manifest = $manifest;
 		$this->id = $manifest->id;
-//		$this->params = $this->_getParams();
 	}
 	
 	function getParams() {
-	    if(!$this->params_loaded) {
-	        $this->params = $this->_getParams();
-	        $this->params_loaded = true;
-	    }
-	    return $this->params;
+		return $this->manifest->getParams();
 	}
 	
 	function setParam($key, $value) {
-	    $this->params[$key] = $value;
-	    
-		$db = DevblocksPlatform::getDatabaseService();
-		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
-
-		$db->Execute(sprintf(
-			"REPLACE INTO ${prefix}property_store (extension_id, property, value) ".
-			"VALUES (%s,%s,%s)",
-			$db->qstr($this->id),
-			$db->qstr($key),
-			$db->qstr($value)	
-		));			
+		return $this->manifest->setParam($key, $value);
 	}
 	
 	function getParam($key,$default=null) {
-	    $params = $this->getParams(); // make sure we're fresh
-	    return isset($params[$key]) ? $params[$key] : $default;
-	}
-	
-	/**
-	 * Loads parameters unique to this extension instance.  Returns an 
-	 * associative array indexed by parameter key.
-	 *
-	 * @private
-	 * @return array
-	 */
-	private function _getParams() {
-//		static $params = null;
-		
-		if(empty($this->id))
-			return null;
-		
-//		if(null != $params)
-//			return $params;
-		
-		$params = $this->manifest->params;
-		$db = DevblocksPlatform::getDatabaseService();
-		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
-		
-		$sql = sprintf("SELECT property,value ".
-			"FROM %sproperty_store ".
-			"WHERE extension_id=%s ",
-			$prefix,
-			$db->qstr($this->id)
-		);
-		$results = $db->GetArray($sql) or die(__CLASS__ . ':' . $db->ErrorMsg()); 
-		
-		foreach($results as $row) {
-			$params[$row['property']] = $row['value'];
-		}
-		
-		return $params;
+		return $this->manifest->getParam($key, $default);
 	}
 };
 

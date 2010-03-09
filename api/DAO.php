@@ -405,6 +405,78 @@ class DAO_DevblocksSetting extends DevblocksORMHelper {
 	}
 };
 
+class DAO_DevblocksExtensionPropertyStore extends DevblocksORMHelper {
+	const EXTENSION_ID = 'extension_id';
+	const PROPERTY = 'property';
+	const VALUE = 'value';
+	
+	const _CACHE_ALL = 'devblocks_property_store';
+	
+	static function getAll() {
+		$extensions = DevblocksPlatform::getExtensionRegistry(true);
+		$cache = DevblocksPlatform::getCacheService();
+		
+		if(null == ($params = $cache->load(self::_CACHE_ALL))) {
+			$db = DevblocksPlatform::getDatabaseService();
+			$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
+			$params = array();
+			
+			// Add manifest params as our initial params
+
+			foreach($extensions as $extension) { /* @var $extension DevblocksExtensionManifest */
+				$params[$extension->id] = $extension->params;
+			}
+			
+			// Now load the DB params on top of them
+			
+			$sql = sprintf("SELECT extension_id, property, value ".
+				"FROM %sproperty_store ",
+				$prefix
+			);
+			$results = $db->GetArray($sql);
+			
+			foreach($results as $row) {
+				$params[$row['extension_id']][$row['property']] = $row['value'];
+			}
+			
+			$cache->save($params, self::_CACHE_ALL);
+		}
+		
+		return $params;
+	}
+	
+	static function getByExtension($extension_id) {
+		$params = self::getAll();
+		
+		if(isset($params[$extension_id]))
+			return $params[$extension_id];
+			
+		return array();
+	}
+
+	static function get($extension_id, $key, $default=null) {
+	    $params = self::getByExtension($extension_id);
+	    return isset($params[$key]) ? $params[$key] : $default;
+	}
+	
+	static function put($extension_id, $key, $value) {
+		$db = DevblocksPlatform::getDatabaseService();
+		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
+
+		$db->Execute(sprintf(
+			"REPLACE INTO ${prefix}property_store (extension_id, property, value) ".
+			"VALUES (%s,%s,%s)",
+			$db->qstr($extension_id),
+			$db->qstr($key),
+			$db->qstr($value)	
+		));
+
+		$cache = DevblocksPlatform::getCacheService();
+		$cache->remove(self::_CACHE_ALL);
+		return true;
+	}
+};
+
 class DAO_DevblocksTemplate extends DevblocksORMHelper {
 	const ID = 'id';
 	const PLUGIN_ID = 'plugin_id';

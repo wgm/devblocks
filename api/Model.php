@@ -348,6 +348,18 @@ class DevblocksExtensionManifest {
 		$plugin = DevblocksPlatform::getPlugin($this->plugin_id);
 		return $plugin;
 	}
+	
+	function getParams() {
+		return DAO_DevblocksExtensionPropertyStore::getByExtension($this->id);
+	}
+	
+	function setParam($key, $value) {
+		return DAO_DevblocksExtensionPropertyStore::put($this->id, $key, $value);
+	}
+	
+	function getParam($key, $default=null) {
+		return DAO_DevblocksExtensionPropertyStore::get($this->id, $key, $default);
+	}
 };
 
 /**
