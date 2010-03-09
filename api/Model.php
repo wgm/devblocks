@@ -461,3 +461,11 @@ class Model_Translation {
 	public $string_default;
 	public $string_override;
 };
+
+class Model_DevblocksStorageProfile {
+	public $id;
+	public $name;
+	public $extension_id;
+	public $params_json;
+	public $params = array();
+};

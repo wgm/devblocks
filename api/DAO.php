@@ -1027,3 +1027,263 @@ class SearchFields_Translation implements IDevblocksSearchFields {
 		);
 	}
 };
+
+class DAO_DevblocksStorageProfile extends DevblocksORMHelper {
+	const ID = 'id';
+	const NAME = 'name';
+	const EXTENSION_ID = 'extension_id';
+	const PARAMS_JSON = 'params_json';
+
+	static function create($fields) {
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		$id = $db->GenID('generic_seq');
+		
+		$sql = sprintf("INSERT INTO devblocks_storage_profile (id) ".
+			"VALUES (%d)",
+			$id
+		);
+		$db->Execute($sql);
+		
+		self::update($id, $fields);
+		
+		return $id;
+	}
+	
+	static function update($ids, $fields) {
+		parent::_update($ids, 'devblocks_storage_profile', $fields);
+		self::_clearCache();
+	}
+	
+	static function updateWhere($fields, $where) {
+		parent::_updateWhere('devblocks_storage_profile', $fields, $where);
+		self::_clearCache();
+	}
+	
+	static function getAll() {
+	    $cache = DevblocksPlatform::getCacheService();
+	    
+	    if(null === ($profiles = $cache->load(DevblocksPlatform::CACHE_STORAGE_PROFILES))) {
+	    	$profiles = self::getWhere();
+	    	$cache->save($profiles, DevblocksPlatform::CACHE_STORAGE_PROFILES);
+	    }
+	    
+	    return $profiles;
+	}
+	
+	static private function _clearCache() {
+		$cache = DevblocksPlatform::getCacheService();
+		$cache->remove(DevblocksPlatform::CACHE_STORAGE_PROFILES);
+	}
+	
+	/**
+	 * @param string $where
+	 * @return Model_DevblocksStorageProfile[]
+	 */
+	static function getWhere($where=null) {
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		$sql = "SELECT id, name, extension_id, params_json ".
+			"FROM devblocks_storage_profile ".
+			(!empty($where) ? sprintf("WHERE %s ",$where) : "").
+			"ORDER BY id asc";
+		$rs = $db->Execute($sql);
+		
+		return self::_getObjectsFromResult($rs);
+	}
+
+	/**
+	 * Accepts either an integer id or a storage extension (profile_id=0)
+	 * 
+	 * @param mixed $id
+	 * @return Model_DevblocksStorageProfile
+	 **/
+	static function get($id) {
+		
+		if(is_numeric($id)) {
+			$profiles = self::getAll();
+			if(isset($profiles[$id]))
+				return $profiles[$id];
+				
+		} else {
+			// [TODO] Validate extension id
+			$profile = new Model_DevblocksStorageProfile();
+			$profile->id = 0;
+			$profile->extension_id = $id;
+			return $profile;
+		}
+			
+		return NULL;
+	}
+	
+	/**
+	 * @param resource $rs
+	 * @return Model_DevblocksStorageProfile[]
+	 */
+	static private function _getObjectsFromResult($rs) {
+		$objects = array();
+		
+		while($row = mysql_fetch_assoc($rs)) {
+			$object = new Model_DevblocksStorageProfile();
+			$object->id = $row['id'];
+			$object->name = $row['name'];
+			$object->extension_id = $row['extension_id'];
+			$object->params_json = $row['params_json'];
+			
+			if(false !== ($params = json_decode($object->params_json, true))) {
+				$object->params = $params;
+			} else {
+				$object->params = array();
+			}
+			
+			$objects[$object->id] = $object;
+		}
+		
+		mysql_free_result($rs);
+		
+		return $objects;
+	}
+	
+	static function delete($ids) {
+		if(!is_array($ids)) $ids = array($ids);
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		if(empty($ids))
+			return;
+		
+		$ids_list = implode(',', $ids);
+		
+		$db->Execute(sprintf("DELETE FROM devblocks_storage_profile WHERE id IN (%s)", $ids_list));
+		
+		self::_clearCache();
+		
+		return true;
+	}
+	
+    /**
+     * Enter description here...
+     *
+     * @param array $columns
+     * @param DevblocksSearchCriteria[] $params
+     * @param integer $limit
+     * @param integer $page
+     * @param string $sortBy
+     * @param boolean $sortAsc
+     * @param boolean $withCounts
+     * @return array
+     */
+    static function search($columns, $params, $limit=10, $page=0, $sortBy=null, $sortAsc=null, $withCounts=true) {
+		$db = DevblocksPlatform::getDatabaseService();
+		$fields = SearchFields_DevblocksStorageProfile::getFields();
+		
+		// Sanitize
+		if(!isset($fields[$sortBy]))
+			$sortBy=null;
+
+        list($tables,$wheres) = parent::_parseSearchParams($params, $columns, $fields, $sortBy);
+		$start = ($page * $limit); // [JAS]: 1-based
+		$total = -1;
+		
+		$select_sql = sprintf("SELECT ".
+			"devblocks_storage_profile.id as %s, ".
+			"devblocks_storage_profile.name as %s, ".
+			"devblocks_storage_profile.extension_id as %s, ".
+			"devblocks_storage_profile.params_json as %s ",
+				SearchFields_DevblocksStorageProfile::ID,
+				SearchFields_DevblocksStorageProfile::NAME,
+				SearchFields_DevblocksStorageProfile::EXTENSION_ID,
+				SearchFields_DevblocksStorageProfile::PARAMS_JSON
+			);
+			
+		$join_sql = "FROM devblocks_storage_profile ";
+		
+		// Custom field joins
+		//list($select_sql, $join_sql, $has_multiple_values) = self::_appendSelectJoinSqlForCustomFieldTables(
+		//	$tables,
+		//	$params,
+		//	'devblocks_storage_profile.id',
+		//	$select_sql,
+		//	$join_sql
+		//);
+				
+		$where_sql = "".
+			(!empty($wheres) ? sprintf("WHERE %s ",implode(' AND ',$wheres)) : "");
+			
+		$sort_sql = (!empty($sortBy)) ? sprintf("ORDER BY %s %s ",$sortBy,($sortAsc || is_null($sortAsc))?"ASC":"DESC") : " ";
+			
+		$sql = 
+			$select_sql.
+			$join_sql.
+			$where_sql.
+			($has_multiple_values ? 'GROUP BY devblocks_storage_profile.id ' : '').
+			$sort_sql;
+			
+		// [TODO] Could push the select logic down a level too
+		if($limit > 0) {
+    		$rs = $db->SelectLimit($sql,$limit,$start) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+		} else {
+		    $rs = $db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+            $total = mysql_num_rows($rs);
+		}
+		
+		$results = array();
+		
+		while($row = mysql_fetch_assoc($rs)) {
+			$result = array();
+			foreach($row as $f => $v) {
+				$result[$f] = $v;
+			}
+			$object_id = intval($row[SearchFields_DevblocksStorageProfile::ID]);
+			$results[$object_id] = $result;
+		}
+
+		// [JAS]: Count all
+		if($withCounts) {
+			$count_sql = 
+				($has_multiple_values ? "SELECT COUNT(DISTINCT devblocks_storage_profile.id) " : "SELECT COUNT(devblocks_storage_profile.id) ").
+				$join_sql.
+				$where_sql;
+			$total = $db->GetOne($count_sql);
+		}
+		
+		mysql_free_result($rs);
+		
+		return array($results,$total);
+	}
+
+};
+
+class SearchFields_DevblocksStorageProfile implements IDevblocksSearchFields {
+	const ID = 'd_id';
+	const NAME = 'd_name';
+	const EXTENSION_ID = 'd_extension_id';
+	const PARAMS_JSON = 'd_params_json';
+	
+	/**
+	 * @return DevblocksSearchField[]
+	 */
+	static function getFields() {
+		$translate = DevblocksPlatform::getTranslationService();
+		
+		$columns = array(
+			self::ID => new DevblocksSearchField(self::ID, 'devblocks_storage_profile', 'id', $translate->_('id')),
+			self::NAME => new DevblocksSearchField(self::NAME, 'devblocks_storage_profile', 'name', $translate->_('name')),
+			self::EXTENSION_ID => new DevblocksSearchField(self::EXTENSION_ID, 'devblocks_storage_profile', 'extension_id', $translate->_('extension_id')),
+			self::PARAMS_JSON => new DevblocksSearchField(self::PARAMS_JSON, 'devblocks_storage_profile', 'params_json', $translate->_('params_json')),
+		);
+		
+		// Custom Fields
+		//$fields = DAO_CustomField::getBySource(PsCustomFieldSource_XXX::ID);
+
+		//if(is_array($fields))
+		//foreach($fields as $field_id => $field) {
+		//	$key = 'cf_'.$field_id;
+		//	$columns[$key] = new DevblocksSearchField($key,$key,'field_value',$field->name);
+		//}
+		
+		// Sort by label (translation-conscious)
+		uasort($columns, create_function('$a, $b', "return strcasecmp(\$a->db_label,\$b->db_label);\n"));
+
+		return $columns;		
+	}
+};

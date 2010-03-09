@@ -135,4 +135,21 @@ if(isset($columns['params'])
 		$db->Execute("ALTER TABLE ${prefix}event_point MODIFY COLUMN params MEDIUMTEXT");
 }
 
+// ============================================================================
+// Storage profiles
+
+if(!isset($tables['devblocks_storage_profile'])) {
+	$sql = "
+		CREATE TABLE IF NOT EXISTS devblocks_storage_profile (
+			id int(11) NOT NULL DEFAULT 0,
+			name varchar(128) NOT NULL DEFAULT '',
+			extension_id varchar(255) NOT NULL DEFAULT '',
+			params_json longtext,
+			PRIMARY KEY (id),
+			INDEX extension_id (extension_id)
+		) ENGINE=MyISAM;
+	";
+	$db->Execute($sql) or die($db->ErrorMsg());
+}
+
 return TRUE;

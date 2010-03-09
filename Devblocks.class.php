@@ -3,7 +3,7 @@ include_once(DEVBLOCKS_PATH . "api/Model.php");
 include_once(DEVBLOCKS_PATH . "api/DAO.php");
 include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
-define('PLATFORM_BUILD',2010021203);
+define('PLATFORM_BUILD',2010030402);
 
 /**
  * A platform container for plugin/extension registries.
@@ -18,6 +18,7 @@ class DevblocksPlatform extends DevblocksEngine {
     const CACHE_PLUGINS = 'devblocks_plugins';
     const CACHE_POINTS = 'devblocks_points';
     const CACHE_SETTINGS = 'devblocks_settings';
+    const CACHE_STORAGE_PROFILES = 'devblocks_storage_profiles';
     const CACHE_TABLES = 'devblocks_tables';
     const CACHE_TAG_TRANSLATIONS = 'devblocks_translations';
     
@@ -964,10 +965,34 @@ class DevblocksPlatform extends DevblocksEngine {
 	}
 
 	/**
-	 * @return _DevblocksStorageEngineAbstract
+	 * @param $profile_id | $extension_id, $options
+	 * @return Extension_DevblocksStorageEngine
 	 */
-	static function getStorageService($extension_id, $options=array()) {
-	    return _DevblocksStorageManager::getEngine($extension_id, $options);
+	static function getStorageService() {
+		$args = func_get_args();
+
+		if(empty($args))
+			return false;
+		
+		$profile = $args[0];
+		$params = array();
+		
+		// Handle $profile polymorphism
+		if($profile instanceof Model_DevblocksStorageProfile) {
+			$extension = $profile->extension_id;
+			$params = $profile->params;
+		} else if(is_numeric($profile)) {
+			$storage_profile = DAO_DevblocksStorageProfile::get($profile);
+			$extension = $storage_profile->extension_id;
+			$params = $storage_profile->params;
+		} else if(is_string($profile)) {
+			$extension = $profile;
+			
+			if(isset($args[1]) && is_array($args[1]))
+				$params = $args[1];
+		}
+		
+	    return _DevblocksStorageManager::getEngine($extension, $params);
 	}
 
 	/**
@@ -1200,7 +1225,7 @@ class PlatformPatchContainer extends DevblocksPatchContainerExtension {
 		$this->registerPatch(new DevblocksPatch('devblocks.core',1,$file_prefix.'1.0.0.php',''));
 		$this->registerPatch(new DevblocksPatch('devblocks.core',253,$file_prefix.'1.0.0_beta.php',''));
 		$this->registerPatch(new DevblocksPatch('devblocks.core',290,$file_prefix.'1.1.0.php',''));
-		$this->registerPatch(new DevblocksPatch('devblocks.core',301,$file_prefix.'2.0.0.php',''));
+		$this->registerPatch(new DevblocksPatch('devblocks.core',302,$file_prefix.'2.0.0.php',''));
 	}
 };
 
@@ -2135,239 +2160,16 @@ class _DevblocksStorageManager {
 	 * 
 	 * @param string $extension_id
 	 * @param array $options
-	 * @return _DevblocksStorageEngineAbstract
+	 * @return Extension_DevblocksStorageEngine
 	 */
 	static public function getEngine($extension_id, $options=array()) {
-		$engine = null;
-		
-		// Storage Engine
-		switch($extension_id) {
-			case 'devblocks.storage.engine.disk':
-				$engine = new _DevblocksStorageEngineDisk($options);
-				break;
-			case 'devblocks.storage.engine.database':
-				$engine = new _DevblocksStorageEngineDatabase($options);
-				break;
-			case 'devblocks.storage.engine.ftp':
-//				$engine = new _DevblocksStorageEngineFTP($options);
-				break;
-			case 'devblocks.storage.engine.s3':
-//				$engine = new _DevblocksStorageEngineS3($options);
-				break;
-			default:
-				break;
-		}
-		
-		if(!empty($engine))
+		if(null !== ($engine = DevblocksPlatform::getExtension($extension_id, true, true))) {
+			/* @var $engine Extension_DevblocksStorageEngine */
+			$engine->setOptions($options);
 			return $engine;
-			
+		}
+		
 		return false;
-	}
-};
-
-abstract class _DevblocksStorageEngineAbstract {
-	private $_options = array();
-	
-	abstract function exists($namespace, $key);
-	abstract function put($namespace, $id, $data);
-	abstract function get($namespace, $key);
-//	abstract function getAsFilePointer($namespace, $key);
-	abstract function delete($namespace, $key);
-	
-	protected function __construct($options=array()) {
-		if(is_array($options))
-			$this->_options = $options;
-	}
-	
-	protected function escapeNamespace($namespace) {
-		return strtolower(DevblocksPlatform::strAlphaNumUnder($namespace));
-	}
-};
-
-class _DevblocksStorageEngineDisk extends _DevblocksStorageEngineAbstract {
-	public function __construct($options=array()) {
-		parent::__construct($options);
-		
-		// Default
-		if(!isset($this->_options['storage_path']))
-			$this->_options['storage_path'] = APP_STORAGE_PATH . '/';
-	}
-	
-	public function exists($namespace, $key) {
-		return file_exists($this->_options['storage_path'] . $this->escapeNamespace($namespace) . '/' . $key);
-	}
-	
-	public function put($namespace, $id, $data) {
-		// Get a unique hash path for this namespace+id
-		$hash = md5($this->escapeNamespace($namespace).$id);
-		$key_prefix = sprintf("%s/%s",
-			substr($hash,0,2),
-			substr($hash,2,2)
-		);
-		$path = sprintf("%s%s/%s",
-			$this->_options['storage_path'],
-			$this->escapeNamespace($namespace),
-			$key_prefix
-		);
-		
-		// Create the hash path if it doesn't exist
-		if(!is_dir($path)) {
-			if(false === mkdir($path, 0755, true)) {
-				return false;
-			}
-		}
-		
-		// Write the content
-		if(!file_put_contents($path.'/'.$id, $data))
-			return false;
-
-		$key = $key_prefix.'/'.$id;
-			
-		return $key;
-	}
-
-	public function get($namespace, $key) {
-		$path = sprintf("%s%s/%s",
-			$this->_options['storage_path'],
-			$this->escapeNamespace($namespace),
-			$key
-		);
-			
-		if(false === ($contents = @file_get_contents($path)))
-			return false;
-			
-		return $contents;
-	}
-	
-//	public function getAsFilePointer($namespace, $key) {
-//		$path = sprintf("%s%s/%s",
-//			$this->_options['storage_path'],
-//			$this->escapeNamespace($namespace),
-//			$key
-//		);
-//		
-//		if(!file_exists($path))
-//			return false;
-//
-//		return @fopen($path, 'rb');
-//	}
-	
-	public function delete($namespace, $key) {
-		$path = sprintf("%s%s/%s",
-			$this->_options['storage_path'],
-			$this->escapeNamespace($namespace),
-			$key
-		);
-		
-		if($this->exists($namespace, $key))
-			return @unlink($path);
-		
-		return true;
-	}
-};
-
-class _DevblocksStorageEngineDatabase extends _DevblocksStorageEngineAbstract {
-	public function __construct($options=array()) {
-		parent::__construct($options);
-	}
-	
-	private function _createTable($namespace) {
-		$db = DevblocksPlatform::getDatabaseService();
-		
-		$tables = $db->metaTables();
-		$namespace = $this->escapeNamespace($namespace);
-		
-		if(isset($tables['storage_'.$namespace]))
-			return true;
-		
-		$result = $db->Execute(sprintf(
-			"CREATE TABLE IF NOT EXISTS storage_%s (
-				id INT UNSIGNED NOT NULL DEFAULT 0,
-				data LONGBLOB,
-				PRIMARY KEY (id)
-			) ENGINE=MyISAM;",
-			$this->escapeNamespace($namespace)
-		));
-		
-		return (false !== $result) ? true : false;
-	}
-	
-	public function exists($namespace, $key) {
-		$db = DevblocksPlatform::getDatabaseService();
-		$result = $db->GetOne(sprintf("SELECT id FROM storage_%s WHERE id=%d",
-			$this->escapeNamespace($namespace),
-			$key
-		));
-		
-		return (false===$result || empty($result)) ? false : true;
-	}
-
-	private function _put($namespace, $id, $data) {
-		$db = DevblocksPlatform::getDatabaseService();
-		
-		$result = $db->Execute(sprintf("REPLACE INTO storage_%s (id,data) VALUES (%d,%s)",
-			$this->escapeNamespace($namespace),
-			$id,
-			$db->qstr($data)
-		));
-		
-		return (false !== $result) ? $id : false;
-	}
-	
-	public function put($namespace, $id, $data) {
-		$db = DevblocksPlatform::getDatabaseService();
-		
-		// Try replacing first since this is the most efficient when things are working right
-		$key = $this->_put($namespace, $id, $data);
-		
-		// If we failed, make sure the table exists
-		if(false === $key) {
-			if($this->_createTable($namespace)) {
-				$key = $this->_put($namespace, $id, $data);
-			}
-		}
-		
-		return (false !== $key) ? $key : false;
-	}
-
-	public function get($namespace, $key) {
-		$db = DevblocksPlatform::getDatabaseService();
-		
-		if(false === ($contents = $db->GetOne(sprintf("SELECT data FROM storage_%s WHERE id=%d",
-				$this->escapeNamespace($namespace),
-				$key
-			))))
-			return false;
-			
-		return $contents;
-	}
-
-//	public function getAsFilePointer($namespace, $key) {
-//		$db = DevblocksPlatform::getDatabaseService();
-//		
-//		if(false === ($contents = $db->GetOne(sprintf("SELECT data FROM storage_%s WHERE id=%d",
-//				$this->escapeNamespace($namespace),
-//				$key
-//			))))
-//			return false;
-//			
-//		// Put file on disk
-//		$file = tempnam(APP_TEMP_PATH, $this->escapeNamespace($namespace));
-//		if(!file_put_contents($file, $contents))
-//			return false;
-//			
-//		return @fopen($file, 'rb');
-//	}
-
-	public function delete($namespace, $key) {
-		$db = DevblocksPlatform::getDatabaseService();
-		
-		$result = $db->Execute(sprintf("DELETE FROM storage_%s WHERE id=%d",
-			$this->escapeNamespace($namespace),
-			$key
-		));
-		
-		return $result ? true : false;
 	}
 };
 
@@ -3844,6 +3646,10 @@ class _DevblocksDatabaseManager {
 		$this->Execute('SET NAMES ' . DB_CHARSET_CODE);
 		
 		return true;
+	}
+	
+	function getConnection() {
+		return $this->_db;
 	}
 	
 	function isConnected() {
