@@ -68,7 +68,7 @@ class DevblocksStorageEngineDisk extends Extension_DevblocksStorageEngine {
 		}
 		
 		// Write the content
-		if(!file_put_contents($path.'/'.$id, $data))
+		if(false === file_put_contents($path.'/'.$id, $data))
 			return false;
 
 		$key = $key_prefix.'/'.$id;
