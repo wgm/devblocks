@@ -7,6 +7,6 @@ This engine stores content in Amazon's S3 cloud storage service.<br>
 <b>Secret key:</b><br>
 <input type="password" name="secret_key" size="32" value="{$profile->params.secret_key|escape}"><br>
 
-<b>Bucket prefix:</b><br>
-<input type="text" name="bucket_prefix" size="16" value="{$profile->params.bucket_prefix|escape}"><br>
+<b>Bucket:</b><br>
+<input type="text" name="bucket" size="16" value="{$profile->params.bucket|escape}"><br>
 
