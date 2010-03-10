@@ -83,7 +83,7 @@ class DevblocksStorageEngineDisk extends Extension_DevblocksStorageEngine {
 			$key
 		);
 			
-		if(false === ($contents = @file_get_contents($path)))
+		if(false === ($contents = file_get_contents($path)))
 			return false;
 			
 		return $contents;
