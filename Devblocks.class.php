@@ -3450,8 +3450,8 @@ class _DevblocksTemplateManager {
 		if(!is_numeric($string))
 			return '';
 			
-		$bytes = intval($string);
-		$precision = intval($precision);
+		$bytes = floatval($string);
+		$precision = floatval($precision);
 		$out = '';
 		
 		if($bytes >= 1000000000) {
