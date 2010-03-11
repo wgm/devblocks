@@ -119,20 +119,23 @@ class DevblocksStorageEngineDatabase extends Extension_DevblocksStorageEngine {
 		if(empty($this->_options['host'])) {
 			$db = DevblocksPlatform::getDatabaseService();
 			$this->_db = $db->getConnection();
-			return true;
 			
 		// Use the provided connection details
 		} else {
-			if(false == ($this->_db = mysql_connect($this->_options['host'], $this->_options['user'], $this->_options['password'])))
+			if(false == ($this->_db = mysql_connect($this->_options['host'], $this->_options['user'], $this->_options['password']))) {
+				$this->_db = null;
 				return false;
+			}
 				
-			if(false == mysql_select_db($this->_options['database'], $this->_db))
+			if(false == mysql_select_db($this->_options['database'], $this->_db)) {
+				$this->_db = null;
 				return false;
+			}
 		}
 		
 		return true;
 	}	
-	
+
 	function testConfig() {
 		@$host = DevblocksPlatform::importGPC($_POST['host'],'string','');
 		@$user = DevblocksPlatform::importGPC($_POST['user'],'string','');
@@ -200,8 +203,10 @@ class DevblocksStorageEngineDatabase extends Extension_DevblocksStorageEngine {
 		$result = mysql_query(sprintf(
 			"CREATE TABLE IF NOT EXISTS storage_%s (
 				id INT UNSIGNED NOT NULL DEFAULT 0,
-				data LONGBLOB,
-				PRIMARY KEY (id)
+				data BLOB,
+				chunk SMALLINT UNSIGNED DEFAULT 1,
+				INDEX id (id),
+				INDEX chunk (chunk),
 			) ENGINE=MyISAM;",
 			$this->escapeNamespace($namespace)
 		), $this->_db);
@@ -219,13 +224,40 @@ class DevblocksStorageEngineDatabase extends Extension_DevblocksStorageEngine {
 	}
 
 	private function _put($namespace, $id, $data) {
-		$result = mysql_query(sprintf("REPLACE INTO storage_%s (id,data) VALUES (%d,'%s')",
+		$chunk_size = 65535;
+		$chunks = 1;
+
+		$sql = sprintf("DELETE QUICK FROM storage_%s WHERE id = %d",
 			$this->escapeNamespace($namespace),
-			$id,
-			mysql_real_escape_string($data, $this->_db)
-		), $this->_db);
+			$id
+		);
+		mysql_query($sql, $this->_db);
 		
-		return (false !== $result) ? $id : false;
+		while($data && strlen($data)) {
+			$chunk = substr($data, 0, $chunk_size);
+			$data = substr($data, $chunk_size);
+			
+			// Chunk
+			$sql = sprintf("INSERT INTO storage_%s (id, data, chunk) VALUES (%d, '%s', %d)",
+				$this->escapeNamespace($namespace),
+				$id,
+				mysql_real_escape_string($chunk, $this->_db),
+				$chunks
+			);
+			if(false === ($result = mysql_query($sql, $this->_db))) {
+				// Rollback
+				$sql = sprintf("DELETE QUICK FROM storage_%s WHERE id = %d",
+					$this->escapeNamespace($namespace),
+					$id
+				);
+				mysql_query($sql, $this->_db);
+				return false;
+			}
+			
+			$chunks++;
+		}
+			
+		return $id;
 	}
 	
 	public function put($namespace, $id, $data) {
@@ -242,15 +274,21 @@ class DevblocksStorageEngineDatabase extends Extension_DevblocksStorageEngine {
 		return (false !== $key) ? $key : false;
 	}
 
+	// [TODO] Pass an optional file pointer to write the response to (by reference)
 	public function get($namespace, $key) {
-		if(false === ($result = mysql_query(sprintf("SELECT data FROM storage_%s WHERE id=%d",
+		if(false === ($result = mysql_query(sprintf("SELECT data FROM storage_%s WHERE id=%d ORDER BY chunk ASC",
 				$this->escapeNamespace($namespace),
 				$key
 			), $this->_db)))
 			return false;
+
+		$contents = '';
 			
-		$row = mysql_fetch_assoc($result);
-		return $row['data'];
+		while($row = mysql_fetch_row($result)) {
+			$contents .= $row[0];
+		}
+		
+		return $contents;
 	}
 
 	public function delete($namespace, $key) {
