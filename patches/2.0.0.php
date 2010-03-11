@@ -152,4 +152,12 @@ if(!isset($tables['devblocks_storage_profile'])) {
 	$db->Execute($sql) or die($db->ErrorMsg());
 }
 
+// ============================================================================
+// Force enable 'devblocks.core' plugin
+
+$sql = sprintf("UPDATE %splugin SET enabled=1 WHERE id='devblocks.core'",
+	$prefix
+);
+$db->Execute($sql) or die($db->ErrorMsg());
+
 return TRUE;
