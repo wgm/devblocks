@@ -67,26 +67,62 @@ class DevblocksStorageEngineDisk extends Extension_DevblocksStorageEngine {
 			}
 		}
 		
-		// Write the content
-		if(false === file_put_contents($path.'/'.$id, $data))
-			return false;
+		// If we're writing from a file resource
+		if(is_resource($data)) {
+			fseek($data, 0);
+			
+			// Open the output file
+			if(false === ($fout = fopen($path.'/'.$id, 'w+b')))
+				return false;
+			
+			// Stream from input to output
+			while(!feof($data)) {
+				fwrite($fout, fread($data, 65535));
+			}
+			
+			// Close output
+			fclose($fout);
+			
+		} else {
+			// Write the content
+			if(false === file_put_contents($path.'/'.$id, $data))
+				return false;
+		}
 
 		$key = $key_prefix.'/'.$id;
 			
 		return $key;
 	}
 
-	public function get($namespace, $key) {
+	public function get($namespace, $key, &$fp=null) {
 		$path = sprintf("%s%s/%s",
 			$this->_options['storage_path'],
 			$this->escapeNamespace($namespace),
 			$key
 		);
+		
+		// Read into file handle
+		if($fp && is_resource($fp)) {
+			$src_fp = fopen($path, 'rb');
+			while(!feof($src_fp)) {
+				if(false === fwrite($fp, fread($src_fp, 65536))) {
+					fclose($src_fp);
+					return false;
+				}
+			}
 			
-		if(false === ($contents = file_get_contents($path)))
-			return false;
+			fseek($fp, 0);
+			fclose($src_fp);
+			return true;
 			
-		return $contents;
+		// Return full contents
+		} else {
+			if(false === ($contents = file_get_contents($path)))
+				return false;
+			return $contents;
+		}
+			
+		return false;
 	}
 	
 	public function delete($namespace, $key) {
@@ -223,16 +259,10 @@ class DevblocksStorageEngineDatabase extends Extension_DevblocksStorageEngine {
 		return (mysql_num_rows($result)) ? true : false;
 	}
 
-	private function _put($namespace, $id, $data) {
+	private function _writeChunksFromString($data, $namespace, $id) {
 		$chunk_size = 65535;
 		$chunks = 1;
 
-		$sql = sprintf("DELETE QUICK FROM storage_%s WHERE id = %d",
-			$this->escapeNamespace($namespace),
-			$id
-		);
-		mysql_query($sql, $this->_db);
-		
 		while($data && strlen($data)) {
 			$chunk = substr($data, 0, $chunk_size);
 			$data = substr($data, $chunk_size);
@@ -256,8 +286,57 @@ class DevblocksStorageEngineDatabase extends Extension_DevblocksStorageEngine {
 			
 			$chunks++;
 		}
+		
+		return true;
+	}
+	
+	private function _writeChunksFromFile($fp, $namespace, $id) {
+		$chunk_size = 65535;
+		$chunks = 1;
+		
+		fseek($fp, 0);
+		while(!feof($fp)) {
+			$chunk = fread($fp, $chunk_size);
 			
-		return $id;
+			// Chunk
+			$sql = sprintf("INSERT INTO storage_%s (id, data, chunk) VALUES (%d, '%s', %d)",
+				$this->escapeNamespace($namespace),
+				$id,
+				mysql_real_escape_string($chunk, $this->_db),
+				$chunks
+			);
+			if(false === ($result = mysql_query($sql, $this->_db))) {
+				// Rollback
+				$sql = sprintf("DELETE QUICK FROM storage_%s WHERE id = %d",
+					$this->escapeNamespace($namespace),
+					$id
+				);
+				mysql_query($sql, $this->_db);
+				return false;
+			}
+			
+			$chunks++;
+		}
+		
+		return true;
+	}
+	
+	private function _put($namespace, $id, $data) {
+		$sql = sprintf("DELETE QUICK FROM storage_%s WHERE id = %d",
+			$this->escapeNamespace($namespace),
+			$id
+		);
+		mysql_query($sql, $this->_db);
+
+		if(is_resource($data)) {
+			if($this->_writeChunksFromFile($data, $namespace, $id))
+				return $id;
+		} else {
+			if($this->_writeChunksFromString($data, $namespace, $id))
+				return $id;
+		}
+			
+		return false;
 	}
 	
 	public function put($namespace, $id, $data) {
@@ -274,21 +353,36 @@ class DevblocksStorageEngineDatabase extends Extension_DevblocksStorageEngine {
 		return (false !== $key) ? $key : false;
 	}
 
-	// [TODO] Pass an optional file pointer to write the response to (by reference)
-	public function get($namespace, $key) {
+	// Pass an optional file pointer to write the response to (by reference)
+	public function get($namespace, $key, &$fp=null) {
 		if(false === ($result = mysql_query(sprintf("SELECT data FROM storage_%s WHERE id=%d ORDER BY chunk ASC",
 				$this->escapeNamespace($namespace),
 				$key
 			), $this->_db)))
 			return false;
 
-		$contents = '';
+		if($fp && is_resource($fp)) {
+			while($row = mysql_fetch_row($result)) {
+				if(false === fwrite($fp, $row[0], strlen($row[0]))) {
+					mysql_free_result($result);
+					return false;
+				}
+			}
 			
-		while($row = mysql_fetch_row($result)) {
-			$contents .= $row[0];
+			mysql_free_result($result);
+			fseek($fp, 0);
+			return true;
+			
+		} else {
+			$contents = '';
+			
+			while($row = mysql_fetch_row($result)) {
+				$contents .= $row[0];
+			}
+			
+			mysql_free_result($result);
+			return $contents;
 		}
-		
-		return $contents;
 	}
 
 	public function delete($namespace, $key) {
@@ -389,21 +483,38 @@ class DevblocksStorageEngineS3 extends Extension_DevblocksStorageEngine {
 			$id
 		);
 		
-		// Write the content
-		if(false === $this->_s3->putObject($data, $bucket, $path, S3::ACL_PRIVATE)) {
-			return false;
+		if(is_resource($data)) {
+			// Write the content from stream
+			if(false === $this->_s3->putObject($this->_s3->inputResource($data), $bucket, $path, S3::ACL_PRIVATE)) {
+				return false;
+			}
+		} else {
+			// Write the content from string
+			if(false === $this->_s3->putObject($data, $bucket, $path, S3::ACL_PRIVATE)) {
+				return false;
+			}
 		}
 		
 		return $path;
 	}
 
-	public function get($namespace, $key) {
+	public function get($namespace, $key, &$fp=null) {
 		@$bucket = $this->_options['bucket'];
 		
-		if(false === ($object = $this->_s3->getObject($bucket, $key)))
-			return false;
+		if($fp && is_resource($fp)) {
+			// Use the filename rather than $fp because the S3 lib will fclose($fp)
+			$tmpfile = DevblocksPlatform::getTempFileInfo($fp);
+			if(false !== ($tmp = $this->_s3->getObject($bucket, $key, $tmpfile))) {
+				fseek($fp, 0);
+				return true;
+			}
 			
-		return $object->body;
+		} else {
+			if(false !== ($object = $this->_s3->getObject($bucket, $key)))
+				return $object->body;
+		}
+			
+		return false;
 	}
 	
 	public function delete($namespace, $key) {

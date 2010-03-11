@@ -72,7 +72,7 @@ abstract class Extension_DevblocksStorageEngine extends DevblocksExtension {
 	
 	abstract function exists($namespace, $key);
 	abstract function put($namespace, $id, $data);
-	abstract function get($namespace, $key);
+	abstract function get($namespace, $key, &$fp=null);
 	abstract function delete($namespace, $key);
 	
 	public function setOptions($options=array()) {
@@ -96,7 +96,7 @@ abstract class Extension_DevblocksStorageSchema extends DevblocksExtension {
 	
 	abstract public static function getActiveStorageProfile();
 
-	abstract public static function get($object);
+	abstract public static function get($object, &$fp=null);
 	abstract public static function put($id, $contents, $profile=null);
 	abstract public static function delete($ids);
 	abstract public static function archive($stop_time=null);
