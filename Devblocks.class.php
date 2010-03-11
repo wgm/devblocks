@@ -1229,7 +1229,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	static function shutdown() {
 		// Clean up any temporary files
 		while(null != ($tmpfile = array_pop(self::$_tmp_files))) {
-			unlink($tmpfile);
+			@unlink($tmpfile);
 		}
 	}
 
