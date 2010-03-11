@@ -510,7 +510,8 @@ class DevblocksStorageEngineS3 extends Extension_DevblocksStorageEngine {
 			}
 			
 		} else {
-			if(false !== ($object = $this->_s3->getObject($bucket, $key)))
+			if(false !== ($object = $this->_s3->getObject($bucket, $key))
+				&& isset($object->body))
 				return $object->body;
 		}
 			
