@@ -3701,6 +3701,10 @@ class _DevblocksDatabaseManager {
 	}
 	
 	function isConnected() {
+		if(!is_resource($this->_db)) {
+			$this->_db = null;
+			return false;
+		}
 		return mysql_ping($this->_db);
 	}
 	
