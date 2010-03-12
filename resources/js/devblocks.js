@@ -1,5 +1,3 @@
-var DevblocksAppPath = '{$smarty.const.DEVBLOCKS_WEBPATH}';
-
 var DevblocksClass = function() {
 	/* Source: http://bytes.com/forum/thread90068.html */
 	this.getSelectedText = function() {
