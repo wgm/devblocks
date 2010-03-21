@@ -115,9 +115,38 @@ class DevblocksSearchCriteria {
 				break;
 				
 			case DevblocksSearchCriteria::OPER_FULLTEXT: // 'fulltext'
-				$where = sprintf("MATCH(%s) AGAINST (%s IN BOOLEAN MODE)", // WITH QUERY EXPANSION
+				$search = DevblocksPlatform::getSearchService();
+
+				$value = null;
+				$scope = null;
+				
+				if(!is_array($this->value)) {
+					$value = $this->value;
+					$scope = 'expert'; 
+				} else {
+					$value = $this->value[0];
+					$scope = $this->value[1]; 
+				}
+				
+				switch($scope) {
+					case 'all':
+						$value = $search->prepareText($value);
+						$value = '+'.str_replace(' ', ' +', $value);
+						break;
+					case 'any':
+						$value = $search->prepareText($value);
+						break;
+					case 'phrase':
+						$value = '"'.$search->prepareText($value).'"';
+						break;
+					default:
+					case 'expert':
+						break;
+				}
+				
+				$where = sprintf("MATCH(%s) AGAINST (%s IN BOOLEAN MODE)",
 					$db_field_name,
-					self::_escapeSearchParam($this, $fields)
+					$db->qstr($value)
 				);
 				break;
 			
