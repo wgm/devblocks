@@ -345,28 +345,40 @@ class DevblocksPlatform extends DevblocksEngine {
 	 * Clears any platform-level plugin caches.
 	 * 
 	 */
-	static function clearCache() {
+	static function clearCache($one_cache=null) {
 	    $cache = self::getCacheService(); /* @var $cache _DevblocksCacheManager */
-	    $cache->remove(self::CACHE_ACL);
-	    $cache->remove(self::CACHE_PLUGINS);
-	    $cache->remove(self::CACHE_EVENT_POINTS);
-	    $cache->remove(self::CACHE_EVENTS);
-	    $cache->remove(self::CACHE_EXTENSIONS);
-	    $cache->remove(self::CACHE_POINTS);
-	    $cache->remove(self::CACHE_SETTINGS);
-	    $cache->remove(self::CACHE_TABLES);
-	    $cache->remove(_DevblocksClassLoadManager::CACHE_CLASS_MAP);
 
-	    // Clear all locale caches
-	    $langs = DAO_Translation::getDefinedLangCodes();
-	    if(is_array($langs) && !empty($langs))
-	    foreach($langs as $lang_code => $lang_name) {
-	    	$cache->remove(self::CACHE_TAG_TRANSLATIONS . '_' . $lang_code);
+	    if(!empty($one_cache)) {
+	    	$cache->remove($one_cache);
+	    	
+	    } else { // All
+		    $cache->remove(self::CACHE_ACL);
+		    $cache->remove(self::CACHE_PLUGINS);
+		    $cache->remove(self::CACHE_EVENT_POINTS);
+		    $cache->remove(self::CACHE_EVENTS);
+		    $cache->remove(self::CACHE_EXTENSIONS);
+		    $cache->remove(self::CACHE_POINTS);
+		    $cache->remove(self::CACHE_SETTINGS);
+		    $cache->remove(self::CACHE_TABLES);
+		    $cache->remove(_DevblocksClassLoadManager::CACHE_CLASS_MAP);
+		    
+		    // Clear all locale caches
+		    $langs = DAO_Translation::getDefinedLangCodes();
+		    if(is_array($langs) && !empty($langs))
+		    foreach($langs as $lang_code => $lang_name) {
+		    	$cache->remove(self::CACHE_TAG_TRANSLATIONS . '_' . $lang_code);
+		    }
 	    }
-	    
-	    // Recache plugins
-		self::getPluginRegistry();
-		self::getExtensionRegistry();
+
+	    // Cache-specific 'after' actions
+	    switch($one_cache) {
+	    	case self::CACHE_PLUGINS:
+	    	case self::CACHE_EXTENSIONS:
+	    	case NULL:
+				self::getPluginRegistry();
+				self::getExtensionRegistry();
+	    		break;
+	    }
 	}
 
 	public static function loadClass($className) {
