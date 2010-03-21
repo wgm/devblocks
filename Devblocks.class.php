@@ -3681,7 +3681,7 @@ class _DevblocksDatabaseManager {
 			if(false === (@$this->_db = mysql_pconnect($host, $user, $pass)))
 				return false;
 		} else {
-			if(false === (@$this->_db = mysql_connect($host, $user, $pass)))
+			if(false === (@$this->_db = mysql_connect($host, $user, $pass, true)))
 				return false;
 		}
 

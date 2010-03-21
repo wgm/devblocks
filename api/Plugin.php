@@ -158,7 +158,7 @@ class DevblocksStorageEngineDatabase extends Extension_DevblocksStorageEngine {
 			
 		// Use the provided connection details
 		} else {
-			if(false == ($this->_db = mysql_connect($this->_options['host'], $this->_options['user'], $this->_options['password']))) {
+			if(false == ($this->_db = mysql_connect($this->_options['host'], $this->_options['user'], $this->_options['password'], true))) {
 				$this->_db = null;
 				return false;
 			}
