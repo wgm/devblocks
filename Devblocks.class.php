@@ -1006,6 +1006,13 @@ class DevblocksPlatform extends DevblocksEngine {
 	}
 
 	/**
+	 * @return _DevblocksSearchEngineMysqlFulltext
+	 */
+	static function getSearchService() {
+		return _DevblocksSearchManager::getInstance();
+	}
+	
+	/**
 	 * @param $profile_id | $extension_id, $options
 	 * @return Extension_DevblocksStorageEngine
 	 */
@@ -2231,6 +2238,251 @@ class _DevblocksStorageManager {
 		
 		return false;
 	}
+};
+
+class _DevblocksSearchManager {
+	static $_instance = null;
+	
+	/**
+	 * @return _DevblocksSearchEngineMysqlFulltext
+	 */
+	static public function getInstance() {
+		if(null == self::$_instance) {
+			self::$_instance = new _DevblocksSearchEngineMysqlFulltext();
+			return self::$_instance;
+		}
+		
+		return self::$_instance;
+	}
+};
+
+class _DevblocksSearchEngineMysqlFulltext {
+	private $_db = null;
+	
+	public function __construct() {
+		$db = DevblocksPlatform::getDatabaseService();
+		$this->_db = $db->getConnection();
+	}
+	
+	protected function escapeNamespace($namespace) {
+		return strtolower(DevblocksPlatform::strAlphaNumUnder($namespace));
+	}
+	
+	public function query($ns, $query, $limit=25, $boolean_mode=true) {
+		$escaped_query = mysql_real_escape_string($query);
+		
+		// [TODO] Process the query
+
+		if(!$boolean_mode) {
+			$result = mysql_query(sprintf("SELECT id ".
+				"FROM fulltext_%s ".
+				"WHERE MATCH content AGAINST ('%s') ".
+				"LIMIT 0,%d ",
+				$this->escapeNamespace($ns),
+				$escaped_query,
+				$limit
+			), $this->_db);
+			
+		} else {
+			$result = mysql_query(sprintf("SELECT id, MATCH content AGAINST ('%s' IN BOOLEAN MODE) AS score ".
+				"FROM fulltext_%s ".
+				"WHERE MATCH content AGAINST ('%s' IN BOOLEAN MODE) ".
+				"ORDER BY score DESC ".
+				"LIMIT 0,%d ",
+				$escaped_query,
+				$this->escapeNamespace($ns),
+				$escaped_query,
+				$limit
+			), $this->_db);
+		}
+		
+		if(false == $result)
+			return false;
+			
+		$ids = array();
+		
+		while($row = mysql_fetch_row($result)) {
+			$ids[] = $row[0];
+		}
+		
+		return $ids;
+	}
+	
+	private function _getStopWords() {
+	    // English
+		$words = array(
+			'' => true,
+			'a' => true,
+			'about' => true,
+			'am' => true,
+			'an' => true,
+			'and' => true,
+			'any' => true,
+			'as' => true,
+			'at' => true,
+			'are' => true,
+			'be' => true,
+			'been' => true,
+			'but' => true,
+			'by' => true,
+			'can' => true,
+			'could' => true,
+			'did' => true,
+			'do' => true,
+			'doesn\'t' => true,
+			'don\'t' => true,
+			'e.g.' => true,
+			'eg' => true,
+			'for' => true,
+			'from' => true,
+			'get' => true,
+			'had' => true,
+			'has' => true,
+			'have' => true,
+			'how' => true,
+			'i' => true,
+			'i.e.' => true,
+			'ie' => true,
+			'i\'m' => true,
+			'if' => true,
+			'in' => true,
+			'into' => true,
+			'is' => true,
+			'it' => true,
+			'it\'s' => true,
+			'its' => true,
+			'me' => true,
+			'my' => true,
+			'not' => true,
+			'of' => true,
+			'on' => true,
+			'or' => true,
+			'our' => true,
+			'p.s.' => true,
+			'ps' => true,
+			'so' => true,
+			'than' => true,
+			'that' => true,
+			'the' => true,
+			'their' => true,
+			'them' => true,
+			'then' => true,
+			'there' => true,
+			'these' => true,
+			'they' => true,
+			'this' => true,
+			'to' => true,
+			'us' => true,
+			'was' => true,
+			'we' => true,
+			'were' => true,
+			'what' => true,
+			'when' => true,
+			'which' => true,
+			'while' => true,
+			'why' => true,
+			'will' => true,
+			'with' => true,
+			'would' => true,
+			'you' => true,
+			'your' => true,
+			'you\'re' => true,
+		);
+	    return $words;
+	}
+	
+	public function prepareText($text) {
+		// Encode apostrophes/etc
+		$tokens = array(
+			'__apos__' => '\''
+		);
+
+		$text = str_replace(array_values($tokens), array_keys($tokens), $text);
+		
+		// Force lowercase and strip non-word punctuation (a-z, 0-9, _)
+		if(function_exists('mb_ereg_replace'))
+			$text = mb_ereg_replace('[^a-z0-9_]+', ' ', mb_convert_case($text, MB_CASE_LOWER));
+		else
+			$text = preg_replace('/[^a-z0-9_]+/', ' ', mb_convert_case($text, MB_CASE_LOWER));
+
+		// Decode apostrophes/etc
+		$text = str_replace(array_keys($tokens), array_values($tokens), $text);
+		
+		$words = explode(' ', $text);
+		
+		// Remove common words
+		$stop_words = $this->_getStopWords();
+
+		// Toss anything over/under the word length bounds
+		// [TODO] Make these configurable
+		foreach($words as $k => $v) {
+			$len = mb_strlen($v);
+//			if($len < 3 || $len > 255) { // || is_numeric($k)
+//				unset($words[$k]); // toss
+//			} elseif(isset($stop_words[$v])) {
+			if(isset($stop_words[$v])) {
+				unset($words[$k]); // toss
+			}
+		}
+		
+		$text = implode(' ', $words);
+		unset($words);
+		
+		// Flatten multiple spaces into a single
+		$text = preg_replace('# +#', ' ', $text);
+		
+		return $text;
+	}
+	
+	private function _index($ns, $id, $content) {
+		$content = $this->prepareText($content);
+		
+		$result = mysql_query(sprintf("REPLACE INTO fulltext_%s VALUES (%d, '%s') ",
+			$this->escapeNamespace($ns),
+			$id,
+			mysql_real_escape_string($content)
+		), $this->_db);
+		
+		return (false !== $result) ? true : false;
+	}
+	
+	public function index($ns, $id, $content) {
+		if(false === ($ids = $this->_index($ns, $id, $content))) {
+			// Create the table dynamically
+			if($this->_createTable($ns)) {
+				return $this->_index($ns, $id, $content);
+			}
+			return false;
+		}
+		
+		return true;
+	}
+	
+	private function _createTable($namespace) {
+		$rs = mysql_query("SHOW TABLES", $this->_db);
+
+		$tables = array();
+		while($row = mysql_fetch_row($rs)) {
+			$tables[$row[0]] = true;
+		}
+		
+		$namespace = $this->escapeNamespace($namespace);
+		
+		if(isset($tables['fulltext_'.$namespace]))
+			return true;
+		
+		$result = mysql_query(sprintf(
+			"CREATE TABLE IF NOT EXISTS fulltext_%s (
+				id INT UNSIGNED NOT NULL DEFAULT 0,
+				content LONGTEXT,
+				PRIMARY KEY (id),
+				FULLTEXT content (content)
+			) ENGINE=MyISAM CHARACTER SET=utf8;", // MUST stay ENGINE=MyISAM
+			$this->escapeNamespace($namespace)
+		), $this->_db);
+		
+		return (false !== $result) ? true : false;
+	}	
 };
 
 class _DevblocksEventManager {
