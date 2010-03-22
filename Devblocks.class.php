@@ -2325,6 +2325,7 @@ class _DevblocksSearchEngineMysqlFulltext {
 			'' => true,
 			'a' => true,
 			'about' => true,
+			'all' => true,
 			'am' => true,
 			'an' => true,
 			'and' => true,
@@ -2350,6 +2351,8 @@ class _DevblocksSearchEngineMysqlFulltext {
 			'had' => true,
 			'has' => true,
 			'have' => true,
+			'hello' => true,
+			'hi' => true,
 			'how' => true,
 			'i' => true,
 			'i.e.' => true,
@@ -2362,6 +2365,7 @@ class _DevblocksSearchEngineMysqlFulltext {
 			'it' => true,
 			'it\'s' => true,
 			'its' => true,
+			'may' => true,
 			'me' => true,
 			'my' => true,
 			'not' => true,
@@ -2369,10 +2373,14 @@ class _DevblocksSearchEngineMysqlFulltext {
 			'on' => true,
 			'or' => true,
 			'our' => true,
+			'out' => true,
+			'please' => true,
 			'p.s.' => true,
 			'ps' => true,
 			'so' => true,
 			'than' => true,
+			'thank' => true,
+			'thanks' => true,
 			'that' => true,
 			'the' => true,
 			'their' => true,
@@ -2382,8 +2390,10 @@ class _DevblocksSearchEngineMysqlFulltext {
 			'these' => true,
 			'they' => true,
 			'this' => true,
+			'those' => true,
 			'to' => true,
 			'us' => true,
+			'want' => true,
 			'was' => true,
 			'we' => true,
 			'were' => true,
@@ -2427,10 +2437,11 @@ class _DevblocksSearchEngineMysqlFulltext {
 		// Toss anything over/under the word length bounds
 		// [TODO] Make these configurable
 		foreach($words as $k => $v) {
-			$len = mb_strlen($v);
+			//$len = mb_strlen($v);
 //			if($len < 3 || $len > 255) { // || is_numeric($k)
 //				unset($words[$k]); // toss
 //			} elseif(isset($stop_words[$v])) {
+
 			if(isset($stop_words[$v])) {
 				unset($words[$k]); // toss
 			}
