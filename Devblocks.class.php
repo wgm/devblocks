@@ -3,7 +3,7 @@ include_once(DEVBLOCKS_PATH . "api/Model.php");
 include_once(DEVBLOCKS_PATH . "api/DAO.php");
 include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
-define('PLATFORM_BUILD',2010031102);
+define('PLATFORM_BUILD',2010032201);
 
 /**
  * A platform container for plugin/extension registries.
@@ -582,7 +582,7 @@ class DevblocksPlatform extends DevblocksEngine {
 
 	    if(is_array($extensions))
 	    foreach($extensions as $extension) { /* @var $extension DevblocksExtensionManifest */
-	        if(0 == strcasecmp($extension->point,$point)) {
+	        if($extension->point == $point) {
 	            $results[$extension->id] = ($as_instances) ? $extension->createInstance() : $extension;
 	        }
 	    }
@@ -603,7 +603,7 @@ class DevblocksPlatform extends DevblocksEngine {
 
 	    if(is_array($extensions))
 	    foreach($extensions as $extension) { /* @var $extension DevblocksExtensionManifest */
-	        if(0 == strcasecmp($extension->id,$extension_id)) {
+	        if($extension->id == $extension_id) {
 	            $result = $extension;
 	            break;
 	        }
@@ -645,6 +645,7 @@ class DevblocksPlatform extends DevblocksEngine {
 	 */
 	static function getExtensionRegistry($ignore_acl=false) {
 	    $cache = self::getCacheService();
+	    static $acl_extensions = null;
 	    
 	    if(null === ($extensions = $cache->load(self::CACHE_EXTENSIONS))) {
 		    $db = DevblocksPlatform::getDatabaseService();
@@ -678,15 +679,25 @@ class DevblocksPlatform extends DevblocksEngine {
 			}
 
 			$cache->save($extensions, self::CACHE_EXTENSIONS);
+			$acl_extensions = null;
 		}
 		
-		// Check with an extension delegate if we have one
-		if(!$ignore_acl && class_exists(self::$extensionDelegate) && method_exists('DevblocksExtensionDelegate','shouldLoadExtension')) {
-			if(is_array($extensions))
-			foreach($extensions as $id => $extension) {
-				// Ask the delegate if we should load the extension
-				if(!call_user_func(array(self::$extensionDelegate,'shouldLoadExtension'),$extension))
-					unset($extensions[$id]);
+		if(!$ignore_acl) {
+			// If we don't have a cache in this request
+			if(null == $acl_extensions) {
+				// Check with an extension delegate if we have one
+				if(class_exists(self::$extensionDelegate) && method_exists('DevblocksExtensionDelegate','shouldLoadExtension')) {
+					if(is_array($extensions))
+					foreach($extensions as $id => $extension) {
+						// Ask the delegate if we should load the extension
+						if(!call_user_func(array(self::$extensionDelegate,'shouldLoadExtension'),$extension))
+							unset($extensions[$id]);
+					}
+				}
+				// Cache for duration of request
+				$acl_extensions = $extensions;
+			} else {
+				$extensions = $acl_extensions;
 			}
 		}
 		
