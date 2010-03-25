@@ -3887,11 +3887,17 @@ class _DevblocksSmartyTemplateResource {
 };
 
 class _DevblocksTemplateBuilder {
-	private $_tpl = null;
+	private $_twig = null;
 	private $_errors = array();
 	
 	private function _DevblocksTemplateBuilder() {
-		$this->_tpl = DevblocksPlatform::getTemplateService();
+		$this->_twig = new Twig_Environment(new Twig_Loader_String(), array(
+			'cache' => APP_TEMP_PATH,
+			'debug' => false,
+			'auto_reload' => true,
+		));
+		
+		// [TODO] Add helpful Twig extensions
 	}
 	
 	/**
@@ -3906,35 +3912,38 @@ class _DevblocksTemplateBuilder {
 		return $instance;
 	}
 
+	/**
+	 * @return Twig_Environment
+	 */
+	public function getEngine() {
+		return $this->_twig;
+	}
+	
+	/**
+	 * @return array
+	 */
 	public function getErrors() {
 		return $this->_errors;
 	}
 	
 	private function _setUp() {
 		$this->_errors = array();
-		$this->_tpl->force_compile = true;
-		$this->_tpl->security = true;
-		$this->_tpl->security_settings = array(
-			'PHP_TAGS' => false,
-			'INCLUDE_ANY' => true, 
-		);
 	}
 	
 	private function _tearDown() {
-		$this->_tpl->force_compile = false;
-		$this->_tpl->security = false;
 	}
 	
 	/**
 	 * 
-	 * @param Smarty $tpl
 	 * @param string $template
+	 * @param array $vars
 	 * @return string
 	 */
-	function build($template) {
+	function build($template, $vars) {
 		$this->_setUp();
 		try {
-			$out = $this->_tpl->fetch('string:'.$template);
+			$template = $this->_twig->loadTemplate($template);
+			$out = $template->render($vars);
 		} catch(Exception $e) {
 			$this->_errors[] = $e->getMessage();
 		}
@@ -4255,6 +4264,9 @@ class _DevblocksClassLoadManager {
 	private function _initLibs() {
 		$this->registerClasses(DEVBLOCKS_PATH . 'libs/s3/S3.php', array(
 			'S3'
+		));
+		$this->registerClasses(DEVBLOCKS_PATH . 'libs/Twig/Autoloader.php', array(
+			'Twig_Autoloader'
 		));
 	}
 	
@@ -4620,3 +4632,6 @@ spl_autoload_register('devblocks_autoload');
 
 // Register SwiftMailer
 require_once(DEVBLOCKS_PATH . 'libs/swift/swift_required.php');
+
+// Twig
+Twig_Autoloader::register();
