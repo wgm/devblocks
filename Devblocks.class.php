@@ -3892,9 +3892,10 @@ class _DevblocksTemplateBuilder {
 	
 	private function _DevblocksTemplateBuilder() {
 		$this->_twig = new Twig_Environment(new Twig_Loader_String(), array(
-			'cache' => APP_TEMP_PATH,
+			'cache' => false, //APP_TEMP_PATH
 			'debug' => false,
 			'auto_reload' => true,
+			'trim_blocks' => true,
 		));
 		
 		// [TODO] Add helpful Twig extensions
