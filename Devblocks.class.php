@@ -3,7 +3,7 @@ include_once(DEVBLOCKS_PATH . "api/Model.php");
 include_once(DEVBLOCKS_PATH . "api/DAO.php");
 include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
-define('PLATFORM_BUILD',2010032201);
+define('PLATFORM_BUILD',2010032401);
 
 /**
  * A platform container for plugin/extension registries.
@@ -1936,6 +1936,8 @@ class _DevblocksSessionManager {
 };
 
 class _DevblocksSessionDatabaseDriver {
+	static $_data = null;
+	
 	static function open($save_path, $session_name) {
 		return true;
 	}
@@ -1946,23 +1948,28 @@ class _DevblocksSessionDatabaseDriver {
 	
 	static function read($id) {
 		$db = DevblocksPlatform::getDatabaseService();
-		if(null != ($data = $db->GetOne(sprintf("SELECT session_data FROM devblocks_session WHERE session_key = %s", $db->qstr($id)))))
-			return $data;
+		if(null != (self::$_data = $db->GetOne(sprintf("SELECT session_data FROM devblocks_session WHERE session_key = %s", $db->qstr($id)))))
+			return self::$_data;
 			
 		return false;
 	}
 	
 	static function write($id, $session_data) {
+		// Nothing changed!
+		if(self::$_data==$session_data) {
+			return true;
+		}
+		
 		$db = DevblocksPlatform::getDatabaseService();
 		
-		if(null != ($data = $db->GetOne(sprintf("SELECT session_key FROM devblocks_session WHERE session_key = %s", $db->qstr($id))))) {
-			// Update
-			$db->Execute(sprintf("UPDATE devblocks_session SET updated=%d, session_data=%s WHERE session_key=%s",
-				time(),
-				$db->qstr($session_data),
-				$db->qstr($id)
-			));
-		} else {
+		// Update
+		$result = $db->Execute(sprintf("UPDATE devblocks_session SET updated=%d, session_data=%s WHERE session_key=%s",
+			time(),
+			$db->qstr($session_data),
+			$db->qstr($id)
+		));
+		
+		if(0==$db->Affected_Rows()) {
 			// Insert
 			$db->Execute(sprintf("INSERT INTO devblocks_session (session_key, created, updated, session_data) ".
 				"VALUES (%s, %d, %d, %s)",
@@ -1972,6 +1979,7 @@ class _DevblocksSessionDatabaseDriver {
 				$db->qstr($session_data)
 			));
 		}
+		
 		return true;
 	}
 	
