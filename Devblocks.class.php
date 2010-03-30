@@ -3,7 +3,7 @@ include_once(DEVBLOCKS_PATH . "api/Model.php");
 include_once(DEVBLOCKS_PATH . "api/DAO.php");
 include_once(DEVBLOCKS_PATH . "api/Extension.php");
 
-define('PLATFORM_BUILD',2010032401);
+define('PLATFORM_BUILD',2010033001);
 
 /**
  * A platform container for plugin/extension registries.
@@ -1638,10 +1638,21 @@ abstract class DevblocksEngine {
 		
 		if(empty($parts)) {
 			// Overrides (Form POST, etc.)
-			@$uri = DevblocksPlatform::importGPC($_REQUEST['c']); // extension
+
+			// Controller (GET has precedence over POST)
+			if(isset($_GET['c'])) {
+				@$uri = DevblocksPlatform::importGPC($_GET['c']); // extension
+			} elseif (isset($_POST['c'])) {
+				@$uri = DevblocksPlatform::importGPC($_POST['c']); // extension
+			}
 			if(!empty($uri)) $parts[] = DevblocksPlatform::strAlphaNum($uri);
 
-			@$listener = DevblocksPlatform::importGPC($_REQUEST['a']); // listener
+			// Action (GET has precedence over POST)
+			if(isset($_GET['a'])) {
+				@$listener = DevblocksPlatform::importGPC($_GET['a']); // listener
+			} elseif (isset($_POST['a'])) {
+				@$listener = DevblocksPlatform::importGPC($_POST['a']); // listener
+			}
 			if(!empty($listener)) $parts[] = DevblocksPlatform::strAlphaNum($listener);
 		}
 		
