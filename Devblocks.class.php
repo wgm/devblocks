@@ -4646,4 +4646,5 @@ spl_autoload_register('devblocks_autoload');
 require_once(DEVBLOCKS_PATH . 'libs/swift/swift_required.php');
 
 // Twig
-Twig_Autoloader::register();
+if(class_exists('Twig_Autoloader', true) && method_exists('Twig_Autoloader','register'))
+	Twig_Autoloader::register();
