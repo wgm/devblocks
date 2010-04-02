@@ -3712,6 +3712,7 @@ class _DevblocksTemplateManager {
 			// Devblocks plugins
 			$instance->register_block('devblocks_url', array('_DevblocksTemplateManager', 'block_devblocks_url'));
 			$instance->register_modifier('devblocks_date', array('_DevblocksTemplateManager', 'modifier_devblocks_date'));
+			$instance->register_modifier('devblocks_hyperlinks', array('_DevblocksTemplateManager', 'modifier_devblocks_hyperlinks'));
 			$instance->register_modifier('devblocks_prettytime', array('_DevblocksTemplateManager', 'modifier_devblocks_prettytime'));
 			$instance->register_modifier('devblocks_prettybytes', array('_DevblocksTemplateManager', 'modifier_devblocks_prettybytes'));
 			$instance->register_modifier('devblocks_translate', array('_DevblocksTemplateManager', 'modifier_devblocks_translate'));
@@ -3809,7 +3810,19 @@ class _DevblocksTemplateManager {
 		}
 		
 		echo $out;
-	}	
+	}
+	
+	function modifier_devblocks_hyperlinks($string, $sanitize = false, $style="") {
+		$from = array("&gt;");
+		$to = array(">");
+		
+		$string = str_replace($from,$to,$string);
+		
+		if($sanitize !== false)
+			return preg_replace("/((http|https):\/\/(.*?))(\s|\>|&lt;|&quot;|\)|$)/ie","'<a href=\"goto.php?url='.'\\1'.'\" target=\"_blank\">\\1</a>\\4'",$string);
+		else
+			return preg_replace("/((http|https):\/\/(.*?))(\s|\>|&lt;|&quot;|\)|$)/ie","'<a href=\"'.'\\1'.'\" target=\"_blank\">\\1</a>\\4'",$string);
+	}
 };
 
 class _DevblocksSmartyTemplateResource {
