@@ -160,4 +160,14 @@ $sql = sprintf("UPDATE %splugin SET enabled=1 WHERE id='devblocks.core'",
 );
 $db->Execute($sql) or die($db->ErrorMsg());
 
+// ============================================================================
+// Resize 'devblocks_setting' values
+
+list($columns, $indexes) = $db->metaTable('devblocks_setting');
+
+if(isset($columns['value'])
+	&& 0 != strcasecmp('text',$columns['value']['type'])) {
+		$db->Execute("ALTER TABLE devblocks_setting MODIFY COLUMN value TEXT");
+}
+
 return TRUE;
