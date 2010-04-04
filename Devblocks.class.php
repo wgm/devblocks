@@ -2747,21 +2747,25 @@ class _DevblocksDateManager {
 		return $instance;
 	}
 	
-	public function formatTime($format, $timestamp) {
+	public function formatTime($format, $timestamp, $gmt=false) {
 		try {
-			if(is_numeric($timestamp))
-				$timestamp = intval($timestamp);
-			else
-				$timestamp = strtotime($time);
+			$datetime = new DateTime();
+			$datetime->setTimezone(new DateTimeZone('GMT'));
+			$date = explode(' ',gmdate("Y m d", $timestamp));
+			$time = explode(':',gmdate("H:i:s", $timestamp));
+			$datetime->setDate($date[0],$date[1],$date[2]);
+			$datetime->setTime($time[0],$time[1],$time[2]);
 		} catch (Exception $e) {
-			$timestamp = time();
+			$datetime = new DateTime();
 		}
 		
-		if(empty($format)) {
-			return strftime('%a, %d %b %Y %H:%M:%S %z', $timestamp);
-		} else {
-			return strftime($format, $timestamp);
-		}
+		if(empty($format))
+			$format = DateTime::RFC822; 
+		
+		if(!$gmt)
+			$datetime->setTimezone(new DateTimeZone(date_default_timezone_get()));
+			
+		return $datetime->format($format);
 	}
 	
 	public function getTimezones() {
@@ -3750,12 +3754,12 @@ class _DevblocksTemplateManager {
 	    }
 	}
 	
-	static function modifier_devblocks_date($string, $format=null) {
+	static function modifier_devblocks_date($string, $format=null, $gmt=false) {
 		if(empty($string))
 			return '';
 	
 		$date = DevblocksPlatform::getDateService();
-		return $date->formatTime($format, $string);
+		return $date->formatTime($format, $string, $gmt);
 	}
 	
 	static function modifier_devblocks_prettytime($string, $format=null) {
