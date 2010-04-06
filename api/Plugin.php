@@ -242,7 +242,7 @@ class DevblocksStorageEngineDatabase extends Extension_DevblocksStorageEngine {
 				data BLOB,
 				chunk SMALLINT UNSIGNED DEFAULT 1,
 				INDEX id (id),
-				INDEX chunk (chunk),
+				INDEX chunk (chunk)
 			) ENGINE=MyISAM;",
 			$this->escapeNamespace($namespace)
 		), $this->_db);
