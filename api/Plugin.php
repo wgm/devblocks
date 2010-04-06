@@ -247,6 +247,8 @@ class DevblocksStorageEngineDatabase extends Extension_DevblocksStorageEngine {
 			$this->escapeNamespace($namespace)
 		), $this->_db);
 		
+		DevblocksPlatform::clearCache(DevblocksPlatform::CACHE_TABLES);
+		
 		return (false !== $result) ? true : false;
 	}
 	
