@@ -525,8 +525,6 @@ class DevblocksPlatform extends DevblocksEngine {
 		
 		$patchMgr = DevblocksPlatform::getPatchService();
 		
-//		echo "Patching platform... ";
-		
 		// [JAS]: Run our overloaded container for the platform
 		$patchMgr->registerPatchContainer(new PlatformPatchContainer());
 		
@@ -538,9 +536,8 @@ class DevblocksPlatform extends DevblocksEngine {
 			// Read in plugin information from the filesystem to the database
 			DevblocksPlatform::readPlugins();
 			
-			$plugins = DevblocksPlatform::getPluginRegistry();
-			
-//			DevblocksPlatform::clearCache();
+			// Clean up missing plugins
+			DAO_Platform::cleanupPluginTables();
 			
 			// Run enabled plugin patches
 			$patches = DevblocksPlatform::getExtensions("devblocks.patch.container",false,true);
@@ -910,7 +907,7 @@ class DevblocksPlatform extends DevblocksEngine {
 		                    $manifest = self::_readPluginManifest($rel_path); /* @var $manifest DevblocksPluginManifest */
 	
 		                    if(null != $manifest) {
-		                        $plugins[] = $manifest;
+		                        $plugins[$manifest->id] = $manifest;
 		                    }
 		                }
 		            }
@@ -920,9 +917,6 @@ class DevblocksPlatform extends DevblocksEngine {
 	    }
 	    
 		// [TODO] Instance the plugins in dependency order
-
-	    DAO_Platform::cleanupPluginTables();
-	    DevblocksPlatform::clearCache();
 	    
 	    return $plugins;
 	}

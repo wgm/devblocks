@@ -328,6 +328,24 @@ class DevblocksPluginManifest {
 	function getPatchContainer() {
 		return null;
 	}
+	
+	function purge() {
+		$db = DevblocksPlatform::getDatabaseService();
+		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
+		
+        $db->Execute(sprintf("DELETE FROM %splugin WHERE id = %s",
+            $prefix,
+            $db->qstr($this->id)
+        ));
+        $db->Execute(sprintf("DELETE FROM %sextension WHERE id = %s",
+            $prefix,
+            $db->qstr($this->id)
+        ));
+        $db->Execute(sprintf("DELETE FROM %sproperty_store WHERE id = %s",
+            $prefix,
+            $db->qstr($this->id)
+        ));
+	}
 };
 
 /**

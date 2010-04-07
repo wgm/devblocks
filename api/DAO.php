@@ -212,36 +212,18 @@ abstract class DevblocksORMHelper {
 
 class DAO_Platform {
     static function cleanupPluginTables() {
-    	DevblocksPlatform::clearCache();
-    	
-		$db = DevblocksPlatform::getDatabaseService();
-		$prefix = (APP_DB_PREFIX != '') ? APP_DB_PREFIX.'_' : ''; // [TODO] Cleanup
+		DevblocksPlatform::clearCache();
 
-        $sql = sprintf("SELECT id FROM %splugin ",
-            $prefix
-        );
-		$results = $db->GetArray($sql); 
-
-		$plugins = DevblocksPlatform::getPluginRegistry();
-		
 		// [JAS]: Remove any plugins that are no longer in the filesystem
-		foreach($results as $row) {
-		    $plugin_id = $row['id'];
-		    if(!isset($plugins[$plugin_id])) {
-		        $db->Execute(sprintf("DELETE FROM %splugin WHERE id = %s",
-		            $prefix,
-		            $db->qstr($plugin_id)
-		        ));
-		        $db->Execute(sprintf("DELETE FROM %sextension WHERE id = %s",
-		            $prefix,
-		            $db->qstr($plugin_id)
-		        ));
-		        $db->Execute(sprintf("DELETE FROM %sproperty_store WHERE id = %s",
-		            $prefix,
-		            $db->qstr($plugin_id)
-		        ));
-		    }
+		$db_plugins = DevblocksPlatform::getPluginRegistry();
+		
+		foreach($db_plugins as $db_plugin_id => $db_plugin) { /* @var $db_plugin DevblocksPluginManifest */
+			if(!file_exists(APP_PATH . '/' . $db_plugin->dir)) {
+				$db_plugin->purge();
+			}
 		}
+		
+		DevblocksPlatform::clearCache();
     }
     
 	static function updatePlugin($id, $fields) {
