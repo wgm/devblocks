@@ -3713,6 +3713,7 @@ class _DevblocksTemplateManager {
 			$instance->register_block('devblocks_url', array('_DevblocksTemplateManager', 'block_devblocks_url'));
 			$instance->register_modifier('devblocks_date', array('_DevblocksTemplateManager', 'modifier_devblocks_date'));
 			$instance->register_modifier('devblocks_hyperlinks', array('_DevblocksTemplateManager', 'modifier_devblocks_hyperlinks'));
+			$instance->register_modifier('devblocks_hideemailquotes', array('_DevblocksTemplateManager', 'modifier_devblocks_hide_email_quotes'));
 			$instance->register_modifier('devblocks_prettytime', array('_DevblocksTemplateManager', 'modifier_devblocks_prettytime'));
 			$instance->register_modifier('devblocks_prettybytes', array('_DevblocksTemplateManager', 'modifier_devblocks_prettybytes'));
 			$instance->register_modifier('devblocks_translate', array('_DevblocksTemplateManager', 'modifier_devblocks_translate'));
@@ -3788,7 +3789,7 @@ class _DevblocksTemplateManager {
 			}
 		}
 		
-		echo $whole;
+		return $whole;
 	}	
 
 	static function modifier_devblocks_prettybytes($string, $precision='0') {
@@ -3809,7 +3810,7 @@ class _DevblocksTemplateManager {
 			$out = $bytes . ' bytes';
 		}
 		
-		echo $out;
+		return $out;
 	}
 	
 	function modifier_devblocks_hyperlinks($string, $sanitize = false, $style="") {
@@ -3822,6 +3823,34 @@ class _DevblocksTemplateManager {
 			return preg_replace("/((http|https):\/\/(.*?))(\s|\>|&lt;|&quot;|\)|$)/ie","'<a href=\"goto.php?url='.'\\1'.'\" target=\"_blank\">\\1</a>\\4'",$string);
 		else
 			return preg_replace("/((http|https):\/\/(.*?))(\s|\>|&lt;|&quot;|\)|$)/ie","'<a href=\"'.'\\1'.'\" target=\"_blank\">\\1</a>\\4'",$string);
+	}
+	
+	function modifier_devblocks_hide_email_quotes($string, $length=3) {
+		$string = str_replace("\r","\n",$string);
+		$string = str_replace("\n\n","\n",$string);
+		$string = preg_replace("/\n{3,99}/", "\n\n", $string);
+		//$string = str_replace("\n\n\n","\n", $string);
+		$lines = explode("\n", $string);
+		
+		$quote_started = false;
+		foreach($lines as $idx => $line) {
+			// Check if the line starts with a > before any content
+			if(preg_match("/^\s*\>/", $line)) {
+				if(false === $quote_started)
+					$quote_started = $idx;
+			} else {
+				if(false !== $quote_started) {
+					//echo $idx,'-',$quote_started;
+					if($idx - $quote_started >= $length) {
+						$lines[$quote_started] = "<div style='margin:5px;'><a href='javascript:;' style='background-color:rgb(255,255,204);' onclick=\"$(this).closest('div').next('div').toggle();$(this).parent().fadeOut();\">-show quote-</a></div><div class='hidden' style='display:none;font-style:italic;color:rgb(66,116,62);'>" . $lines[$quote_started];
+						$lines[$idx] = "</div>".$lines[$idx];
+					}
+					$quote_started = false;
+				}
+			}
+		}
+		
+		return implode("\n", $lines);
 	}
 };
 
