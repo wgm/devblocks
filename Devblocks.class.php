@@ -3829,24 +3829,32 @@ class _DevblocksTemplateManager {
 		$string = str_replace("\r","\n",$string);
 		$string = str_replace("\n\n","\n",$string);
 		$string = preg_replace("/\n{3,99}/", "\n\n", $string);
-		//$string = str_replace("\n\n\n","\n", $string);
 		$lines = explode("\n", $string);
 		
 		$quote_started = false;
+		$last_line = count($lines) - 1;
+		
 		foreach($lines as $idx => $line) {
 			// Check if the line starts with a > before any content
 			if(preg_match("/^\s*\>/", $line)) {
 				if(false === $quote_started)
 					$quote_started = $idx;
+				$quote_ended = false;
 			} else {
-				if(false !== $quote_started) {
-					//echo $idx,'-',$quote_started;
-					if($idx - $quote_started >= $length) {
-						$lines[$quote_started] = "<div style='margin:5px;'><a href='javascript:;' style='background-color:rgb(255,255,204);' onclick=\"$(this).closest('div').next('div').toggle();$(this).parent().fadeOut();\">-show quote-</a></div><div class='hidden' style='display:none;font-style:italic;color:rgb(66,116,62);'>" . $lines[$quote_started];
-						$lines[$idx] = "</div>".$lines[$idx];
-					}
-					$quote_started = false;
+				if(false !== $quote_started)
+					$quote_ended = $idx-1;
+			}
+			
+			// Always finish quoting on the last line
+			if(!$quote_ended && $last_line == $idx)
+				$quote_ended = $idx;
+			
+			if($quote_started && $quote_ended) {
+				if($quote_ended - $quote_started >= $length) {
+					$lines[$quote_started] = "<div style='margin:5px;'><a href='javascript:;' style='background-color:rgb(255,255,204);' onclick=\"$(this).closest('div').next('div').toggle();$(this).parent().fadeOut();\">-show quote-</a></div><div class='hidden' style='display:none;font-style:italic;color:rgb(66,116,62);'>" . $lines[$quote_started];
+					$lines[$quote_ended] = $lines[$quote_ended]."</div>";
 				}
+				$quote_started = false;
 			}
 		}
 		
@@ -4663,9 +4671,7 @@ class DevblocksProxy_Curl extends DevblocksProxy {
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
         curl_setopt($ch, CURLOPT_HEADER, 0);
-//        curl_setopt($ch, CURLOPT_NOBODY, 1);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 0);
-//        curl_setopt($ch, CURLOPT_NOSIGNAL, 1);
 //        curl_setopt($ch, CURLOPT_TIMEOUT, 1);
 //        curl_setopt($ch, CURLOPT_TIMEOUT_MS, 500);
         curl_exec($ch);
