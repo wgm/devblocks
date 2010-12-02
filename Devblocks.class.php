@@ -35,6 +35,53 @@ class DevblocksPlatform extends DevblocksEngine {
     private function __construct() { return false; }
 
 	/**
+	 * @param mixed $value
+	 * @param string $type
+	 * @param mixed $default
+	 * @return mixed
+	 */
+	static function importVar($value,$type=null,$default=null) {
+		if(is_null($value) && !is_null($default))
+			$value = $default;
+		
+		// Sanitize input
+		switch($type) {
+			case 'array':
+				@settype($value,$type);
+				break;
+			case 'bit':
+				$value = !empty($value) ? 1 : 0;
+				break;
+			case 'boolean':
+				$value = !empty($value) ? true : false;
+				break;
+			case 'float':
+				$value = floatval($value);
+				break;
+			case 'integer':
+				$value = intval($value);
+				break;
+			case 'string':
+				$value = (string) $value;
+				break;
+			case 'timestamp':
+				if(!is_numeric($value)) {
+					try {
+						$value = strtotime($value);	
+					} catch(Exception $e) {}
+				} else {
+					$value = abs(intval($value));	
+				}
+				break;
+			default:
+				@settype($value,$type);
+				break;
+		}
+		
+		return $value;		
+	}    
+    
+	/**
 	 * @param mixed $var
 	 * @param string $cast
 	 * @param mixed $default
@@ -53,10 +100,10 @@ class DevblocksPlatform extends DevblocksEngine {
 	    } elseif (is_null($var) && !is_null($default)) {
 	        $var = $default;
 	    }
-	    
-	    if(!is_null($cast))
-	        @settype($var, $cast);
 
+	    if(!is_null($cast))
+	    	$var = self::importVar($var, $cast, $default);
+	    
 	    return $var;
 	}
 
@@ -68,6 +115,37 @@ class DevblocksPlatform extends DevblocksEngine {
 		$pattern = str_replace(array('*'),'__any__', $string);
 		$pattern = sprintf("/%s/i",str_replace(array('__any__'),'(.*?)', preg_quote($pattern)));
 		return $pattern;
+	}
+	
+	/**
+	 * Returns a formatted string as a number of bytes (e.g. 200M = 209715200)
+	 * 
+	 * @param string $string
+	 * @return integer|FALSE
+	 */
+	static function parseBytesString($string) {
+	    if(is_numeric($string)) { 
+	        return intval($string);
+	        
+	    } else { 
+	        $value = intval($string); 
+	        $unit = strtolower(substr($string, -1)); 
+	         
+	        switch($unit) { 
+	            default: 
+	            case 'm': 
+	                return $value * 1048576; // 1024^2
+	                break; 
+	            case 'g': 
+	                return $value * 1073741824; // 1024^3 
+	                break;
+	            case 'k': 
+	                return $value * 1024; // 1024^1
+	                break; 
+	        }
+	    }
+	    
+	    return FALSE;
 	}
 	
 	static function parseCrlfString($string) {
@@ -133,9 +211,16 @@ class DevblocksPlatform extends DevblocksEngine {
 	static function stripHTML($str) {
 		// Strip all CRLF and tabs, spacify </TD>
 		$str = str_ireplace(
-			array("\r","\n","\t","</TD>"),
+			array("\r","\n","\t","</td>"),
 			array('','',' ',' '),
 			trim($str)
+		);
+		
+		// Handle XHTML variations
+		$str = str_ireplace(
+			array("<br />", "<br/>"),
+			"<br>",
+			$str
 		);
 		
 		// Turn block tags into a linefeed
@@ -1006,6 +1091,13 @@ class DevblocksPlatform extends DevblocksEngine {
 	}
 	
 	/**
+	 * @return _DevblocksOpenIDManager 
+	 */
+	static function getOpenIDService() {
+		return _DevblocksOpenIDManager::getInstance();
+	}
+	
+	/**
 	 * @return _DevblocksSearchEngineMysqlFulltext
 	 */
 	static function getSearchService() {
@@ -1219,7 +1311,7 @@ class DevblocksPlatform extends DevblocksEngine {
     
 		// App path (always backend)
 	
-		$app_self = $_SERVER["PHP_SELF"];
+		$app_self = $_SERVER["SCRIPT_NAME"];
 		
         if(DEVBLOCKS_REWRITE) {
             $pos = strrpos($app_self,'/');
@@ -1681,13 +1773,17 @@ abstract class DevblocksEngine {
 		        if(!is_file($resource) || 'php' == $ext) die(""); // extension security
 
                 // Caching
-	            if($ext == 'css' || $ext == 'js' || $ext == 'png' || $ext == 'gif' || $ext == 'jpg') {
-	                header('Cache-control: max-age=604800', true); // 1 wk // , must-revalidate
-	                header('Expires: ' . gmdate('D, d M Y H:i:s',time()+604800) . ' GMT'); // 1 wk
-	                header('Content-length: '. filesize($resource));
-	            }
-
-	            // [TODO] Get a better mime list together?
+                switch($ext) {
+                	case 'css':
+                	case 'gif':
+                	case 'jpg':
+                	case 'js':
+                	case 'png':
+		                header('Cache-control: max-age=604800', true); // 1 wk // , must-revalidate
+		                header('Expires: ' . gmdate('D, d M Y H:i:s',time()+604800) . ' GMT'); // 1 wk
+                		break;
+                }
+                
 	            switch($ext) {
 	            	case 'css':
 	            		header('Content-type: text/css;');
@@ -1710,7 +1806,14 @@ abstract class DevblocksEngine {
 	            		break;
 	            }
 	            
-		        echo file_get_contents($resource,false);
+		        $out = file_get_contents($resource, false);
+		        
+                // Pass through
+                if($out) {
+                	header('Content-Length: '. strlen($out));
+                	echo $out;
+                }
+		        
 				exit;
     	        break;
 		        
@@ -1900,6 +2003,8 @@ class _DevblocksSessionManager {
 		static $instance = null;
 		if(null == $instance) {
 		    $db = DevblocksPlatform::getDatabaseService();
+		    $url_writer = DevblocksPlatform::getUrlService();
+		    
 			if(is_null($db) || !$db->isConnected()) { 
 				return null;
 			}
@@ -1920,7 +2025,7 @@ class _DevblocksSessionManager {
 			);
 			
 			session_name(APP_SESSION_NAME);
-			session_set_cookie_params(0);
+			session_set_cookie_params(0, '/', NULL, $url_writer->isSSL(), true);
 			session_start();
 			
 			$instance = new _DevblocksSessionManager();
@@ -1930,20 +2035,23 @@ class _DevblocksSessionManager {
 		return $instance;
 	}
 	
-	// See: http://php.net/manual/en/function.session-decode.php
 	function decodeSession($data) {
-	    $vars=preg_split('/([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff^|]*)\|/',
-	              $data,-1,PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
-	    
-	    $scope = array();
-	    
-	    while(!empty($vars)) {
-	    	@$key = array_shift($vars);
-	    	@$value = unserialize(array_shift($vars));
-	    	$scope[$key] = $value;
-	    }
-	    
-	    return $scope;		
+		$vars=preg_split(
+			'/([a-zA-Z_\.\x7f-\xff][a-zA-Z0-9_\.\x7f-\xff^|]*)\|/',
+			$data,
+			-1,
+			PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE
+		);
+		
+		$scope = array();
+		
+		while(!empty($vars)) {
+			@$key = array_shift($vars);
+			@$value = unserialize(array_shift($vars));
+			$scope[$key] = $value;
+		}
+		
+		return $scope; 		
 	}
 	
 	/**
@@ -2056,6 +2164,273 @@ class _DevblocksSessionDatabaseDriver {
 	static function destroyAll() {
 		$db = DevblocksPlatform::getDatabaseService();
 		$db->Execute("DELETE FROM devblocks_session");
+	}
+};
+
+class _DevblocksOpenIDManager {
+	private static $instance = null;
+	
+	public static function getInstance() {
+		if(null == self::$instance) {
+			self::$instance = new _DevblocksOpenIDManager();
+		}
+		
+		return self::$instance;
+	}
+	
+	public function discover($url) {
+		$num_redirects = 0;
+		$is_safemode = !(ini_get('open_basedir') == '' && ini_get('safe_mode' == 'Off'));
+		
+		do {
+			$repeat = false;
+			
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $url);
+			curl_setopt($ch, CURLOPT_HEADER, 1);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+			// We can't use option this w/ safemode enabled
+			if(!$is_safemode)
+				curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+			
+			$content = curl_exec($ch);
+			$info = curl_getinfo($ch);
+			curl_close($ch);
+	
+			$lines = explode("\n", $content);
+
+			$headers = array();
+			$content = '';
+
+			$is_headers = true;
+			while($line = array_shift($lines)) {
+				if($is_headers && $line == "\r") {
+					// Is the next line another headers block?
+					$line = array_shift($lines);
+					if(preg_match("/^HTTP\/\S+ \d+/i", $line)) {
+						$headers = array(); // flush
+					} else {
+						$is_headers = false;
+						array_unshift($lines, $line);
+						continue;
+					}
+				}
+				
+				if($is_headers) {
+					$headers[] = $line;
+				} else {
+					// Everything else
+					$content = $line . "\n" . implode("\n", $lines);
+					$lines = array();
+				}
+			}
+			
+			unset($lines);
+			
+			// Scan headers
+			foreach($headers as $header) {
+				// Safemode specific behavior
+				if($is_safemode) {
+					if(preg_match("/^Location:.*?/i", $header)) {
+						$out = explode(':', $header, 2);
+						$url = isset($out[1]) ? trim($out[1]) : null;
+						$repeat = true;
+						break;
+					}
+				}
+				
+				// Check the headers for an 'X-XRDS-Location'
+				if(preg_match("/^X-XRDS-Location:.*?/i", $header)) {
+					$out = explode(':', $header, 2);
+					$xrds_url = isset($out[1]) ? trim($out[1]) : null;
+					
+					// We have a redirect header on an XRDS document
+					if(0 == strcasecmp($xrds_url, $url)) {
+						$repeat = false;
+						
+					// We're being redirected
+					} else {
+						$repeat = true;
+						$headers = array();
+						$url = $xrds_url;
+					}
+					
+					break;
+				}
+			}
+			
+		} while($repeat || ++$num_redirects > 10);
+		
+		if(isset($info['content_type']))  {
+			$result = explode(';', $info['content_type']);
+			$type = isset($result[0]) ? trim($result[0]) : null;
+			
+			$server = null;
+			
+			switch($type) {
+				case 'application/xrds+xml':
+					$xml = simplexml_load_string($content);
+					
+					foreach($xml->XRD->Service as $service) {
+						$types = array();
+						foreach($service->Type as $type) {
+							$types[] = $type;
+						}
+
+						// [TODO] OpenID 1.0
+						if(false !== ($pos = array_search('http://specs.openid.net/auth/2.0/server', $types))) {
+							$server = $service->URI;
+						} elseif(false !== ($pos = array_search('http://specs.openid.net/auth/2.0/signon', $types))) {
+							$server = $service->URI;
+						}
+					}
+					break;
+					
+				case 'text/html':
+					// [TODO] This really needs to parse syntax better (can be single or double quotes, and attribs in any order)
+					preg_match("/<link rel=\"openid.server\" href=\"(.*?)\"/", $content, $found);
+					if($found && isset($found[1]))
+						$server = $found[1];
+						
+					preg_match("/<link rel=\"openid.delegate\" href=\"(.*?)\"/", $content, $found);
+					if($found && isset($found[1]))
+						$delegate = $found[1];
+						
+					break;
+					
+				default:
+					break;
+			}
+
+			return $server;
+		}		
+	}
+	
+	public function getAuthUrl($openid_identifier, $return_to) {
+		$url_writer = DevblocksPlatform::getUrlService();
+		
+		// Normalize the URL
+		$parts = parse_url($openid_identifier);
+		if(!isset($parts['scheme'])) {
+			$openid_identifier = 'http://' . $openid_identifier;
+		}
+		
+		$server = $this->discover($openid_identifier);
+		
+		if(empty($server))
+			return FALSE;
+		
+		$parts = explode('?', $server, 2);
+		$url = isset($parts[0]) ? $parts[0] : '';
+		$query = isset($parts[1]) ? ('?'.$parts[1]) : '';
+		
+		$query .= (!empty($query)) ? '&' : '?';
+		$query .= "openid.mode=checkid_setup";
+		$query .= "&openid.claimed_id=".urlencode("http://specs.openid.net/auth/2.0/identifier_select");
+		$query .= "&openid.identity=".urlencode("http://specs.openid.net/auth/2.0/identifier_select");
+		$query .= "&openid.realm=".urlencode($url_writer->write('',true));
+		$query .= "&openid.ns=".urlencode("http://specs.openid.net/auth/2.0");
+		$query .= "&openid.return_to=".urlencode($return_to);
+		
+		// AX 1.0 (axschema)
+		$query .= "&openid.ns.ax=".urlencode("http://openid.net/srv/ax/1.0");
+		$query .= "&openid.ax.mode=".urlencode("fetch_request");
+		$query .= "&openid.ax.type.nickname=".urlencode('http://axschema.org/namePerson/friendly');
+		$query .= "&openid.ax.type.fullname=".urlencode('http://axschema.org/namePerson');
+		$query .= "&openid.ax.type.email=".urlencode('http://axschema.org/contact/email');
+		$query .= "&openid.ax.required=".urlencode('email,nickname,fullname');
+		
+		// SREG 1.1
+		$query .= "&openid.ns.sreg=".urlencode('http://openid.net/extensions/sreg/1.1');
+		$query .= "&openid.sreg.required=".urlencode("nickname,fullname,email");
+		$query .= "&openid.sreg.optional=".urlencode("dob,gender,postcode,country,language,timezone");
+		
+		return $url.$query;
+	}
+	
+	public function validate($scope) {
+		$url_writer = DevblocksPlatform::getUrlService();
+		
+		$openid_identifier = $scope['openid_identity'];
+		
+		$server = $this->discover($openid_identifier);
+		
+		$parts = explode('?', $server, 2);
+		$url = isset($parts[0]) ? $parts[0] : '';
+		$query = isset($parts[1]) ? ('?'.$parts[1]) : '';
+		
+		$query .= (!empty($query)) ? '&' : '?';
+		$query .= "openid.ns=".urlencode("http://specs.openid.net/auth/2.0");
+		$query .= "&openid.mode=check_authentication";
+		$query .= "&openid.sig=".urlencode($_GET['openid_sig']);
+		$query .= "&openid.signed=".urlencode($_GET['openid_signed']);
+		
+		// Append all the tokens used in the signed
+		$tokens = explode(',', $scope['openid_signed']);
+		foreach($tokens as $token) {
+			switch($token) {
+				case 'mode':
+				case 'ns':
+				case 'sig':
+				case 'signed':
+					break;
+					
+				default:
+					$key = str_replace('.', '_', $token);
+					
+					if(isset($scope['openid_'.$key])) {
+						$query .= sprintf("&openid.%s=%s",
+							$token,
+							urlencode($scope['openid_'.$key])
+						);
+					}
+					break;
+			}
+		}
+		
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $url.$query);
+		curl_setopt($ch, CURLOPT_HEADER, 0);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		$response = curl_exec($ch);
+		curl_close($ch);
+		
+		if(preg_match('/is_valid:true/', $response))
+			return true;
+		else
+			return false;
+	}
+	
+	public function getAttributes($scope) {
+		$ns = array();
+		$attribs = array();
+		
+		foreach($scope as $ns => $spec) {
+			// Namespaces
+			if(preg_match("/^openid_ns_(.*)$/",$ns,$ns_found)) {
+				switch(strtolower($spec)) {
+					case 'http://openid.net/srv/ax/1.0';
+						foreach($scope as $k => $v) {
+							if(preg_match("/^openid_".$ns_found[1]."_value_(.*)$/i",$k,$attrib_found)) {
+								$attribs[strtolower($attrib_found[1])] = $v;
+							}
+						}
+						break;
+						
+					case 'http://openid.net/srv/sreg/1.0';
+					case 'http://openid.net/extensions/sreg/1.1';
+						foreach($scope as $k => $v) {
+							if(preg_match("/^openid_".$ns_found[1]."_(.*)$/i",$k,$attrib_found)) {
+								$attribs[strtolower($attrib_found[1])] = $v;
+							}
+						}
+						break;
+				}
+			}
+		}
+		
+		return $attribs;
 	}
 };
 
@@ -2213,7 +2588,11 @@ class _DevblocksCacheManagerMemcached extends _DevblocksCacheManagerAbstract {
 	
 	function save($data, $key, $tags=array(), $lifetime=0) {
 		$key = $this->_options['key_prefix'] . $key;
-		return $this->_driver->set($key, $data, 0, $lifetime);
+		
+		if($this->_driver instanceof Memcached)
+			return $this->_driver->set($key, $data, $lifetime);
+		else
+			return $this->_driver->set($key, $data, 0, $lifetime);
 	}
 	
 	function load($key) {
@@ -2601,7 +2980,7 @@ class _DevblocksEventManager {
 		}
 
 		// [TODO] Make sure we can't get a double listener
-	    if(is_array($events['*']))
+	    if(isset($events['*']) && is_array($events['*']))
 	    foreach($events['*'] as $evt) {
 	        $listeners[] = $evt;
 	    }
@@ -3758,19 +4137,21 @@ class _DevblocksTemplateManager {
 			$instance->compile_dir = APP_TEMP_PATH . '/templates_c';
 			$instance->cache_dir = APP_TEMP_PATH . '/cache';
 
+			$instance->use_sub_dirs = false;
+
 			$instance->caching = 0;
 			$instance->cache_lifetime = 0;
 			$instance->compile_check = (defined('DEVELOPMENT_MODE') && DEVELOPMENT_MODE) ? true : false;
 			
 			// Devblocks plugins
-			$instance->register_block('devblocks_url', array('_DevblocksTemplateManager', 'block_devblocks_url'));
-			$instance->register_modifier('devblocks_date', array('_DevblocksTemplateManager', 'modifier_devblocks_date'));
-			$instance->register_modifier('devblocks_hyperlinks', array('_DevblocksTemplateManager', 'modifier_devblocks_hyperlinks'));
-			$instance->register_modifier('devblocks_hideemailquotes', array('_DevblocksTemplateManager', 'modifier_devblocks_hide_email_quotes'));
-			$instance->register_modifier('devblocks_prettytime', array('_DevblocksTemplateManager', 'modifier_devblocks_prettytime'));
-			$instance->register_modifier('devblocks_prettybytes', array('_DevblocksTemplateManager', 'modifier_devblocks_prettybytes'));
-			$instance->register_modifier('devblocks_translate', array('_DevblocksTemplateManager', 'modifier_devblocks_translate'));
-			$instance->register_resource('devblocks', array(
+			$instance->register->block('devblocks_url', array('_DevblocksTemplateManager', 'block_devblocks_url'));
+			$instance->register->modifier('devblocks_date', array('_DevblocksTemplateManager', 'modifier_devblocks_date'));
+			$instance->register->modifier('devblocks_hyperlinks', array('_DevblocksTemplateManager', 'modifier_devblocks_hyperlinks'));
+			$instance->register->modifier('devblocks_hideemailquotes', array('_DevblocksTemplateManager', 'modifier_devblocks_hide_email_quotes'));
+			$instance->register->modifier('devblocks_prettytime', array('_DevblocksTemplateManager', 'modifier_devblocks_prettytime'));
+			$instance->register->modifier('devblocks_prettybytes', array('_DevblocksTemplateManager', 'modifier_devblocks_prettybytes'));
+			$instance->register->modifier('devblocks_translate', array('_DevblocksTemplateManager', 'modifier_devblocks_translate'));
+			$instance->register->resource('devblocks', array(
 				array('_DevblocksSmartyTemplateResource', 'get_template'),
 				array('_DevblocksSmartyTemplateResource', 'get_timestamp'),
 				array('_DevblocksSmartyTemplateResource', 'get_secure'),
@@ -3833,7 +4214,11 @@ class _DevblocksTemplateManager {
 		
 		// The past
 		if($diffsecs >= 0) {
-			if($diffsecs >= 86400) { // days
+			if($diffsecs >= 31557600) { // years
+				$whole .= floor($diffsecs/31557600).'yr';
+			} elseif($diffsecs >= 2592000) { // mo
+				$whole .= floor($diffsecs/2592000).'mo';
+			} elseif($diffsecs >= 86400) { // days
 				$whole .= floor($diffsecs/86400).'d';
 			} elseif($diffsecs >= 3600) { // hours
 				$whole .= floor($diffsecs/3600).'h';
@@ -3847,7 +4232,11 @@ class _DevblocksTemplateManager {
 				$whole .= ' ago';
 			
 		} else { // The future
-			if($diffsecs <= -86400) { // days
+			if($diffsecs <= -31557600) { // years
+				$whole .= floor($diffsecs/-31557600).'yr';
+			} elseif($diffsecs <= -2592000) { // mo
+				$whole .= floor($diffsecs/-2592000).'mo';
+			} elseif($diffsecs <= -86400) { // days
 				$whole .= floor($diffsecs/-86400).'d';
 			} elseif($diffsecs <= -3600) { // hours
 				$whole .= floor($diffsecs/-3600).'h';
@@ -3933,7 +4322,7 @@ class _DevblocksTemplateManager {
 
 class _DevblocksSmartyTemplateResource {
 	static function get_template($tpl_name, &$tpl_source, $smarty_obj) {
-		list($plugin_id, $tpl_path, $tag) = explode(':',$tpl_name,3);
+		list($plugin_id, $tag, $tpl_path) = explode(':',$tpl_name,3);
 		
 		if(empty($plugin_id) || empty($tpl_path))
 			return false;
@@ -3968,13 +4357,11 @@ class _DevblocksSmartyTemplateResource {
 	}
 	
 	static function get_timestamp($tpl_name, &$tpl_timestamp, $smarty_obj) { /* @var $smarty_obj Smarty */
-		list($plugin_id, $tpl_path, $tag) = explode(':',$tpl_name,3);
+		list($plugin_id, $tag, $tpl_path) = explode(':',$tpl_name,3);
 		
 		if(empty($plugin_id) || empty($tpl_path))
 			return false;
 		
-//		echo $tpl_name,"<BR>";
-			
 		$plugins = DevblocksPlatform::getPluginRegistry();
 		$db = DevblocksPlatform::getDatabaseService();
 			
@@ -4259,21 +4646,8 @@ class _DevblocksDatabaseManager {
 		
 		return false;
 	}
-	
-	function GenID($seq) {
-		// Attempt to update and see if we fail, if so we need to create table
-		if(false === ($rs = $this->Execute("UPDATE ${seq} SET id=LAST_INSERT_ID(id+1)"))) {
-			// Create the table
-			$sql = "
-				CREATE TABLE IF NOT EXISTS ${seq} (
-					id INT UNSIGNED NOT NULL
-				) ENGINE=MyISAM;
-			";
-			$this->Execute($sql);
-			$this->Execute(sprintf("INSERT INTO ${seq} (id) VALUES (1)"));
-			return 1;
-		}
-		
+
+	function LastInsertId() {
 		return mysql_insert_id($this->_db);
 	}
 	
@@ -4451,7 +4825,7 @@ class _DevblocksUrlManager {
 	
 	function parseURL($url) {
 		// [JAS]: Use the index.php page as a reference to deconstruct the URI
-		$pos = stripos($_SERVER['PHP_SELF'],'index.php',0);
+		$pos = stripos($_SERVER['SCRIPT_NAME'],'index.php',0);
 		if($pos === FALSE) return array();
 
 		// Decode proxy requests
